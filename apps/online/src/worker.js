@@ -10,6 +10,12 @@ const headers = {
 const json = (data, status = 200, extra = {}) =>
   Response.json(data, { status, headers: { ...headers, ...extra } });
 const quote = (revision) => `"cloud-${revision}"`;
+// Cloudflare can weaken ETags when compressing responses. GET uses weak comparison.
+const matchesETag = (request, etag) =>
+  (request.headers.get("If-None-Match") || "").split(",").some((value) => {
+    const tag = value.trim().replace(/^W\//, "");
+    return tag === "*" || tag === etag.replace(/^W\//, "");
+  });
 const writes = new Set([
   "product",
   "delete-product",
@@ -51,7 +57,7 @@ async function handle(request, env) {
       const meta = await env.DB.prepare(
         "SELECT revision FROM metadata WHERE id=1",
       ).first();
-      if (request.headers.get("If-None-Match") === quote(meta.revision))
+      if (matchesETag(request, quote(meta.revision)))
         return new Response(null, {
           status: 304,
           headers: { ...headers, ETag: quote(meta.revision) },
@@ -108,7 +114,7 @@ async function handle(request, env) {
         "Content-Type": "image/jpeg",
         "Cache-Control": "public,max-age=3600",
       };
-      if (request.headers.get("If-None-Match") === etag)
+      if (matchesETag(request, etag))
         return new Response(null, { status: 304, headers: h });
       return new Response(
         Uint8Array.from(atob(image.content), (c) => c.charCodeAt(0)),

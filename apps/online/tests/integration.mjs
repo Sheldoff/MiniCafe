@@ -30,6 +30,14 @@ try {
       .status,
     304,
   );
+  assert.equal(
+    (
+      await fetch(base + "/api/state", {
+        headers: { "If-None-Match": '"other", W/' + etag.replace(/^W\//, "") },
+      })
+    ).status,
+    304,
+  );
   const p = state.products[0],
     request = "integration-" + Date.now();
   const order = {
