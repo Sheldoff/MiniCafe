@@ -54,7 +54,7 @@
     "private_password_file_separate": "work/android/signing.local.json",
     "certificate_fingerprint_file": "work/android/signing-cert.sha256"
   },
-  "validation_limit": "Android-local API/unit/UI checks and APK build; Windows frozen, online not implemented. No physical Android/iPhone testing.",
+  "validation_limit": "Local Android original suites retained; cloud domain + local D1 API and Chrome/WebKit tested. No physical iPhone/Android cloud testing. Windows frozen.",
   "development_tracks": {
     "policy": "docs/PROJECT-TRACKS-UA.md",
     "local_android": {
@@ -63,10 +63,15 @@
       "sources": "work/android"
     },
     "online": {
-      "status": "planned_not_deployed",
+      "status": "public_test_deployed",
       "entry": "apps/online/README.md",
       "hosting": "Cloudflare Workers + D1",
-      "auth": "Telegram staff/admin; guest links"
+      "auth": "NOT IMPLEMENTED: explicit PUBLIC_TEST_MODE=true grants all visitors full test access",
+      "url": "https://minicafe.minicafe.workers.dev",
+      "sources": "apps/online/src",
+      "database": "D1 minicafe-db",
+      "deploy_docs": "apps/online/DEPLOY-UA.md",
+      "version": "0.1.0-test"
     },
     "windows": {
       "status": "frozen",

@@ -77,6 +77,7 @@ function finishManualRefresh() {
 }
 
 async function fetchState() {
+  const online = !!window.CafeCloud;
   if (!token) {
     document
       .querySelector("#connection")
@@ -104,7 +105,9 @@ async function fetchState() {
         controller?.abort();
         reject(
           Error(
-            "Сервер не відповів за 12 секунд. Перевірте, що сервер МініКафе й тунель Termux працюють, та повторіть підключення.",
+            online
+              ? "Онлайн-сервер не відповів за 12 секунд. Перевірте інтернет і повторіть підключення."
+              : "Сервер не відповів за 12 секунд. Перевірте, що сервер МініКафе й тунель Termux працюють, та повторіть підключення.",
           ),
         );
       }, 12000);
@@ -119,20 +122,28 @@ async function fetchState() {
         if (r.status === 304) return { r };
         if (r.status === 401 || r.status === 403)
           throw Error(
-            "Ключ доступу неправильний. Скопіюйте повне посилання з головного телефона, на якому працює цей тунель.",
+            online
+              ? "Онлайн-доступ вимкнено або обмежено адміністратором."
+              : "Ключ доступу неправильний. Скопіюйте повне посилання з головного телефона, на якому працює цей тунель.",
           );
         if (!r.ok)
           throw Error(
-            "Сервер або тунель недоступний (HTTP " +
+            (online
+              ? "Онлайн-сервер недоступний (HTTP "
+              : "Сервер або тунель недоступний (HTTP ") +
               r.status +
-              "). Перевірте головний телефон і поточну адресу Termux.",
+              (online
+                ? "). Спробуйте ще раз пізніше."
+                : "). Перевірте головний телефон і поточну адресу Termux."),
           );
         try {
           return { r, next: await r.json() };
         } catch (e) {
           if (e.name === "AbortError") throw e;
           throw Error(
-            "Замість даних меню отримано іншу сторінку. Перевірте поточне посилання тунелю та роботу сервера.",
+            online
+              ? "Онлайн-сервер повернув неправильну відповідь. Оновіть сторінку й спробуйте ще раз."
+              : "Замість даних меню отримано іншу сторінку. Перевірте поточне посилання тунелю та роботу сервера.",
           );
         }
       })(),
@@ -153,7 +164,9 @@ async function fetchState() {
     }
     if (!Array.isArray(next.products) || !Array.isArray(next.orders))
       throw Error(
-        "Сервер повернув неправильний формат даних. Оновіть МініКафе на головному телефоні.",
+        online
+          ? "Неправильний формат даних онлайн-сервера. Оновіть сторінку."
+          : "Сервер повернув неправильний формат даних. Оновіть МініКафе на головному телефоні.",
       );
     if (serial !== refreshSerial) return false;
     let max = Math.max(0, ...next.orders.map((o) => o.id));
@@ -240,9 +253,13 @@ async function fetchState() {
     connectionNotice(
       "Не вдалося завантажити меню",
       e.name === "AbortError"
-        ? "Сервер не відповідає. Перевірте МініКафе й Termux на головному телефоні."
+        ? online
+          ? "Онлайн-сервер не відповідає. Перевірте інтернет."
+          : "Сервер не відповідає. Перевірте МініКафе й Termux на головному телефоні."
         : e.message === "Failed to fetch"
-          ? "Не вдалося зв’язатися із сервером. Перевірте інтернет і поточну адресу тунелю."
+          ? online
+            ? "Не вдалося зв’язатися з онлайн-сервером. Перевірте інтернет."
+            : "Не вдалося зв’язатися із сервером. Перевірте інтернет і поточну адресу тунелю."
           : e.message,
     );
     return false;
@@ -272,7 +289,10 @@ function scheduleRefresh(immediate = false) {
   if (document.visibilityState === "hidden") return;
   let delay = immediate
     ? 0
-    : Math.min(30000, 2000 * 2 ** Math.min(pollFailures, 4));
+    : Math.min(
+        window.CafeCloud ? 60000 : 30000,
+        (window.CafeCloud ? 15000 : 2000) * 2 ** Math.min(pollFailures, 4),
+      );
   pollTimer = setTimeout(async () => {
     if (!refreshing) await refresh();
     scheduleRefresh();
