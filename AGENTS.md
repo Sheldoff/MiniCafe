@@ -1,6 +1,12 @@
 # MiniCafe — правила для будь-якого AI-помічника
 
 Спочатку прочитай START-HERE-UA.md, PROJECT-CONTEXT.json і COLLABORATION-UA.md.
+Пріоритетна політика напрямів: docs/PROJECT-TRACKS-UA.md.
+Активні напрями: локальний Android і онлайн Cloudflare. Windows заморожений на
+3.36 (archive/windows-3.36, реліз v3.36); не змінюй work/cafe/app.py,
+work/cafe/desktop_engine.py, work/cafe/requirements.txt, work/desktop/ або
+work/scripts/build_desktop.ps1, не збирай/не тестуй EXE без нового прохання власника.
+work/cafe/frontend_build.py залишається активним спільним збирачем UI.
 Це реальний застосунок з Android APK, Windows EXE та спільним вебінтерфейсом.
 
 - Канонічні джерела UI: work/frontend; не редагуй згенерований index.html.

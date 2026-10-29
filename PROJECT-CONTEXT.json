@@ -54,5 +54,27 @@
     "private_password_file_separate": "work/android/signing.local.json",
     "certificate_fingerprint_file": "work/android/signing-cert.sha256"
   },
-  "validation_limit": "Автоматичні Java/API/Chrome-WebKit перевірки та збірка APK/EXE. Фізичний Android/емулятор не використовувався."
+  "validation_limit": "Android-local API/unit/UI checks and APK build; Windows frozen, online not implemented. No physical Android/iPhone testing.",
+  "development_tracks": {
+    "policy": "docs/PROJECT-TRACKS-UA.md",
+    "local_android": {
+      "status": "active",
+      "entry": "apps/local-android/README.md",
+      "sources": "work/android"
+    },
+    "online": {
+      "status": "planned_not_deployed",
+      "entry": "apps/online/README.md",
+      "hosting": "Cloudflare Workers + D1",
+      "auth": "Telegram staff/admin; guest links"
+    },
+    "windows": {
+      "status": "frozen",
+      "version": "3.36",
+      "source_ref": "archive/windows-3.36",
+      "release": "https://github.com/Sheldoff/MiniCafe/releases/tag/v3.36",
+      "build_or_test": false
+    },
+    "data_sync": "Separate databases; explicit import only"
+  }
 }
