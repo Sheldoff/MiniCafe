@@ -17,6 +17,7 @@ html += '<script>' + (HERE / 'src/cloud-ui.js').read_text(encoding='utf-8') + '<
 (out / 'private').mkdir(exist_ok=True)
 (out / 'private/admin.html').write_text(html, encoding='utf-8')
 (out / 'index.html').write_text((HERE / 'src/guest.html').read_text(encoding='utf-8'), encoding='utf-8')
+(out / 'login.html').write_text((HERE / 'src/login.html').read_text(encoding='utf-8'), encoding='utf-8')
 (out / 'images').mkdir(exist_ok=True)
 source = ROOT / 'work/android/assets/default-menu'
 menu = json.loads((source / 'menu.json').read_text(encoding='utf-8'))['items']

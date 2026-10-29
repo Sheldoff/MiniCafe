@@ -192,6 +192,15 @@ export async function authRoutes(request, env) {
     });
   }
   if (path === "/auth/login" && request.method === "GET") {
+    const asset = await env.ASSETS.fetch(
+      new Request(new URL("/login.html", url)),
+    );
+    return new Response(asset.body, {
+      status: asset.status,
+      headers: { ...privateHeaders, "Content-Type": "text/html;charset=utf-8" },
+    });
+  }
+  if (path === "/auth/start" && request.method === "GET") {
     if (!env.TELEGRAM_CLIENT_ID || !env.TELEGRAM_CLIENT_SECRET)
       return errorPage(
         "Вхід через Telegram ще налаштовується. Спробуйте пізніше.",
