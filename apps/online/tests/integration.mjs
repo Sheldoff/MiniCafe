@@ -3,6 +3,17 @@ import assert from "node:assert/strict";
 const base = process.env.CAFE_CLOUD_TEST_URL || "http://127.0.0.1:8791";
 if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))
   throw Error("Local test URL required");
+const nativeFetch = globalThis.fetch;
+const fetch = (url, options = {}) =>
+  nativeFetch(url, {
+    ...options,
+    headers: {
+      Cookie: "__Host-minicafe_session=" + "1".repeat(64),
+      "X-CSRF-Token": "2".repeat(64),
+      Origin: base,
+      ...options.headers,
+    },
+  });
 const get = async (path) => {
   const r = await fetch(base + "/api/" + path);
   assert.equal(r.status, 200, await r.clone().text());

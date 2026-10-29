@@ -1,6 +1,17 @@
 import { mutate, report, selected, undoAvailable, fail } from "./domain.js";
 import { load, commit, mutationQuery, prepareImages } from "./storage.js";
 import { restoreData } from "./restore.js";
+import {
+  authRoutes,
+  identity,
+  csrfAllowed,
+  canRead,
+  canWrite,
+  filterState,
+  secureJson,
+  admins,
+  rateLimit,
+} from "./auth.js";
 
 const headers = {
   "Cache-Control": "no-store",
@@ -9,7 +20,7 @@ const headers = {
 };
 const json = (data, status = 200, extra = {}) =>
   Response.json(data, { status, headers: { ...headers, ...extra } });
-const quote = (revision) => `"cloud-${revision}"`;
+const quote = (revision, user) => `"cloud-${revision}-${user.role}-${user.id}"`;
 // Cloudflare can weaken ETags when compressing responses. GET uses weak comparison.
 const matchesETag = (request, etag) =>
   (request.headers.get("If-None-Match") || "").split(",").some((value) => {
@@ -38,54 +49,148 @@ const writes = new Set([
 async function handle(request, env) {
   const url = new URL(request.url),
     path = url.pathname.slice(5);
-  if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
-  // Explicit, removable testing mode. No accidental unauthenticated fallback.
-  if (env.PUBLIC_TEST_MODE !== "true")
-    return json(
-      { error: "Тестовий доступ вимкнено; вхід ще не налаштовано" },
-      403,
-    );
-  if (request.method === "GET") {
-    if (path === "ping")
-      return json({
-        ok: true,
-        app: "minicafe",
-        mode: "cloud-public-test",
-        api_version: 1,
+  const authentication = await authRoutes(request, env);
+  if (authentication) return authentication;
+  if (url.pathname.startsWith("/private/"))
+    return new Response("Not found", { status: 404, headers });
+  if (url.pathname === "/admin" || url.pathname === "/admin/") {
+    if (request.method !== "GET")
+      return json({ error: "Метод не підтримується" }, 405);
+    const user = await identity(request, env);
+    if (!user)
+      return new Response(null, {
+        status: 302,
+        headers: { ...headers, Location: "/auth/login" },
       });
+    const asset = await env.ASSETS.fetch(
+      new Request(new URL("/private/admin.html", url)),
+    );
+    if (!asset.ok) return json({ error: "Інтерфейс недоступний" }, 503);
+    const context = JSON.stringify({
+      authenticated: true,
+      csrf: user.csrf,
+      role: user.role,
+      name: user.name,
+    }).replace(/</g, "\\u003c");
+    return new Response(
+      (await asset.text()).replace("__CLOUD_CONTEXT__", context),
+      {
+        headers: {
+          ...headers,
+          "Content-Type": "text/html;charset=utf-8",
+          "X-Frame-Options": "DENY",
+        },
+      },
+    );
+  }
+  if (url.pathname === "/")
+    return env.ASSETS.fetch(new Request(new URL("/index.html", url), request));
+  if (!url.pathname.startsWith("/api/")) {
+    if (url.pathname.startsWith("/auth/") || url.pathname.startsWith("/admin/"))
+      return json({ error: "Не знайдено" }, 404);
+    return env.ASSETS.fetch(request);
+  }
+  if (path === "public/menu" && request.method === "GET")
+    return json(
+      {
+        published: false,
+        accepting: false,
+        message: "Меню формується",
+        products: [],
+      },
+      200,
+      { "Cache-Control": "public,max-age=60" },
+    );
+  if (path.startsWith("public/"))
+    return json({ error: "Онлайн-замовлення ще не відкриті" }, 403);
+  if (path === "ping" && request.method === "GET")
+    return json({
+      ok: true,
+      app: "minicafe",
+      mode: "cloud-telegram",
+      api_version: 2,
+    });
+  const user = await identity(request, env);
+  if (!user)
+    return json({ error: "Потрібен вхід працівника через Telegram" }, 401);
+  if (request.method === "GET" && !canRead(user.role, path))
+    return json({ error: "Недостатньо прав" }, 403);
+  if (path === "staff") {
+    if (user.role !== "admin")
+      return json({ error: "Лише адміністратор" }, 403);
+    if (request.method === "GET")
+      return json({
+        staff: (
+          await env.DB.prepare(
+            "SELECT telegram_id,role,enabled,updated FROM staff_access ORDER BY telegram_id",
+          ).all()
+        ).results,
+      });
+    if (request.method !== "POST" || !csrfAllowed(request, user))
+      return json({ error: "Немає доступу" }, 403);
+    if (!(await rateLimit(env, request, "staff", 30, 60)))
+      return json({ error: "Забагато змін" }, 429);
+    if (Number(request.headers.get("Content-Length")) > 2048)
+      return json({ error: "Запит завеликий" }, 413);
+    const text = await request.text();
+    if (text.length > 2048) return json({ error: "Запит завеликий" }, 413);
+    let input;
+    try {
+      input = JSON.parse(text);
+    } catch {
+      return json({ error: "Некоректний JSON" }, 400);
+    }
+    const id = String(input.telegram_id || "");
+    if (
+      !/^\d{1,20}$/.test(id) ||
+      admins(env).has(id) ||
+      !["service", "cash", "bar", "delivery"].includes(input.role) ||
+      typeof input.enabled !== "boolean"
+    )
+      return json({ error: "Некоректний доступ" }, 400);
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO staff_access VALUES(?,?,?,?) ON CONFLICT(telegram_id) DO UPDATE SET role=excluded.role,enabled=excluded.enabled,updated=excluded.updated`,
+      ).bind(id, input.role, input.enabled ? 1 : 0, new Date().toISOString()),
+      env.DB.prepare("DELETE FROM auth_sessions WHERE telegram_id=?").bind(id),
+    ]);
+    return json({ ok: true });
+  }
+  if (request.method === "GET") {
     if (path === "state") {
       const meta = await env.DB.prepare(
         "SELECT revision FROM metadata WHERE id=1",
       ).first();
-      if (matchesETag(request, quote(meta.revision)))
+      if (matchesETag(request, quote(meta.revision, user)))
         return new Response(null, {
           status: 304,
-          headers: { ...headers, ETag: quote(meta.revision) },
+          headers: { ...headers, ETag: quote(meta.revision, user) },
         });
       const d = await load(env.DB);
       return json(
-        {
-          versions: d.versions,
-          products: d.products,
-          orders: d.orders
-            .sort((a, b) => b.id - a.id)
-            .map((o) => ({ ...o, events: o.events.slice(-8).reverse() })),
-          sessions: d.sessions,
-          active_session: d.active_session,
-          require_session_start: false,
-          expenses_version: d.expenses_version,
-          additional_expenses: d.calculator_expenses.filter(
-            (e) => e.kind === "additional",
-          ),
-          can_undo_issue: {
-            bar: undoAvailable(d, "bar"),
-            instant: undoAvailable(d, "instant"),
+        filterState(
+          {
+            versions: d.versions,
+            products: d.products,
+            orders: d.orders
+              .sort((a, b) => b.id - a.id)
+              .map((o) => ({ ...o, events: o.events.slice(-8).reverse() })),
+            sessions: d.sessions,
+            active_session: d.active_session,
+            require_session_start: false,
+            expenses_version: d.expenses_version,
+            additional_expenses: d.calculator_expenses.filter(
+              (e) => e.kind === "additional",
+            ),
+            can_undo_issue: {
+              bar: undoAvailable(d, "bar"),
+              instant: undoAvailable(d, "instant"),
+            },
           },
-          access_role: "admin",
-          cloud_public_test: true,
-        },
+          user,
+        ),
         200,
-        { ETag: quote(d.revision) },
+        { ETag: quote(d.revision, user) },
       );
     }
     if (path.startsWith("image/")) {
@@ -97,6 +202,11 @@ async function handle(request, env) {
         .first();
       if (!p) return json({ error: "Фото не знайдено" }, 404);
       const product = JSON.parse(p.data);
+      if (
+        ["bar", "delivery"].includes(user.role) &&
+        product.route !== (user.role === "bar" ? "bar" : "instant")
+      )
+        return json({ error: "Недостатньо прав" }, 403);
       if (product.image_asset)
         return env.ASSETS.fetch(
           new Request(new URL(product.image_asset, url), request),
@@ -112,7 +222,8 @@ async function handle(request, env) {
         ...headers,
         ETag: etag,
         "Content-Type": "image/jpeg",
-        "Cache-Control": "public,max-age=3600",
+        "Cache-Control": "private,no-cache",
+        Vary: "Cookie",
       };
       if (matchesETag(request, etag))
         return new Response(null, { status: 304, headers: h });
@@ -205,6 +316,8 @@ async function handle(request, env) {
   }
   if (request.method !== "POST")
     return json({ error: "Метод не підтримується" }, 405);
+  if (!csrfAllowed(request, user))
+    return json({ error: "Сесію не підтверджено. Оновіть сторінку." }, 403);
   // Public is not cross-origin writable; APIs have no CORS wildcard.
   if (
     request.headers.get("Origin") &&
@@ -248,6 +361,8 @@ async function handle(request, env) {
   }
   if (!input || typeof input !== "object" || Array.isArray(input))
     fail("Некоректний запит");
+  if (!canWrite(user.role, path, input))
+    return json({ error: "Недостатньо прав" }, 403);
   for (let attempt = 0; attempt < 4; attempt++) {
     const meta = await env.DB.prepare(
       "SELECT revision,data FROM metadata WHERE id=1",
@@ -259,6 +374,14 @@ async function handle(request, env) {
       path === "restore" ? [] : bindings,
     );
     if (before.revision !== meta.revision) continue;
+    if (path === "availability" && ["bar", "delivery"].includes(user.role)) {
+      const product = before.products.find((p) => p.id === input.id);
+      if (
+        !product ||
+        product.route !== (user.role === "bar" ? "bar" : "instant")
+      )
+        return json({ error: "Інша видача" }, 403);
+    }
     const after =
       path === "restore" ? restoreData(before, input) : structuredClone(before);
     const { result, changed } =

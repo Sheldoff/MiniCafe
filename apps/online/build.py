@@ -12,9 +12,11 @@ from frontend_build import build_html
 out = HERE / 'dist'
 out.mkdir(exist_ok=True)
 html = build_html()
-html = html.replace('<script>', '<script>window.CafeCloud={publicTest:true};</script><script>', 1)
+html = html.replace('<script>', '<script>window.CafeCloud=__CLOUD_CONTEXT__;</script><script>', 1)
 html += '<script>' + (HERE / 'src/cloud-ui.js').read_text(encoding='utf-8') + '</script>'
-(out / 'index.html').write_text(html, encoding='utf-8')
+(out / 'private').mkdir(exist_ok=True)
+(out / 'private/admin.html').write_text(html, encoding='utf-8')
+(out / 'index.html').write_text((HERE / 'src/guest.html').read_text(encoding='utf-8'), encoding='utf-8')
 (out / 'images').mkdir(exist_ok=True)
 source = ROOT / 'work/android/assets/default-menu'
 menu = json.loads((source / 'menu.json').read_text(encoding='utf-8'))['items']

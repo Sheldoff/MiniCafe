@@ -3,8 +3,13 @@ window.CafeNative =
   window.CafeNative || /MiniCafeAndroid/.test(navigator.userAgent);
 const token =
     new URLSearchParams(location.search).get("key") ||
-    (window.CafeCloud ? "public-test" : ""),
-  auth = { "X-Cafe-Key": token };
+    (window.CafeCloud ? "cloud-session" : ""),
+  auth = {
+    "X-Cafe-Key": token,
+    ...(window.CafeCloud?.csrf
+      ? { "X-CSRF-Token": window.CafeCloud.csrf }
+      : {}),
+  };
 
 let menuPage = 0,
   mobileCart = false;
@@ -14,7 +19,11 @@ let imageDraft = undefined,
   imageGeneration = 0;
 
 let categoryFilter = "",
-  data = { products: [], orders: [] },
+  data = {
+    products: [],
+    orders: [],
+    ...(window.CafeCloud?.role ? { access_role: window.CafeCloud.role } : {}),
+  },
   view = location.hash.slice(1) || "cash",
   cart = [],
   draft =

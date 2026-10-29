@@ -20,8 +20,13 @@ const base = "http://127.0.0.1:8791";
     p.on("pageerror", (e) => errors.push(e.message));
     try {
       await p.goto(base);
+      await p.locator("h1").waitFor();
+      await p.setExtraHTTPHeaders({
+        Cookie: "__Host-minicafe_session=" + "1".repeat(64),
+      });
+      await p.goto(base + "/admin");
       await p.locator('[data-product="1"]').waitFor();
-      assert.equal(await p.evaluate(() => token), "public-test");
+      assert.equal(await p.evaluate(() => window.CafeCloud.role), "admin");
       assert.equal(await p.locator(".cloud-test-note").count(), 1);
       await p.waitForFunction(() => {
         const i = document.querySelector('[data-product="1"] img');
