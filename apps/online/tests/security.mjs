@@ -115,6 +115,55 @@ assert.equal(
   400,
 );
 // Revocation must invalidate an already authenticated browser, not only hide UI.
+for (const phone of ["0671234567", "+380671234567 ext 2", 123456789]) {
+  assert.equal(
+    (
+      await req("/api/staff", {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({ phone, role: "cash", enabled: true }),
+      })
+    ).status,
+    400,
+  );
+}
+const phoneGrant = { phone: "+1 (202) 555-0199", role: "cash", enabled: true };
+assert.equal(
+  (
+    await req("/api/staff", {
+      method: "POST",
+      headers: headers("4"),
+      body: JSON.stringify(phoneGrant),
+    })
+  ).status,
+  403,
+);
+assert.equal(
+  (
+    await req("/api/staff", {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify(phoneGrant),
+    })
+  ).status,
+  200,
+);
+const staffList = await (
+  await req("/api/staff", { headers: headers() })
+).json();
+assert.ok(
+  staffList.staff.some((s) => s.phone === "+12025550199" && s.enabled === 1),
+);
+assert.equal(
+  (
+    await req("/api/staff", {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify({ ...phoneGrant, enabled: false }),
+    })
+  ).status,
+  200,
+);
 const revoke = await req("/api/staff", {
   method: "POST",
   headers: headers(),

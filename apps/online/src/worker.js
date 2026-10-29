@@ -1,6 +1,7 @@
 import { mutate, report, selected, undoAvailable, fail } from "./domain.js";
 import { load, commit, mutationQuery, prepareImages } from "./storage.js";
 import { restoreData } from "./restore.js";
+import { normalizePhone } from "./phone.js";
 import {
   authRoutes,
   identity,
@@ -122,7 +123,9 @@ async function handle(request, env) {
       return json({
         staff: (
           await env.DB.prepare(
-            "SELECT telegram_id,role,enabled,updated FROM staff_access ORDER BY telegram_id",
+            `SELECT telegram_id,role,enabled,updated,NULL AS phone FROM staff_access
+             UNION ALL SELECT claimed_id AS telegram_id,role,enabled,updated,phone FROM staff_phone
+             ORDER BY updated DESC`,
           ).all()
         ).results,
       });
@@ -141,13 +144,33 @@ async function handle(request, env) {
       return json({ error: "Некоректний JSON" }, 400);
     }
     const id = String(input.telegram_id || "");
+    const phone =
+      input.phone !== undefined ? normalizePhone(input.phone) : null;
     if (
-      !/^\d{1,20}$/.test(id) ||
-      admins(env).has(id) ||
+      (input.phone !== undefined
+        ? !phone || !!id
+        : !/^\d{1,20}$/.test(id) || admins(env).has(id)) ||
       !["service", "cash", "bar", "delivery"].includes(input.role) ||
       typeof input.enabled !== "boolean"
     )
       return json({ error: "Некоректний доступ" }, 400);
+    if (phone) {
+      await env.DB.batch([
+        env.DB.prepare(
+          `INSERT INTO staff_phone(phone,role,enabled,updated) VALUES(?,?,?,?)
+          ON CONFLICT(phone) DO UPDATE SET role=excluded.role,enabled=excluded.enabled,updated=excluded.updated`,
+        ).bind(
+          phone,
+          input.role,
+          input.enabled ? 1 : 0,
+          new Date().toISOString(),
+        ),
+        env.DB.prepare(
+          "DELETE FROM auth_sessions WHERE token_hash IN (SELECT token_hash FROM session_phone WHERE phone=?)",
+        ).bind(phone),
+      ]);
+      return json({ ok: true });
+    }
     await env.DB.batch([
       env.DB.prepare(
         `INSERT INTO staff_access VALUES(?,?,?,?) ON CONFLICT(telegram_id) DO UPDATE SET role=excluded.role,enabled=excluded.enabled,updated=excluded.updated`,

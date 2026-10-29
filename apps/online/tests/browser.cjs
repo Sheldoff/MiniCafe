@@ -66,6 +66,18 @@ const base = "http://127.0.0.1:8791";
       await p
         .getByRole("button", { name: "Зберегти резервну копію", exact: true })
         .waitFor();
+      await p.evaluate(() => cloudStaff());
+      await p
+        .locator('#staffForm input[name="identifier"]')
+        .fill("+1 (202) 555-0199");
+      await p.locator("#staffForm button").click();
+      const phoneRow = p
+        .locator("#cloudStaff .row")
+        .filter({ hasText: "+12025550199" });
+      await phoneRow.locator("button:not([disabled])").waitFor();
+      p.once("dialog", (dialog) => dialog.accept());
+      await phoneRow.locator("button").click();
+      await phoneRow.locator("button[disabled]").waitFor();
       await p.evaluate(() => change("cash"));
       await p.screenshot({
         path: `../../outputs/cloud-${name}-phone.png`,

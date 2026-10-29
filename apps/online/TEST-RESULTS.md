@@ -1,5 +1,9 @@
 # Telegram authentication validation — 2026-10-29
 
+Phone grants: normalization/invalid formats, verified claim requirement, account
+pinning against number reuse, immediate revocation, explicit disabled ID priority,
+session-link cascade cleanup, administrator-only grant/list/revoke integration.
+
 - Domain tests: payments, gifts, costs, menu calculator, invalid input.
 - Signed JWT tests: wrong signature, issuer, audience, expiry and nonce rejected.
 - Disposable local D1: concurrent writes, persistence, idempotency, rollback,

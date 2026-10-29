@@ -1,4 +1,5 @@
 import { createRemoteJWKSet, jwtVerify } from "jose";
+import { claimPhone } from "./phone.js";
 
 const DAY = 86400,
   encoder = new TextEncoder();
@@ -70,8 +71,12 @@ export async function identity(request, env) {
   const token = cookie(request, "__Host-minicafe_session");
   if (!/^[a-f0-9]{64}$/.test(token)) return null;
   const row = await env.DB.prepare(
-    `SELECT a.telegram_id,a.display_name,a.csrf,a.expires,s.role,s.enabled
+    `SELECT a.telegram_id,a.display_name,a.csrf,a.expires,
+    CASE WHEN s.telegram_id IS NOT NULL THEN s.role ELSE p.role END AS role,
+    CASE WHEN s.telegram_id IS NOT NULL THEN s.enabled ELSE p.enabled END AS enabled
     FROM auth_sessions a LEFT JOIN staff_access s ON s.telegram_id=a.telegram_id
+    LEFT JOIN session_phone sp ON sp.token_hash=a.token_hash
+    LEFT JOIN staff_phone p ON p.phone=sp.phone AND p.claimed_id=a.telegram_id
     WHERE a.token_hash=? AND a.expires>?`,
   )
     .bind(await hash(token), timestamp())
@@ -248,7 +253,7 @@ export async function authRoutes(request, env) {
       client_id: env.TELEGRAM_CLIENT_ID,
       redirect_uri: url.origin + "/auth/callback",
       response_type: "code",
-      scope: "openid profile",
+      scope: "openid profile phone",
       state,
       nonce,
       code_challenge: challenge,
@@ -315,11 +320,16 @@ export async function authRoutes(request, env) {
       const staff = admins(env).has(id)
         ? { role: "admin" }
         : await env.DB.prepare(
-            "SELECT role FROM staff_access WHERE telegram_id=? AND enabled=1",
+            "SELECT role,enabled FROM staff_access WHERE telegram_id=?",
           )
             .bind(id)
             .first();
-      if (!staff)
+      const access = staff
+        ? staff.enabled === 0
+          ? null
+          : staff
+        : await claimPhone(env.DB, payload, id);
+      if (!access)
         return errorPage(
           "Для цього Telegram-акаунта ще не надано доступ. Зверніться до адміністратора.",
           403,
@@ -330,9 +340,24 @@ export async function authRoutes(request, env) {
           0,
           100,
         );
-      await env.DB.prepare("INSERT INTO auth_sessions VALUES(?,?,?,?,?)")
-        .bind(await hash(session), id, name, csrf, timestamp() + 7 * DAY)
-        .run();
+      const tokenHash = await hash(session);
+      const statements = [
+        env.DB.prepare("INSERT INTO auth_sessions VALUES(?,?,?,?,?)").bind(
+          tokenHash,
+          id,
+          name,
+          csrf,
+          timestamp() + 7 * DAY,
+        ),
+      ];
+      if (access.phone)
+        statements.push(
+          env.DB.prepare("INSERT INTO session_phone VALUES(?,?)").bind(
+            tokenHash,
+            access.phone,
+          ),
+        );
+      await env.DB.batch(statements);
       const h = new Headers({ ...privateHeaders, Location: "/admin" });
       h.append("Set-Cookie", sessionCookie(session));
       h.append("Set-Cookie", flowCookie("", 0));
