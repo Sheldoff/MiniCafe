@@ -331,7 +331,7 @@ function orders() {
 
 function availabilityPanel(route) {
   let products = data.products.filter((p) => p.route === route && p.active);
-  return `<section class="availability-panel" data-route="${route}"><button class="availability-heading" aria-expanded="false" onclick="toggleAvailability(this)"><span>Наявність позицій</span><span class="availability-chevron">⌄</span></button><div class="availability-body" hidden><div class="availability-grid">${products.map((p) => `<button class="availability-toggle ${p.sold_out ? "off" : ""}" aria-pressed="${!!p.sold_out}" onclick="availability(${p.id})"><span>${esc(p.name)}</span><b>${p.sold_out ? "Закінчилось · повернути" : "Є в наявності · вимкнути"}</b></button>`).join("")}</div></div></section>`;
+  return `<section class="availability-panel" data-route="${route}"><button class="availability-heading" aria-expanded="false" onclick="toggleAvailability(this)"><span>Наявність позицій</span><span class="availability-chevron">⌄</span></button><div class="availability-body" hidden><div class="availability-grid">${products.map((p) => `<button class="availability-toggle ${productUnavailable(p) ? "off" : ""}" aria-pressed="${productUnavailable(p)}" ${p.stock != null && !p.stock_estimated && p.stock <= 0 ? "disabled" : ""} onclick="availability(${p.id})"><span>${esc(p.name)}</span><b>${p.stock != null && !p.stock_estimated && p.stock <= 0 ? "Залишок 0 · оновіть кількість" : p.sold_out ? "Закінчилось · повернути" : "Є в наявності · вимкнути"}</b></button>`).join("")}</div></div></section>`;
 }
 
 function toggleAvailability(button) {

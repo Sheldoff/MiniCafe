@@ -45,10 +45,17 @@ export function mutationQuery(path, input, meta) {
   if (path === "stats/clear") return ["SELECT data FROM orders", []];
   return ["SELECT data FROM orders WHERE 0", []];
 }
-export async function commit(db, before, after, imageChanges = []) {
+export async function commit(
+  db,
+  before,
+  after,
+  imageChanges = [],
+  guards = [],
+) {
   const { products, orders, sessions, calculator_expenses, revision, ...meta } =
     after;
   const statements = [
+    ...guards,
     // A failed CHECK rolls back the ENTIRE batch, including all entity writes.
     db
       .prepare(

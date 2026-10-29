@@ -80,7 +80,7 @@ function menu(reset = false) {
   imageLoading = false;
   imageDraft = undefined;
   document.querySelector("#main").innerHTML =
-    `<div class="grid menu-editor-grid"><section class="panel product-form-panel" hidden><h2>Редактор меню</h2><p class="muted">Додавайте товари, змінюйте ціни та доступність.</p><form id="form" onsubmit="saveProduct(event)"><input id="pid" type="hidden"><label>Назва</label><input id="pname" required><label>Категорія</label><input id="pcategory" required value="Їжа" autocomplete="off" oninput="suggestCategories(this.value)" onfocus="suggestCategories(this.value)"><div id="categorySuggestions" class="category-suggestions"></div><label>Обробка</label><select id="proute"><option value="bar">Передати бариста</option><option value="instant" selected>Передати на видачу їжі</option></select><label>Ціна, грн</label><input data-money id="pprice" type="number" min="0" step="0.01" required><label for="pstock">Орієнтовна кількість, необов’язково</label><input id="pstock" type="number" min="0" max="1000000" step="1" inputmode="numeric" placeholder="Кількість"><label>Зображення товару</label><div class="image-editor"><div id="picturePreview" class="image-preview">Зображення ще не додано</div><input id="pimage" aria-label="Зображення товару" type="file" accept="image/*" style="display:none" onchange="choosePicture(this)"><div class="row photo-actions"><button type="button" class="primary" onclick="document.querySelector('#pimage').value='';document.querySelector('#pimage').click()">Обрати фото</button><button type="submit">Зберегти фото</button><button type="button" onclick="removePicture()">Прибрати</button></div></div><input id="pactive" type="checkbox" checked hidden><button id="activeToggle" type="button" class="active-toggle" aria-pressed="true" onclick="toggleProductActive()">● Показувати товар у меню</button><div class="row"><button class="primary">Зберегти</button></div></form></section><section class="panel product-list-panel"><div class="row" style="margin:0 0 10px"><h2 class="grow" style="margin:0">Товари</h2><button id="editorToggle" onclick="toggleProductEditor()" aria-expanded="false">＋ Новий товар</button></div><input id="productSearch" type="search" placeholder="Пошук за назвою" aria-label="Пошук товарів" oninput="filterEditorProducts(this.value)"><div id="editorProducts">${editorProductRows("")}</div></section></div>`;
+    `<div class="grid menu-editor-grid"><section class="panel product-form-panel" hidden><h2>Редактор меню</h2><p class="muted">Додавайте товари, змінюйте ціни та доступність.</p><form id="form" onsubmit="saveProduct(event)"><input id="pid" type="hidden"><label>Назва</label><input id="pname" required><label>Категорія</label><input id="pcategory" required value="Їжа" autocomplete="off" oninput="suggestCategories(this.value)" onfocus="suggestCategories(this.value)"><div id="categorySuggestions" class="category-suggestions"></div><label>Обробка</label><select id="proute"><option value="bar">Передати бариста</option><option value="instant" selected>Передати на видачу їжі</option></select><label>Ціна, грн</label><input data-money id="pprice" type="number" min="0" step="0.01" required><label for="pstock">Кількість, необов’язково</label><input id="pstock" type="number" min="0" max="1000000" step="1" inputmode="numeric" placeholder="Кількість"><label class="stock-mode"><input id="pestimated" type="checkbox" onchange="document.querySelector('#pstock').min=this.checked?'-1000000':'0'">Орієнтовна кількість</label><small class="muted">З галочкою залишок може бути від’ємним.</small><label>Зображення товару</label><div class="image-editor"><div id="picturePreview" class="image-preview">Зображення ще не додано</div><input id="pimage" aria-label="Зображення товару" type="file" accept="image/*" style="display:none" onchange="choosePicture(this)"><div class="row photo-actions"><button type="button" class="primary" onclick="document.querySelector('#pimage').value='';document.querySelector('#pimage').click()">Обрати фото</button><button type="submit">Зберегти фото</button><button type="button" onclick="removePicture()">Прибрати</button></div></div><input id="pactive" type="checkbox" checked hidden><button id="activeToggle" type="button" class="active-toggle" aria-pressed="true" onclick="toggleProductActive()">● Показувати товар у меню</button><div class="row"><button class="primary">Зберегти</button></div></form></section><section class="panel product-list-panel"><div class="row" style="margin:0 0 10px"><h2 class="grow" style="margin:0">Товари</h2><button id="editorToggle" onclick="toggleProductEditor()" aria-expanded="false">＋ Новий товар</button></div><input id="productSearch" type="search" placeholder="Пошук за назвою" aria-label="Пошук товарів" oninput="filterEditorProducts(this.value)"><div id="editorProducts">${editorProductRows("")}</div></section></div>`;
   restoreEditorDraft();
   decorateMoneyFields();
 }
@@ -221,10 +221,12 @@ function editProduct(id) {
     pcategory: p.category,
     pprice: (p.price / 100).toFixed(2),
     proute: p.route,
-    pstock: p.stock == null ? "" : Math.max(0, p.stock),
+    pstock: p.stock == null ? "" : p.stock,
   }))
     document.getElementById(k).value = v;
   document.querySelector("#pactive").checked = !!p.active;
+  document.querySelector("#pestimated").checked = !!p.stock_estimated;
+  document.querySelector("#pstock").min = p.stock_estimated ? "-1000000" : "0";
   updateActiveToggle();
   picturePreview(p.image_version ? imageUrl(p) : null);
   suggestCategories(p.category);
@@ -233,6 +235,7 @@ function editProduct(id) {
 
 async function saveProduct(e) {
   e.preventDefault();
+  const savingForm = e.target;
   if (productSaving) return;
   if (imageLoading) return toast("Зачекайте, зображення обробляється");
   let d = {
@@ -247,6 +250,7 @@ async function saveProduct(e) {
     document.querySelector("#pstock").value.trim() === ""
       ? null
       : Number(document.querySelector("#pstock").value);
+  d.stock_estimated = document.querySelector("#pestimated").checked;
   if (imageDraft !== undefined) d.image = imageDraft;
   let saveButton =
     e.submitter ||
@@ -255,7 +259,7 @@ async function saveProduct(e) {
   try {
     await post("product", d);
     await savedFeedback(saveButton);
-    if (view === "menu") menu(true);
+    if (view === "menu" && savingForm.isConnected) menu(true);
     toast("Меню збережено", true);
   } catch (e) {
     toast(e.message);
@@ -299,6 +303,7 @@ function captureEditorDraft() {
     fields: {},
     active: document.querySelector("#pactive").checked,
     hasImageDraft: imageDraft !== undefined,
+    estimated: document.querySelector("#pestimated").checked,
     imageDraft,
     preview: document.querySelector("#picturePreview").innerHTML,
     open:
@@ -316,6 +321,10 @@ function restoreEditorDraft() {
   for (let [id, value] of Object.entries(editorDraft.fields))
     document.getElementById(id).value = value;
   document.querySelector("#pactive").checked = editorDraft.active;
+  document.querySelector("#pestimated").checked = !!editorDraft.estimated;
+  document.querySelector("#pstock").min = editorDraft.estimated
+    ? "-1000000"
+    : "0";
   updateActiveToggle();
   imageDraft = editorDraft.hasImageDraft ? editorDraft.imageDraft : undefined;
   let preview = document.querySelector("#picturePreview");

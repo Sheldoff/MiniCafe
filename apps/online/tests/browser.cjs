@@ -27,7 +27,7 @@ const base = "http://127.0.0.1:8791";
       await p.goto(base + "/admin");
       await p.locator('[data-product="1"]').waitFor();
       assert.equal(await p.evaluate(() => window.CafeCloud.role), "admin");
-      assert.equal(await p.locator(".cloud-test-note").count(), 1);
+      assert.equal(await p.locator(".cloud-test-note").count(), 0);
       await p.waitForFunction(() => {
         const i = document.querySelector('[data-product="1"] img');
         return i?.complete && i.naturalWidth > 0;
@@ -70,14 +70,33 @@ const base = "http://127.0.0.1:8791";
       await p
         .locator('#staffForm input[name="identifier"]')
         .fill("+1 (202) 555-0199");
-      await p.locator("#staffForm button").click();
+      await p.locator("#staffForm button.primary").click();
       const phoneRow = p
         .locator("#cloudStaff .row")
         .filter({ hasText: "+12025550199" });
-      await phoneRow.locator("button:not([disabled])").waitFor();
+      await phoneRow.locator('[onclick*="cloudStaffEdit"]').click();
+      await p.locator('#staffForm select[name="role"]').selectOption("bar");
+      await p.locator("#staffForm button.primary").click();
+      await phoneRow.filter({ hasText: "Бариста" }).waitFor();
       p.once("dialog", (dialog) => dialog.accept());
-      await phoneRow.locator("button").click();
-      await phoneRow.locator("button[disabled]").waitFor();
+      await phoneRow.locator('[onclick*="cloudStaffRevoke"]').click();
+      await phoneRow.filter({ hasText: "вимкнено" }).waitFor();
+      p.once("dialog", (dialog) => dialog.accept());
+      await phoneRow.locator('[onclick*="cloudStaffDelete"]').click();
+      await phoneRow.waitFor({ state: "detached" });
+      await p.evaluate(() => change("server"));
+      await p
+        .getByRole("button", { name: "Меню телефона ↔ сайт", exact: true })
+        .click();
+      p.once("dialog", (dialog) => dialog.accept());
+      await p
+        .getByRole("button", { name: "Сайт → телефон", exact: true })
+        .click();
+      await p.locator(".transfer-code").waitFor();
+      assert.match(
+        await p.locator(".transfer-code").inputValue(),
+        /^[a-f0-9]{64}$/,
+      );
       await p.evaluate(() => change("cash"));
       await p.screenshot({
         path: `../../outputs/cloud-${name}-phone.png`,

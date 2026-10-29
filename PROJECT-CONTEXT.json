@@ -1,7 +1,7 @@
 {
   "application": "МініКафе",
-  "version": "3.36",
-  "android_version_code": 48,
+  "version": "3.37",
+  "android_version_code": 49,
   "purpose": "Каса, окремі черги напоїв і їжі, гнучке меню, статистика/PDF, калькулятор, резервні копії",
   "entry_document": "START-HERE-UA.md",
   "human_prompt": "NEXT-CHAT-PROMPT-UA.txt",
@@ -26,12 +26,11 @@
     "delivery": "Тільки видача їжі"
   },
   "latest_requested_changes": [
-    "Плавний перехід до сервера без попереднього знищення WebView",
-    "Картка підтримки 4441111056584349 з копіюванням",
-    "Виділення вкладки Розробник у двох темах",
-    "Прибрано автоматичний фокус із назви МініКафе при відкритті меню",
-    "Свайп ліворуч: замовлення; праворуч: меню; до 999 px без конфлікту прокручування/утримання/вводу",
-    "Переносний архів вихідних кодів з інструкціями та залежностями"
+    "Manual confirmed menu/photo/price/stock transfer between APK host and Cloudflare via one-use direction-scoped 5-minute codes",
+    "Strict stock disables at zero; stock_estimated permits negative counts; optional guest highlighted",
+    "Separate staff management page: add by verified phone or Telegram ID, edit role, revoke/delete",
+    "Removed Telegram banner, styled server actions, checked online forms at mobile/tablet/desktop widths",
+    "Fixed request ID generation for consecutive online receipts and late editor save navigation race"
   ],
   "key_rules": [
     "Гроші — копійки у сервері",
@@ -60,7 +59,8 @@
     "local_android": {
       "status": "active",
       "entry": "apps/local-android/README.md",
-      "sources": "work/android"
+      "sources": "work/android",
+      "version": "3.37"
     },
     "online": {
       "status": "telegram_auth_deployed",
@@ -71,7 +71,7 @@
       "sources": "apps/online/src",
       "database": "D1 minicafe-db",
       "deploy_docs": "apps/online/DEPLOY-UA.md",
-      "version": "0.2.0"
+      "version": "0.3.0"
     },
     "windows": {
       "status": "frozen",
@@ -80,6 +80,6 @@
       "release": "https://github.com/Sheldoff/MiniCafe/releases/tag/v3.36",
       "build_or_test": false
     },
-    "data_sync": "Separate databases; explicit import only"
+    "data_sync": "Separate databases; manual, confirmed menu-only transfer via one-use capability; no order/statistics sync"
   }
 }
