@@ -1,4 +1,25 @@
 /* Theme tokens: warm charcoal surfaces, soft mint accents, restrained semantic colors. */
+.guest-name-field {
+  border: 2px solid var(--accent, #27634f);
+  background: var(--raised, #f1f6ed);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--accent, #27634f) 12%, transparent);
+}
+.guest-name-field:focus {
+  outline: 2px solid var(--accent, #27634f);
+  outline-offset: 3px;
+}
+.stock-mode {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-block: 12px;
+}
+.stock-mode input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--accent, #27634f);
+}
 :root {
   --amount-pulse: #deedce;
   --theme-control-bg: #edf1e5;

@@ -676,6 +676,7 @@ public final class CafeStore {
               .put("active", source.optInt("active", 1));
       if (source.has("stock") && !source.isNull("stock")) p.put("stock", source.getLong("stock"));
       p.put("sold_out", source.optBoolean("sold_out", false));
+      p.put("stock_estimated", source.optBoolean("stock_estimated", false));
       if (source.has("image") && !source.isNull("image")) {
         byte[] bytes = checkImage(source.getString("image"));
         byte[] hash = MessageDigest.getInstance("SHA-256").digest(bytes);
@@ -690,6 +691,34 @@ public final class CafeStore {
     work.put("products", ps);
     persist(work);
     data = work;
+  }
+
+  public synchronized byte[] exportMenu() throws Exception {
+    JSONArray products = new JSONArray(data.getJSONArray("products").toString());
+    for (int i = 0; i < products.length(); i++) {
+      JSONObject p = products.getJSONObject(i);
+      if (p.has("image_file")) {
+        p.put("image", Codec.encode(images.get(p.getString("image_file"))));
+        p.remove("image_file");
+      }
+    }
+    return new JSONObject()
+        .put("format", "minicafe-menu-1")
+        .put("products", products)
+        .put("confirm", true)
+        .toString()
+        .getBytes("UTF-8");
+  }
+
+  public synchronized long menuVersion() {
+    return data.optLong("products_revision", 0);
+  }
+
+  public synchronized void importMenu(JSONArray input, long expectedVersion) throws Exception {
+    if (menuVersion() != expectedVersion)
+      throw new IllegalArgumentException(
+          "Меню або залишки телефона змінилися. Створіть новий код і повторіть перенесення.");
+    importMenu(input);
   }
 
   public synchronized void restore(byte[] bytes) throws Exception {
@@ -922,12 +951,13 @@ public final class CafeStore {
         }
       }
       checkProduct(p);
+      if (d.has("stock_estimated")) p.put("stock_estimated", d.getBoolean("stock_estimated"));
       if (d.has("stock")) {
         if (d.isNull("stock")) p.remove("stock");
         else {
           long stock = d.getLong("stock");
-          if (stock < 0 || stock > 1000000)
-            throw new IllegalArgumentException("Орієнтовна кількість має бути від 0 до 1000000");
+          if (stock < (p.optBoolean("stock_estimated", false) ? -1000000 : 0) || stock > 1000000)
+            throw new IllegalArgumentException("Перевірте кількість і режим залишку (до 1000000)");
           p.put("stock", stock);
         }
       }
@@ -982,7 +1012,11 @@ public final class CafeStore {
                 .put("route", p.getString("route"))
                 .put("status", "new")
                 .put("note", shortText(input.optString("note", ""), 300)));
-        if (p.has("stock") && !p.isNull("stock")) p.put("stock", p.getLong("stock") - qty);
+        if (p.has("stock") && !p.isNull("stock")) {
+          if (!p.optBoolean("stock_estimated", false) && p.getLong("stock") < qty)
+            throw new IllegalArgumentException("Недостатній залишок");
+          p.put("stock", p.getLong("stock") - qty);
+        }
       }
       long total = 0;
       for (int i = 0; i < items.length(); i++) {
@@ -1138,11 +1172,16 @@ public final class CafeStore {
                 JSONObject product = ps.getJSONObject(k);
                 if (product.getInt("id") == it.optInt("product_id", 0)
                     && product.has("stock")
-                    && !product.isNull("stock"))
+                    && !product.isNull("stock")) {
+                  if (!status.equals("cancelled")
+                      && !product.optBoolean("stock_estimated", false)
+                      && product.getLong("stock") < it.getInt("qty"))
+                    throw new IllegalArgumentException("Недостатній залишок");
                   product.put(
                       "stock",
                       product.getLong("stock")
                           + (status.equals("cancelled") ? it.getInt("qty") : -it.getInt("qty")));
+                }
               }
             }
             it.remove("unit_issued");

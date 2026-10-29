@@ -2,6 +2,7 @@ import { mutate, report, selected, undoAvailable, fail } from "./domain.js";
 import { load, commit, mutationQuery, prepareImages } from "./storage.js";
 import { restoreData } from "./restore.js";
 import { normalizePhone } from "./phone.js";
+import { menuTransfer } from "./menu-transfer.js";
 import {
   authRoutes,
   identity,
@@ -52,6 +53,8 @@ async function handle(request, env) {
     path = url.pathname.slice(5);
   const authentication = await authRoutes(request, env);
   if (authentication) return authentication;
+  const transfer = await menuTransfer(request, env);
+  if (transfer) return transfer;
   if (url.pathname.startsWith("/private/"))
     return new Response("Not found", { status: 404, headers });
   if (url.pathname === "/admin" || url.pathname === "/admin/") {
@@ -154,6 +157,29 @@ async function handle(request, env) {
       typeof input.enabled !== "boolean"
     )
       return json({ error: "Некоректний доступ" }, 400);
+    if (input.action === "delete") {
+      if (phone)
+        await env.DB.batch([
+          env.DB.prepare(
+            "DELETE FROM auth_sessions WHERE token_hash IN (SELECT token_hash FROM session_phone WHERE phone=?)",
+          ).bind(phone),
+          env.DB.prepare("DELETE FROM staff_phone WHERE phone=?").bind(phone),
+        ]);
+      else
+        await env.DB.batch([
+          env.DB.prepare("DELETE FROM auth_sessions WHERE telegram_id=?").bind(
+            id,
+          ),
+          env.DB.prepare(
+            "UPDATE staff_phone SET enabled=0 WHERE claimed_id=?",
+          ).bind(id),
+          env.DB.prepare("DELETE FROM staff_access WHERE telegram_id=?").bind(
+            id,
+          ),
+        ]);
+      return json({ ok: true });
+    }
+    if (input.action !== undefined) return json({ error: "Невідома дія" }, 400);
     if (phone) {
       await env.DB.batch([
         env.DB.prepare(

@@ -8,7 +8,7 @@
 | Напрям | Канонічні джерела | Стан |
 | --- | --- | --- |
 | Спільний вебінтерфейс | work/frontend, work/cafe/frontend_build.py | Активний |
-| Локальний Android | work/android, apps/local-android | Активний, робочий 3.36 |
+| Локальний Android | work/android, apps/local-android | Активний, 3.37 |
 | Онлайн | apps/online | Worker + D1, Telegram OIDC, персональні ролі; гостьова заглушка |
 | Windows | work/desktop, частина work/cafe | Заморожено 3.36 |
 
@@ -55,5 +55,6 @@ production. Не підключай чужий наявний Worker або D1 �
 Cloud-проєкт: minicafe.minicafe.workers.dev, Worker minicafe, окрема D1 minicafe-db.
 Акаунт і ресурси зафіксовані у apps/online/wrangler.jsonc. Квоти Free спільні для
 акаунта. Локальні OAuth secrets — у виключеному .wrangler-auth; вони також
-виключаються з вихідних ZIP. Відкритий доступ є тимчасовим тестовим режимом;
-Telegram-вхід і гостьовий окремий API — наступна задача. Автодеплою немає.
+виключаються з вихідних ZIP. Telegram-вхід і серверні ролі вже реалізовані;
+гості бачать заглушку. Ручне перенесення меню описане в MENU-TRANSFER-UA.md.
+Автодеплою немає.

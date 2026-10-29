@@ -1,9 +1,23 @@
+function productUnavailable(p) {
+  return (
+    !!p.sold_out || (p.stock != null && !p.stock_estimated && p.stock <= 0)
+  );
+}
 function pageMenu(delta) {
   menuPage += delta;
   tiles("");
 }
 
 function step(i, d) {
+  const p = data.products.find((p) => p.id === cart[i].id);
+  if (
+    d > 0 &&
+    p &&
+    p.stock != null &&
+    !p.stock_estimated &&
+    countProduct(p.id) >= p.stock
+  )
+    return toast("Недостатній залишок");
   if (cart[i].qty + d <= 0) cart.splice(i, 1);
   else cart[i].qty = Math.min(99, cart[i].qty + d);
   drawCart();
@@ -13,7 +27,7 @@ function cash() {
   payMode = "mixed";
   mixedAuto = true;
   document.querySelector("#main").innerHTML =
-    `<div class="cash-switch"><button onclick="showCashPanel(false)">Меню</button><button id="cartTab" onclick="showCashPanel(true)">Замовлення</button></div><div class="grid cash-grid"><section class="panel menu-panel"><div id="categories" class="chips"></div><div id="tiles"></div><div id="menuPages"></div></section><section class="panel cart-panel"><input id="guest" aria-label="Ім’я гостя" placeholder="Ім’я гостя"><div id="cart"></div><div class="total" data-gift-hold><span id="totalLabel">Разом</span><b id="sum"></b></div><div class="payment-box"><div class="pay-fields"><label>Готівкою, грн<input data-money id="received" inputmode="decimal" placeholder="0,00" oninput="paymentEdited('cash')"></label><label>Карткою, грн<input data-money id="cardPaid" inputmode="decimal" placeholder="0,00" oninput="paymentEdited('card')"></label></div><div class="paid-line"><span>Внесено разом</span><b id="paidSum">0,00 ₴</b></div><div id="change" role="status" aria-live="polite">До сплати: —</div></div><button id="send" class="primary" onclick="send()">Відправити замовлення</button></section></div>`;
+    `<div class="cash-switch"><button onclick="showCashPanel(false)">Меню</button><button id="cartTab" onclick="showCashPanel(true)">Замовлення</button></div><div class="grid cash-grid"><section class="panel menu-panel"><div id="categories" class="chips"></div><div id="tiles"></div><div id="menuPages"></div></section><section class="panel cart-panel"><input class="guest-name-field" id="guest" aria-label="Ім’я гостя" placeholder="Ім’я гостя"><div id="cart"></div><div class="total" data-gift-hold><span id="totalLabel">Разом</span><b id="sum"></b></div><div class="payment-box"><div class="pay-fields"><label>Готівкою, грн<input data-money id="received" inputmode="decimal" placeholder="0,00" oninput="paymentEdited('cash')"></label><label>Карткою, грн<input data-money id="cardPaid" inputmode="decimal" placeholder="0,00" oninput="paymentEdited('card')"></label></div><div class="paid-line"><span>Внесено разом</span><b id="paidSum">0,00 ₴</b></div><div id="change" role="status" aria-live="polite">До сплати: —</div></div><button id="send" class="primary" onclick="send()">Відправити замовлення</button></section></div>`;
   categoryFilter = "";
   menuPage = 0;
   drawCategories();
@@ -174,7 +188,9 @@ async function send() {
     cart = [];
     giftOrder = false;
     chosenProducts.clear();
-    draft = String(Date.now()) + Math.random();
+    draft = window.crypto?.randomUUID
+      ? window.crypto.randomUUID()
+      : String(Date.now()) + "-" + Math.random().toString(36).slice(2);
     if (view === "cash") {
       payMode = "mixed";
       mixedAuto = true;
@@ -274,7 +290,7 @@ function countProduct(id) {
 
 function cardMarkup(p) {
   let count = countProduct(p.id);
-  return `<button class="tile ${p.sold_out ? "sold-out" : ""}" data-product="${p.id}" aria-disabled="${!!p.sold_out}" onclick="tileClick(event,${p.id})" oncontextmenu="return false">${productVisual(p)}<span class="product-copy"><b>${esc(p.name)}</b>${p.stock !== undefined && p.stock !== null ? `<span class="stock-estimate">≈ ${p.stock} шт.</span>` : ""}${p.sold_out ? '<span class="sold-label">Закінчилось</span>' : ""}<span class="tile-price">${money(p.price)}</span><span class="selected-count" ${count > 0 ? "" : "hidden"} aria-label="У замовленні">${count}</span></span></button>`;
+  return `<button class="tile ${productUnavailable(p) ? "sold-out" : ""}" data-product="${p.id}" aria-disabled="${!!productUnavailable(p)}" onclick="tileClick(event,${p.id})" oncontextmenu="return false">${productVisual(p)}<span class="product-copy"><b>${esc(p.name)}</b>${p.stock !== undefined && p.stock !== null ? `<span class="stock-estimate">${p.stock_estimated ? "≈ " : ""}${p.stock} шт.</span>` : ""}${productUnavailable(p) ? '<span class="sold-label">Закінчилось</span>' : ""}<span class="tile-price">${money(p.price)}</span><span class="selected-count" ${count > 0 ? "" : "hidden"} aria-label="У замовленні">${count}</span></span></button>`;
 }
 
 function tiles(q) {
@@ -309,8 +325,8 @@ function updateProductCards() {
     let id = Number(button.dataset.product),
       p = data.products.find((x) => x.id === id);
     if (!p) return;
-    button.classList.toggle("sold-out", !!p.sold_out);
-    button.setAttribute("aria-disabled", String(!!p.sold_out));
+    button.classList.toggle("sold-out", !!productUnavailable(p));
+    button.setAttribute("aria-disabled", String(!!productUnavailable(p)));
     let count = button.querySelector(".selected-count");
     if (count) {
       let previous = Number(count.textContent),
@@ -333,7 +349,10 @@ function updateProductCards() {
 
 function add(id) {
   let p = data.products.find((x) => x.id === id);
-  if (!p || !p.active || p.sold_out) return toast("Ця позиція закінчилась");
+  if (!p || !p.active || productUnavailable(p))
+    return toast("Ця позиція закінчилась");
+  if (p.stock != null && !p.stock_estimated && countProduct(id) >= p.stock)
+    return toast("Недостатній залишок");
   productFeedback(id, "tap-feedback");
   chosenProducts.add(id);
   let existing = cart.find(

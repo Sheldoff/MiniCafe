@@ -41,6 +41,7 @@ public class HostActivity extends Activity {
   private String screen = "", url = "";
   private boolean alive = true;
   private byte[] exportData;
+  private boolean cloudTransferring;
 
   private int px(int n) {
     return (int) (getResources().getDisplayMetrics().density * n);
@@ -313,6 +314,17 @@ public class HostActivity extends Activity {
     controls.removeAllViews();
     root = controls;
     if (state.running) {
+      group(
+          "Меню телефона ↔ сайт",
+          () -> {
+            root.addView(
+                text(
+                    "Переноситься лише меню з фото, цінами та залишками. Замовлення й статистика не"
+                        + " змінюються.",
+                    14));
+            button("Телефон → сайт", () -> cloudMenuTransfer(true));
+            button("Сайт → телефон", () -> cloudMenuTransfer(false));
+          });
       group(
           "Підключити інший пристрій",
           () -> {
@@ -612,6 +624,148 @@ public class HostActivity extends Activity {
               Toast.makeText(this, "Перенесення меню…", Toast.LENGTH_SHORT).show();
             })
         .show();
+  }
+
+  private void cloudMenuTransfer(boolean upload) {
+    if (cloudTransferring) return;
+    EditText code = new EditText(this);
+    code.setSingleLine(true);
+    code.setHint("Одноразовий код із сайту");
+    code.setInputType(
+        android.text.InputType.TYPE_CLASS_TEXT
+            | android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+    LinearLayout box = new LinearLayout(this);
+    box.setOrientation(LinearLayout.VERTICAL);
+    box.setPadding(px(20), px(8), px(20), px(8));
+    box.addView(
+        text(
+            "На сайті: Сервер → Меню телефона ↔ сайт. Створіть код потрібного напрямку та вставте"
+                + " сюди. Код діє 5 хвилин, один раз.",
+            14));
+    box.addView(code);
+    AlertDialog dialog =
+        new AlertDialog.Builder(this)
+            .setTitle(upload ? "Телефон → сайт" : "Сайт → телефон")
+            .setView(box)
+            .setNegativeButton("Скасувати", null)
+            .setNeutralButton(
+                "Відкрити сайт",
+                (d, w) ->
+                    startActivity(
+                        new Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse(
+                                "https://minicafe.minicafe.workers.dev/admin#menu-transfer"))))
+            .setPositiveButton("Продовжити", null)
+            .create();
+    dialog.setOnShowListener(
+        v ->
+            dialog
+                .getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(
+                    b -> {
+                      String token = code.getText().toString().trim();
+                      if (!token.matches("[a-f0-9]{64}")) {
+                        code.setError("Вставте повний код із сайту");
+                        return;
+                      }
+                      new AlertDialog.Builder(this)
+                          .setTitle("Замінити меню?")
+                          .setMessage(
+                              (upload
+                                      ? "Меню сайту буде замінене меню телефона."
+                                      : "Меню телефона буде замінене меню сайту.")
+                                  + " Замовлення, статистика та доступи не змінюються.")
+                          .setNegativeButton("Скасувати", null)
+                          .setPositiveButton(
+                              "Замінити меню",
+                              (d, w) -> {
+                                dialog.dismiss();
+                                cloudTransferring = true;
+                                Toast.makeText(this, "Перенесення меню…", Toast.LENGTH_LONG).show();
+                                new Thread(
+                                        () -> {
+                                          HttpURLConnection connection = null;
+                                          try {
+                                            CafeStore db = ServerService.store;
+                                            if (db == null)
+                                              throw new Exception("Запустіть сервер телефона");
+                                            long localMenuVersion = db.menuVersion();
+                                            byte[] body =
+                                                upload ? db.exportMenu() : "{}".getBytes("UTF-8");
+                                            if (body.length > 8000000)
+                                              throw new Exception("Меню завелике: до 8 МБ");
+                                            connection =
+                                                (HttpURLConnection)
+                                                    new URL(
+                                                            "https://minicafe.minicafe.workers.dev/api/menu-transfer/"
+                                                                + (upload ? "upload" : "download"))
+                                                        .openConnection();
+                                            connection.setConnectTimeout(10000);
+                                            connection.setReadTimeout(30000);
+                                            connection.setInstanceFollowRedirects(false);
+                                            connection.setRequestMethod("POST");
+                                            connection.setDoOutput(true);
+                                            connection.setRequestProperty(
+                                                "Content-Type", "application/json");
+                                            connection.setRequestProperty("X-Menu-Transfer", token);
+                                            connection.setFixedLengthStreamingMode(body.length);
+                                            try (OutputStream out = connection.getOutputStream()) {
+                                              out.write(body);
+                                            }
+                                            int status = connection.getResponseCode();
+                                            InputStream stream =
+                                                status == 200
+                                                    ? connection.getInputStream()
+                                                    : connection.getErrorStream();
+                                            if (stream == null)
+                                              throw new Exception("Сервер недоступний");
+                                            org.json.JSONObject result;
+                                            try (InputStream in = stream) {
+                                              result =
+                                                  new org.json.JSONObject(
+                                                      new String(
+                                                          CafeStore.readBytes(in, 8000000),
+                                                          "UTF-8"));
+                                            }
+                                            if (status != 200)
+                                              throw new Exception(
+                                                  result.optString(
+                                                      "error",
+                                                      "Помилка перенесення. Створіть новий код."));
+                                            if (!upload) {
+                                              if (!"minicafe-menu-1"
+                                                  .equals(result.optString("format")))
+                                                throw new Exception("Невідомий формат меню");
+                                              if (ServerService.store != db)
+                                                throw new Exception(
+                                                    "Сервер телефона змінився. Повторіть"
+                                                        + " перенесення.");
+                                              db.importMenu(
+                                                  result.getJSONArray("products"),
+                                                  localMenuVersion);
+                                            }
+                                            runOnUiThread(
+                                                () ->
+                                                    new AlertDialog.Builder(this)
+                                                        .setMessage(
+                                                            "Меню перенесено. Оновіть касу на"
+                                                                + " пристроях.")
+                                                        .setPositiveButton("Добре", null)
+                                                        .show());
+                                          } catch (Exception e) {
+                                            fail(e);
+                                          } finally {
+                                            if (connection != null) connection.disconnect();
+                                            runOnUiThread(() -> cloudTransferring = false);
+                                          }
+                                        },
+                                        "MiniCafe-cloud-menu")
+                                    .start();
+                              })
+                          .show();
+                    }));
+    dialog.show();
   }
 
   private void exportBackup() {

@@ -32,6 +32,8 @@ export function validateProduct(p) {
   routeCheck(p.route);
   p.active = p.active ? 1 : 0;
   if (p.stock != null) integer(p.stock, -1000000, 1000000);
+  if (p.stock_estimated !== undefined && typeof p.stock_estimated !== "boolean")
+    fail("Некоректний режим залишку");
   return p;
 }
 export function flags(i) {
@@ -108,9 +110,19 @@ export function mutate(d, path, input) {
         active: input.active ?? true,
       }),
     );
+    if ("stock_estimated" in input) {
+      if (typeof input.stock_estimated !== "boolean")
+        fail("Некоректний режим залишку");
+      product.stock_estimated = input.stock_estimated;
+    }
     if ("stock" in input) {
       if (input.stock === null) delete product.stock;
-      else product.stock = integer(input.stock, 0, 1000000);
+      else
+        product.stock = integer(
+          input.stock,
+          product.stock_estimated ? -1000000 : 0,
+          1000000,
+        );
     }
     if ("image" in input) product.image = input.image;
     result.id = product.id;
@@ -142,7 +154,11 @@ export function mutate(d, path, input) {
         row.unit_price === undefined
           ? product.price
           : integer(row.unit_price, 0, 100000000);
-      if (product.stock != null) product.stock -= qty;
+      if (product.stock != null) {
+        if (!product.stock_estimated && product.stock < qty)
+          fail("Недостатній залишок");
+        product.stock -= qty;
+      }
       return {
         id: d.nextItem++,
         order_id: id,
@@ -252,6 +268,12 @@ export function mutate(d, path, input) {
       (i.status === "cancelled" || input.status === "cancelled") &&
       product?.stock != null
     ) {
+      if (
+        input.status !== "cancelled" &&
+        !product.stock_estimated &&
+        product.stock < i.qty
+      )
+        fail("Недостатній залишок");
       product.stock += input.status === "cancelled" ? i.qty : -i.qty;
       changed.add("products");
     }

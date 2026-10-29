@@ -29,7 +29,7 @@ let categoryFilter = "",
   draft =
     window.crypto && typeof window.crypto.randomUUID === "function"
       ? window.crypto.randomUUID()
-      : String(Date.now()) + Math.random(),
+      : String(Date.now()) + "-" + Math.random().toString(36).slice(2),
   busy = false,
   sound = false,
   seen = null;

@@ -50,7 +50,8 @@ public class InventoryTest {
     s.mutate("/api/availability", j("{id:5,sold_out:false}"));
     s.mutate(
         "/api/product",
-        j("{id:2,name:'Капучино',category:'Напої',price:5500,route:'bar',stock:0}"));
+        j(
+            "{id:2,name:'Капучино',category:'Напої',price:5500,route:'bar',stock:0,stock_estimated:true}"));
     s.mutate(
         "/api/order",
         j("{request:'estimate-zero',cash_given:0,card_amount:5500,items:[{id:2,qty:1}]}"));
