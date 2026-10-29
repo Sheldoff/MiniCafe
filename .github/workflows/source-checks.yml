@@ -21,4 +21,4 @@ jobs:
         working-directory: work/tooling
       - run: node work/scripts/lint_frontend.cjs
       - run: node work/tooling/node_modules/prettier/bin/prettier.cjs --check "work/frontend/**/*.js" "work/frontend/**/*.css" "work/tests/ui/*.cjs"
-      - run: python -m compileall -q work/cafe work/scripts work/tests/api work/android/prepare_assets.py work/android/verify_apk.py
+      - run: python -m compileall -q work/cafe/frontend_build.py work/scripts work/tests/api/contract.py work/android/prepare_assets.py work/android/verify_apk.py

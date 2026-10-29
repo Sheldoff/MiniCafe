@@ -20,7 +20,8 @@ function CheckExit {if($LASTEXITCODE -ne 0){throw "Setup command failed: $LASTEX
 $env:MINICAFE_PYTHON=(Get-Command $PythonExe).Source
 $env:JAVA_HOME=$JdkHome
 $env:ANDROID_HOME=$SdkHome
-& $PythonExe -m pip install -r "$work/cafe/requirements.txt"; CheckExit
+# Android checks and the frontend builder use Python's standard library.
+# Frozen desktop dependencies (PyInstaller, Tk, etc.) are not installed here.
 Push-Location "$work/tooling"
 try {
   & npm ci; CheckExit

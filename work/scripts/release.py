@@ -31,15 +31,18 @@ def main():
     assert (
         summary["passed"] and summary["full_build"] and summary["ui_engines"]
     ), "Run complete checks before a release"
+    assert summary.get("profile") == "local-android", "Run current Android checks"
     out = ROOT / "outputs"
     artifacts = {}
-    for suffix in ["apk", "exe"]:
+    for suffix in ["apk"]:
         source = out / f"MiniCafe.{suffix}"
         target = out / f"MiniCafe-{args.version}.{suffix}"
         shutil.copyfile(source, target)
         artifacts[target.name] = hashlib.sha256(target.read_bytes()).hexdigest()
     archive = out / f"MiniCafe-{args.version}-source.zip"
     roots = [
+        "apps",
+        "docs",
         "work/frontend",
         "work/android/src",
         "work/android/res",
@@ -62,10 +65,7 @@ def main():
         "NEXT-CHAT-PROMPT-UA.txt",
         "PROJECT-CONTEXT.json",
         ".gitignore",
-        "work/cafe/app.py",
-        "work/cafe/desktop_engine.py",
         "work/cafe/frontend_build.py",
-        "work/cafe/requirements.txt",
         "work/android/AndroidManifest.xml",
         "work/android/build.ps1",
         "work/android/prepare_assets.py",
@@ -73,7 +73,6 @@ def main():
         "work/android/signing-cert.sha256",
         "work/android/dependencies.sha256.json",
         "work/android/assets/default-menu.json",
-        "work/desktop/DesktopServer.java",
         "work/android/ServerHarness.java",
         "work/tooling/package.json",
         "work/tooling/package-lock.json",

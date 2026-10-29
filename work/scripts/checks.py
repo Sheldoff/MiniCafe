@@ -1,10 +1,9 @@
-"""One regression entry point. Never reads or modifies the user's cafe database."""
+"""Android-local regressions. Windows 3.36 is frozen; user data is never used."""
 
 from pathlib import Path
 import argparse
 import json
 import os
-import socket
 import subprocess
 import sys
 import time
@@ -14,9 +13,7 @@ WORK = Path(__file__).resolve().parents[1]
 ROOT = WORK.parent
 sys.path[:0] = [str(WORK / "cafe"), str(WORK / "tests/api")]
 from frontend_build import build_html
-from desktop_engine import DesktopEngine
 from contract import contract
-from migration import migration_test
 
 
 def run(command, **kwargs):
@@ -27,12 +24,6 @@ def run(command, **kwargs):
         flush=True,
     )
     subprocess.run([str(x) for x in command], cwd=ROOT, check=True, **kwargs)
-
-
-def available_port():
-    with socket.socket() as probe:
-        probe.bind(("127.0.0.1", 0))
-        return probe.getsockname()[1]
 
 
 def main():
@@ -168,82 +159,15 @@ def main():
         server.terminate()
         server.wait(timeout=10)
         server.stdout.close()
-    run(
-        [
-            "powershell",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-File",
-            WORK / "scripts/build_desktop.ps1",
-            "-PythonExe",
-            sys.executable,
-            "-SkipExe",
-        ]
-    )
-    desktop = DesktopEngine(results / "desktop", "desktop-test-key", available_port())
-    try:
-        desktop.start()
-        contract(f"http://127.0.0.1:{desktop.port}", "desktop-test-key")
-        bundled = (
-            Path(
-                (WORK / "desktop/current-dist.txt")
-                .read_text(encoding="utf-8-sig")
-                .strip()
-            )
-            / "assets/index.html"
-        )
-        assert (
-            bundled.read_text(encoding="utf-8") == build_html()
-        ), "Desktop/Android UI differ"
-    finally:
-        desktop.stop()
-    migration_test(results / "legacy-desktop", available_port())
-    run(
-        [
-            sys.executable,
-            WORK / "cafe/app.py",
-            "--self-test",
-            "--data-dir",
-            results / "desktop-ui",
-            "--port",
-            str(available_port()),
-            "--key",
-            "ui-test-key",
-        ]
-    )
-    if not args.skip_build:
-        run(
-            [
-                "powershell",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-File",
-                WORK / "scripts/build_desktop.ps1",
-                "-PythonExe",
-                sys.executable,
-            ]
-        )
-    if not args.skip_build:
-        for mode in ["headless", "window"]:
-            command = [
-                ROOT / "outputs/MiniCafe.exe",
-                "--self-test",
-                "--data-dir",
-                results / ("exe-" + mode),
-                "--port",
-                str(available_port()),
-                "--key",
-                "packaged-test-key",
-            ]
-            if mode == "headless":
-                command.append("--headless")
-            run(command, timeout=90)
     summary = {
         "passed": True,
         "unit_suites": len(tests),
-        "api_contracts": ["android-core", "desktop"],
+        "profile": "local-android",
+        "api_contracts": ["android-core"],
         "ui_engines": [] if args.skip_ui else ["Chrome", "WebKit"],
-        "legacy_migration": True,
+        "legacy_migration": False,
+        "desktop_checked": False,
+        "build_targets": [] if args.skip_build else ["apk"],
         "full_build": not args.skip_build,
     }
     (results / "summary.json").write_text(
