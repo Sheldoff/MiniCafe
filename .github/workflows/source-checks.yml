@@ -22,3 +22,34 @@ jobs:
       - run: node work/scripts/lint_frontend.cjs
       - run: node work/tooling/node_modules/prettier/bin/prettier.cjs --check "work/frontend/**/*.js" "work/frontend/**/*.css" "work/tests/ui/*.cjs"
       - run: python -m compileall -q work/cafe/frontend_build.py work/scripts work/tests/api/contract.py work/android/prepare_assets.py work/android/verify_apk.py
+  online:
+    runs-on: ubuntu-latest
+    env:
+      WRANGLER_SEND_METRICS: 'false'
+    defaults:
+      run:
+        working-directory: apps/online
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/online/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci --no-audit --no-fund
+      - run: python build.py
+      - run: npm test
+      - run: node node_modules/wrangler/bin/wrangler.js d1 migrations apply DB --local
+      - name: Local D1 API integration
+        run: |
+          node node_modules/wrangler/bin/wrangler.js dev --local --port 8791 > "$RUNNER_TEMP/minicafe-worker.log" 2>&1 &
+          worker_pid=$!
+          trap 'kill "$worker_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:8791/api/ping >/dev/null; then break; fi
+            sleep 1
+          done
+          node tests/integration.mjs

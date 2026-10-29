@@ -1,7 +1,9 @@
 // Available before the first render, so Android does not animate its first page twice.
 window.CafeNative =
   window.CafeNative || /MiniCafeAndroid/.test(navigator.userAgent);
-const token = new URLSearchParams(location.search).get("key") || "",
+const token =
+    new URLSearchParams(location.search).get("key") ||
+    (window.CafeCloud ? "public-test" : ""),
   auth = { "X-Cafe-Key": token };
 
 let menuPage = 0,

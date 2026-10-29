@@ -86,8 +86,9 @@ def main():
             if p.is_file()
             and p.suffix not in [".sqlite3", ".pyc"]
             and not set(p.relative_to(ROOT).parts).intersection(
-                {"__pycache__", "node_modules", "dist", "build", "originals"}
+                {"__pycache__", "node_modules", "dist", "build", "originals", ".wrangler", ".wrangler-auth"}
             )
+            and not p.name.startswith((".dev.vars", ".env"))
         )
     # Images are source assets, not test screenshots.
     paths.update((WORK / "android/assets/default-menu").glob("*"))
