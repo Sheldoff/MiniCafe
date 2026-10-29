@@ -9,7 +9,7 @@
 | --- | --- | --- |
 | Спільний вебінтерфейс | work/frontend, work/cafe/frontend_build.py | Активний |
 | Локальний Android | work/android, apps/local-android | Активний, робочий 3.36 |
-| Онлайн | apps/online | Worker + D1, відкрита тестова версія без входу |
+| Онлайн | apps/online | Worker + D1, Telegram OIDC, персональні ролі; гостьова заглушка |
 | Windows | work/desktop, частина work/cafe | Заморожено 3.36 |
 
 apps/local-android — точка входу й конфігурація напряму; Java-джерела залишені

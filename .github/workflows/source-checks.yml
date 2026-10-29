@@ -43,6 +43,7 @@ jobs:
       - run: python build.py
       - run: npm test
       - run: node node_modules/wrangler/bin/wrangler.js d1 migrations apply DB --local
+      - run: node tests/seed-auth.mjs
       - name: Local D1 API integration
         run: |
           node node_modules/wrangler/bin/wrangler.js dev --local --port 8791 > "$RUNNER_TEMP/minicafe-worker.log" 2>&1 &
@@ -52,4 +53,4 @@ jobs:
             if curl --fail --silent http://127.0.0.1:8791/api/ping >/dev/null; then break; fi
             sleep 1
           done
-          node tests/integration.mjs
+          npm run test:api

@@ -5,8 +5,8 @@
 - **[Локальний Android](apps/local-android/README.md)** — активний APK-сервер,
   Wi-Fi/точка доступу та інтернет через Termux.
 - **[Онлайн Cloudflare](apps/online/README.md)** — окремий напрям для Workers,
-  D1, Telegram-входу та гостьових замовлень. Відкрита тестова версія вже доступна:
-  https://minicafe.minicafe.workers.dev . Telegram-вхід і гостьовий режим ще не додані.
+  D1 та Telegram-входу з серверними ролями:
+  https://minicafe.minicafe.workers.dev . Гості поки бачать «Меню формується».
 - **Windows 3.36 — заморожено**: готовий EXE у Releases, незмінні джерела
   у гілці `archive/windows-3.36`. Нові EXE не збираються й не тестуються.
 

@@ -63,15 +63,15 @@
       "sources": "work/android"
     },
     "online": {
-      "status": "public_test_deployed",
+      "status": "telegram_auth_deployed",
       "entry": "apps/online/README.md",
       "hosting": "Cloudflare Workers + D1",
-      "auth": "NOT IMPLEMENTED: explicit PUBLIC_TEST_MODE=true grants all visitors full test access",
+      "auth": "Telegram OIDC + PKCE, server-side roles and revocation; guest placeholder only",
       "url": "https://minicafe.minicafe.workers.dev",
       "sources": "apps/online/src",
       "database": "D1 minicafe-db",
       "deploy_docs": "apps/online/DEPLOY-UA.md",
-      "version": "0.1.0-test"
+      "version": "0.2.0"
     },
     "windows": {
       "status": "frozen",
