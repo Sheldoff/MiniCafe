@@ -32,6 +32,7 @@ test("mobile login is a first-party page and a same-tab PKCE redirect", async ()
     origin + "/auth/callback",
   );
   assert.equal(target.searchParams.get("code_challenge_method"), "S256");
+  assert.equal(target.searchParams.get("scope"), "openid profile phone");
   assert.equal(target.searchParams.get("state").length, 64);
   assert.match(r.headers.get("set-cookie"), /Secure; HttpOnly; SameSite=Lax/);
   const cross = await authRoutes(

@@ -40,7 +40,7 @@ async function cloudStaff() {
     const r = await fetch("/api/staff"),
       j = await r.json();
     if (!r.ok) throw Error(j.error);
-    box.innerHTML = `<h3>Доступи працівників</h3><p class="muted">Вкажіть Telegram ID. Після зміни прав працівник має ввійти знову.</p><form id="staffForm"><label>Telegram ID<input name="telegram_id" inputmode="numeric" pattern="[0-9]{1,20}" required maxlength="20"></label><label>Роль<select name="role"><option value="service">Каса та обидві видачі</option><option value="cash">Тільки каса</option><option value="bar">Тільки бариста</option><option value="delivery">Тільки видача їжі</option></select></label><button class="primary">Надати доступ</button></form><div>${j.staff.map((s) => `<div class="row" style="margin-top:12px"><span class="grow">${esc(s.telegram_id)} · ${esc({ service: "Каса та видачі", cash: "Каса", bar: "Бариста", delivery: "Видача їжі" }[s.role])}${s.enabled ? "" : " · вимкнено"}</span><button data-id="${esc(s.telegram_id)}" data-role="${esc(s.role)}" onclick="cloudStaffRevoke(this)" ${s.enabled ? "" : "disabled"}>Відкликати</button></div>`).join("")}</div>`;
+    box.innerHTML = `<h3>Доступи працівників</h3><p class="muted">Номер у міжнародному форматі, наприклад +380…, або Telegram ID. Працівник має підтвердити номер через Telegram. Після зміни прав потрібно ввійти знову.</p><form id="staffForm"><label>Надати доступ за<select name="kind"><option value="phone">Номером телефону</option><option value="id">Telegram ID</option></select></label><label>Номер телефону або ID<input name="identifier" inputmode="tel" autocomplete="off" required maxlength="40" placeholder="+380…"></label><label>Роль<select name="role"><option value="service">Каса та обидві видачі</option><option value="cash">Тільки каса</option><option value="bar">Тільки бариста</option><option value="delivery">Тільки видача їжі</option></select></label><button class="primary">Надати доступ</button></form><div>${j.staff.map((s) => `<div class="row" style="margin-top:12px"><span class="grow">${esc(s.phone || s.telegram_id)} · ${esc({ service: "Каса та видачі", cash: "Каса", bar: "Бариста", delivery: "Видача їжі" }[s.role])}${s.enabled ? "" : " · вимкнено"}</span><button data-id="${esc(s.telegram_id || "")}" data-phone="${esc(s.phone || "")}" data-role="${esc(s.role)}" onclick="cloudStaffRevoke(this)" ${s.enabled ? "" : "disabled"}>Відкликати</button></div>`).join("")}</div>`;
     box.querySelector("form").onsubmit = async (e) => {
       e.preventDefault();
       const form = new FormData(e.target),
@@ -48,7 +48,9 @@ async function cloudStaff() {
       button.disabled = true;
       try {
         await cloudStaffWrite({
-          telegram_id: form.get("telegram_id"),
+          ...(form.get("kind") === "phone"
+            ? { phone: form.get("identifier") }
+            : { telegram_id: form.get("identifier") }),
           role: form.get("role"),
           enabled: true,
         });
@@ -77,7 +79,9 @@ async function cloudStaffRevoke(button) {
   button.disabled = true;
   try {
     await cloudStaffWrite({
-      telegram_id: button.dataset.id,
+      ...(button.dataset.phone
+        ? { phone: button.dataset.phone }
+        : { telegram_id: button.dataset.id }),
       role: button.dataset.role,
       enabled: false,
     });
