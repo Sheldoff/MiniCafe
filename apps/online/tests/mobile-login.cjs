@@ -43,9 +43,7 @@ const {
       );
       await page.locator(".primary").click();
       await page.waitForURL("https://oauth.telegram.org/**");
-      await page
-        .getByText("Or log in with a phone number", { exact: true })
-        .waitFor();
+      await page.locator(".sub-button-text a").waitFor();
       assert.equal(popups, 0);
       assert.equal(
         (await context.cookies("https://minicafe.minicafe.workers.dev")).some(

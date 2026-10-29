@@ -23,3 +23,6 @@ Unit tests cover PKCE, callback URI, secure HttpOnly flow cookie and cross-site
 start rejection. Read-only mobile browser smoke: tests/mobile-login.cjs (manual,
 uses the live Telegram page, never authenticates a person or mutates cafe data).
 It is not run in CI and does not replace real iPhone/Android device verification.
+Published-flow smoke passed in Android Chrome and iPhone WebKit browser
+emulation: same tab, no popup, secure flow cookie present, Telegram phone-number
+fallback visible. The provider localized its page into Ukrainian during testing.
