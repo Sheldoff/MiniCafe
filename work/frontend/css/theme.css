@@ -1,0 +1,467 @@
+/* Theme tokens: warm charcoal surfaces, soft mint accents, restrained semantic colors. */
+:root {
+  --amount-pulse: #deedce;
+  --theme-control-bg: #edf1e5;
+  --theme-control-text: #254d3c;
+  --theme-control-border: #cad5c7;
+}
+:root:not([data-theme="dark"]) body {
+  background: #f5f4ef;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #141b18;
+  --surface: #1e2924;
+  --raised: #29382f;
+  --input-bg: #17221d;
+  --text: #e9efe9;
+  --muted: #b0beb2;
+  --border: #4c6254;
+  --accent: #b3d9a4;
+  --on-accent: #162619;
+  --danger: #ffb9a8;
+  --danger-bg: #3b2925;
+  --success: #c4e4b6;
+  --success-bg: #283d2d;
+  --warning: #ffdaa8;
+  --warning-bg: #3b3021;
+  --amount-pulse: #3b553b;
+  --theme-control-bg: #29382f;
+  --theme-control-text: #e0ebd9;
+  --theme-control-border: #68816d;
+  background: var(--page);
+  color: var(--text);
+}
+.drawer-heading {
+  gap: 8px;
+}
+.drawer-heading > b {
+  margin-right: auto;
+}
+.drawer-heading #themeToggle {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 8px;
+  border: 1px solid var(--theme-control-border);
+  border-radius: 12px;
+  color: var(--theme-control-text);
+  background: var(--theme-control-bg);
+  -webkit-tap-highlight-color: transparent;
+}
+.theme-icon {
+  position: relative;
+  display: block;
+  width: 22px;
+  height: 22px;
+}
+.theme-icon svg {
+  position: absolute;
+  inset: 0;
+  width: 22px;
+  height: 22px;
+  transition:
+    opacity 0.093s ease-in-out,
+    transform 0.107s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center;
+}
+.theme-moon {
+  opacity: 0;
+  transform: rotate(65deg) scale(0.65);
+}
+.theme-sun {
+  opacity: 1;
+  transform: rotate(0) scale(1);
+}
+[data-theme="dark"] .theme-moon {
+  opacity: 1;
+  transform: rotate(0) scale(1);
+}
+[data-theme="dark"] .theme-sun {
+  opacity: 0;
+  transform: rotate(-65deg) scale(0.65);
+}
+:root.theme-changing
+  :is(
+    body,
+    header,
+    main,
+    button,
+    input,
+    textarea,
+    select,
+    .panel,
+    .card,
+    .tile,
+    .product-copy,
+    .metric,
+    .report-document,
+    .history-record,
+    .history-body,
+    .report-times,
+    .order-dialog-card,
+    .availability-panel,
+    #appDrawer,
+    #change,
+    .cash-switch,
+    .cash-tab-indicator,
+    .calc-row,
+    .image-editor,
+    .image-preview
+  ) {
+  transition:
+    background-color 0.107s ease-in-out,
+    border-color 0.107s ease-in-out,
+    box-shadow 0s;
+}
+:root[data-theme="dark"] body {
+  background: var(--page);
+  color: var(--text);
+}
+:root.theme-changing .cash-tab-indicator {
+  transition:
+    left 0.18s cubic-bezier(0.2, 0.7, 0.3, 1),
+    width 0.18s ease,
+    background-color 0.107s ease-in-out,
+    border-color 0.107s ease-in-out;
+}
+:root[data-theme="dark"] header {
+  background: #142d25;
+  color: #eef4ec;
+  border-bottom: 1px solid #3f594a;
+}
+:root[data-theme="dark"]
+  :is(
+    .panel,
+    .card,
+    .product-form-panel,
+    .product-list-panel,
+    .report-document,
+    .order-dialog-card,
+    .history-record,
+    .availability-panel,
+    #appDrawer,
+    .browser-notice
+  ) {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: 0 8px 26px #0000001c;
+}
+:root[data-theme="dark"]
+  :is(
+    h1,
+    h2,
+    h3,
+    label,
+    .cart-name,
+    .order-place,
+    .drawer-heading,
+    .product-copy b,
+    .editor-product b,
+    .calc-title h2
+  ) {
+  color: var(--text);
+}
+:root[data-theme="dark"] :is(button, input, textarea, select) {
+  background: var(--input-bg);
+  color: var(--text);
+  border-color: var(--border);
+}
+:root[data-theme="dark"] .cart-panel #guest {
+  background: var(--input-bg);
+  color: var(--text);
+  border-color: var(--border);
+}
+:root[data-theme="dark"] button:hover {
+  background: var(--raised);
+}
+:root[data-theme="dark"] :is(input, textarea)::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+:root[data-theme="dark"]
+  :is(button, input, textarea, select, summary):focus-visible {
+  outline: 2px solid #c5e4af;
+  outline-offset: 3px;
+  box-shadow: none;
+}
+:root[data-theme="dark"] input:focus {
+  border-color: #9abc88;
+}
+:root[data-theme="dark"]
+  :is(
+    button.primary,
+    .drawer-links .selected,
+    .drawer-tools .selected,
+    .stats-tabs button.selected,
+    .cash-tab-indicator
+  ) {
+  background: var(--accent) !important;
+  color: var(--on-accent) !important;
+  border-color: var(--accent);
+}
+:root[data-theme="dark"] button.primary:hover {
+  background: #c2e4b5 !important;
+}
+:root[data-theme="dark"]
+  :is(.cash-switch, .pay-modes, .calc-summary, .image-editor) {
+  background: var(--input-bg);
+  border-color: var(--border);
+}
+:root[data-theme="dark"] .cash-switch button {
+  background: transparent;
+  color: var(--muted);
+}
+:root[data-theme="dark"] .cash-switch button.selected {
+  color: var(--on-accent) !important;
+}
+:root[data-theme="dark"]
+  :is(
+    .drawer-tools button,
+    .chips button,
+    .note-icon,
+    .qty-button,
+    .category-suggestions button,
+    .calc-suggestions button,
+    .calc-add,
+    .active-toggle,
+    .badge,
+    .editor-placeholder
+  ) {
+  background: var(--raised);
+  color: var(--text);
+  border-color: var(--border);
+}
+:root[data-theme="dark"]
+  :is(
+    .chips .active,
+    .category-suggestions .exact-category,
+    .note-icon.has-note,
+    .active-toggle[aria-pressed="true"]
+  ) {
+  background: var(--success-bg);
+  color: var(--success);
+  border-color: #8fa680;
+}
+:root[data-theme="dark"]
+  :is(
+    .drawer-tools,
+    .drawer-heading,
+    .total,
+    .line,
+    .cart-compact,
+    .history-body,
+    .history-item,
+    .report-table th,
+    .report-table td,
+    .calc-extra-row,
+    .editor-product,
+    .calc-confirm-list > div
+  ) {
+  border-color: var(--border);
+}
+:root[data-theme="dark"] :is(.editor-product, .calc-extra-row) {
+  color: var(--text);
+}
+:root[data-theme="dark"]
+  :is(.editor-product, .calc-extra-row):is(:hover, :focus-visible) {
+  background: var(--raised);
+}
+:root[data-theme="dark"] :is(.editor-product, .calc-extra-row):active {
+  background: var(--success-bg);
+}
+:root[data-theme="dark"] :is(.editor-product, .calc-extra-row):focus-visible {
+  outline: 2px solid #c5e4af;
+  outline-offset: 2px;
+}
+:root[data-theme="dark"]
+  :is(
+    .muted,
+    .tiny,
+    .empty-cart,
+    .empty-state p,
+    .stock-estimate,
+    .editor-product small,
+    .calc-match,
+    .calc-row-total,
+    .calc-value-tools small,
+    .report-group .metric span,
+    .report-group .metric small,
+    .metric span,
+    .report-explanation,
+    .report-note,
+    .history-record small,
+    .history-id,
+    .saved-note,
+    .comment-toggle,
+    .custom-price-label
+  ) {
+  color: var(--muted);
+}
+:root[data-theme="dark"]
+  :is(
+    .tile-price,
+    .price,
+    a,
+    .queue-count,
+    .report-group .metric b,
+    .metric b,
+    .cart-compact-main strong,
+    .calc-summary b
+  ) {
+  color: var(--text);
+}
+:root[data-theme="dark"] .tile {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+:root[data-theme="dark"] .product-copy {
+  background: var(--surface);
+  color: var(--text);
+}
+:root[data-theme="dark"] .tile.is-pressed {
+  background: var(--raised);
+  box-shadow: inset 0 0 0 2px #95b77f;
+}
+:root[data-theme="dark"] .image-preview {
+  background: var(--raised);
+  color: var(--muted);
+}
+:root[data-theme="dark"] :is(.product-visual, .image-preview.has-image) {
+  background: #dce2d8;
+  color: #3d4e3f;
+}
+:root[data-theme="dark"]
+  :is(.product-visual img, .product-thumb, .image-preview img) {
+  filter: brightness(0.88);
+}
+:root[data-theme="dark"] .selected-count {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: none;
+}
+:root[data-theme="dark"] :is(.tile.sold-out, .sold-out .product-copy) {
+  background: #252d28;
+  color: #b3beb6;
+  border-color: #506056;
+}
+:root[data-theme="dark"] .sold-out :is(b, .tile-price, .stock-estimate) {
+  color: #b3beb6;
+}
+:root[data-theme="dark"]
+  :is(
+    .sold-label,
+    .availability-toggle.off,
+    .active-toggle[aria-pressed="false"]
+  ) {
+  background: var(--warning-bg);
+  color: var(--warning);
+  border-color: #b5966c;
+}
+:root[data-theme="dark"] .availability-toggle b {
+  color: var(--success);
+}
+:root[data-theme="dark"] .availability-toggle.off b {
+  color: var(--warning);
+}
+:root[data-theme="dark"]
+  :is(
+    .remove,
+    .qty-button.delete-one,
+    .field-error,
+    .calc-invalid,
+    .calc-problem.calc-invalid
+  ) {
+  color: var(--danger) !important;
+}
+:root[data-theme="dark"] :is(.remove, .qty-button.delete-one) {
+  background: var(--danger-bg);
+  border-color: #806154;
+}
+:root[data-theme="dark"] :is(.payment-error, .field-invalid) {
+  color: var(--danger) !important;
+}
+:root[data-theme="dark"]
+  :is(#change.payment-error, .payment-blocked, .field-invalid) {
+  background: var(--danger-bg) !important;
+  border-color: #c8967c !important;
+}
+:root[data-theme="dark"]
+  :is(.change-positive, .report-finances .metric:last-child) {
+  background: var(--success-bg);
+  color: var(--success) !important;
+  border-color: #6d8d62;
+}
+:root[data-theme="dark"] .report-finances .metric:last-child :is(b, span) {
+  color: var(--success);
+}
+:root[data-theme="dark"] .report-negative .metric:last-child {
+  background: var(--danger-bg);
+  border-color: #a37b69;
+}
+:root[data-theme="dark"] .report-negative .metric:last-child :is(b, span) {
+  color: var(--danger);
+}
+:root[data-theme="dark"]
+  :is(.metric, .report-times, .calc-row, .report-table th) {
+  background: var(--raised);
+  color: var(--text);
+  border-color: var(--border);
+}
+:root[data-theme="dark"] .report-table td {
+  color: var(--text);
+}
+:root[data-theme="dark"] :is(.report-total-row, .queue-count) {
+  background: var(--raised);
+}
+:root[data-theme="dark"] .cash-switch:not(.indicator-ready) button.selected {
+  background: var(--accent) !important;
+}
+:root[data-theme="dark"] :is(.order-note, .item-comment) {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+:root[data-theme="dark"] :is(.queue-item, .order-item) {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+:root[data-theme="dark"] :is(.item-issued, .queue-item.item-issued) {
+  background: #29312c;
+  color: #b5c0b7;
+}
+:root[data-theme="dark"] .item-issued :is(b, .muted, .item-check) {
+  color: #b5c0b7;
+}
+:root[data-theme="dark"] :is(.gift-total, .gift-total b) {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+:root[data-theme="dark"] #toast {
+  background: #c0dbaf;
+  color: #172619;
+  box-shadow: 0 8px 24px #0004;
+}
+:root[data-theme="dark"] #drawerOverlay {
+  background: #050b08b3;
+}
+:root[data-theme="dark"] .order-dialog {
+  background: #050b08b3;
+}
+.stats-initial {
+  min-height: 180px;
+}
+.calc-suggestions {
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-icon svg,
+  :root.theme-changing * {
+    transition: none !important;
+  }
+}

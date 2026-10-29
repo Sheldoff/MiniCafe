@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "currency": "UAH",
+  "items": [
+    {
+      "name": "Айріш",
+      "price": 5000,
+      "image": "drink-1.jpg"
+    },
+    {
+      "name": "Американо з молоком",
+      "price": 5000,
+      "image": "drink-2.jpg"
+    },
+    {
+      "name": "Американо",
+      "price": 5000,
+      "image": "drink-3.jpg"
+    },
+    {
+      "name": "Еспресо з молоком",
+      "price": 5000,
+      "image": "drink-4.jpg"
+    },
+    {
+      "name": "Еспресо",
+      "price": 5000,
+      "image": "drink-5.jpg"
+    },
+    {
+      "name": "Какао",
+      "price": 5000,
+      "image": "drink-6.jpg"
+    },
+    {
+      "name": "Лате",
+      "price": 5000,
+      "image": "drink-7.jpg"
+    },
+    {
+      "name": "Чай",
+      "price": 5000,
+      "image": "drink-8.jpg"
+    }
+  ]
+}

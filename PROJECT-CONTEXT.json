@@ -1,0 +1,58 @@
+{
+  "application": "МініКафе",
+  "version": "3.36",
+  "android_version_code": 48,
+  "purpose": "Каса, окремі черги напоїв і їжі, гнучке меню, статистика/PDF, калькулятор, резервні копії",
+  "entry_document": "START-HERE-UA.md",
+  "human_prompt": "NEXT-CHAT-PROMPT-UA.txt",
+  "canonical_frontend": "work/frontend/manifest.json",
+  "shared_server": "work/android/src/ua/minicafe/mobile",
+  "windows_entry": "work/cafe/app.py",
+  "build_checks": "python -X utf8 work/scripts/checks.py",
+  "setup": "work/scripts/setup_dev.ps1",
+  "versions": {
+    "python_tested": "3.12.14",
+    "java": "17",
+    "node_minimum": "22.13",
+    "android_platform": "35",
+    "android_build_tools": "35.0.0",
+    "playwright": "1.62.1"
+  },
+  "roles": {
+    "admin": "Повний доступ",
+    "service": "Видача: каса + бариста + їжа",
+    "cash": "Тільки каса",
+    "bar": "Тільки бариста",
+    "delivery": "Тільки видача їжі"
+  },
+  "latest_requested_changes": [
+    "Плавний перехід до сервера без попереднього знищення WebView",
+    "Картка підтримки 4441111056584349 з копіюванням",
+    "Виділення вкладки Розробник у двох темах",
+    "Прибрано автоматичний фокус із назви МініКафе при відкритті меню",
+    "Свайп ліворуч: замовлення; праворуч: меню; до 999 px без конфлікту прокручування/утримання/вводу",
+    "Переносний архів вихідних кодів з інструкціями та залежностями"
+  ],
+  "key_rules": [
+    "Гроші — копійки у сервері",
+    "Не перезаписувати меню користувача базовим при оновленні",
+    "Зберегти історичні ціни/назви",
+    "Не повторювати POST автоматично",
+    "Права перевіряються на сервері",
+    "Новий APK підписувати тільки оригінальним ключем"
+  ],
+  "excluded": [
+    "Робочі бази та замовлення",
+    "Приватний keystore і паролі",
+    "SDK/JDK/Python/Node дистрибутиви",
+    "node_modules, результати й тимчасові збірки",
+    "Застарілі копії оригінальних фото"
+  ],
+  "signing": {
+    "required_for_in_place_updates": true,
+    "private_file_separate": "work/android/minicafe-signing.jks",
+    "private_password_file_separate": "work/android/signing.local.json",
+    "certificate_fingerprint_file": "work/android/signing-cert.sha256"
+  },
+  "validation_limit": "Автоматичні Java/API/Chrome-WebKit перевірки та збірка APK/EXE. Фізичний Android/емулятор не використовувався."
+}

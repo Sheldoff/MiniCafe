@@ -1,0 +1,24 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="ua.minicafe.mobile" android:versionCode="48" android:versionName="3.36">
+ <queries><package android:name="com.termux" /></queries>
+ <uses-sdk android:minSdkVersion="23" android:targetSdkVersion="34" />
+ <uses-permission android:name="android.permission.INTERNET" />
+ <uses-permission android:name="android.permission.CAMERA" />
+ <uses-feature android:name="android.hardware.camera" android:required="false" />
+ <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+ <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+ <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+ <uses-permission android:name="android.permission.WAKE_LOCK" />
+ <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+ <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+ <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+ <application android:label="@string/app_name" android:icon="@drawable/cafe_icon" android:theme="@style/CafeTheme" android:usesCleartextTraffic="true" android:allowBackup="false" android:supportsRtl="true">
+  <activity android:name=".MainActivity" android:exported="true" android:configChanges="orientation|screenSize|keyboardHidden">
+   <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+  </activity>
+  <activity android:name=".InternetActivity" android:exported="false" />
+  <activity android:name=".ScanActivity" android:exported="false" android:screenOrientation="portrait" />
+  <activity android:name=".HostActivity" android:exported="false" />
+  <service android:name=".ServerService" android:exported="false" android:foregroundServiceType="connectedDevice" android:stopWithTask="false" />
+  <provider android:name=".PhotoProvider" android:authorities="ua.minicafe.mobile.pictures" android:exported="false" android:grantUriPermissions="true" />
+ </application>
+</manifest>

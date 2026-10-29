@@ -1,0 +1,24 @@
+name: Source checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: work/tooling/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: work/tooling
+      - run: node work/scripts/lint_frontend.cjs
+      - run: node work/tooling/node_modules/prettier/bin/prettier.cjs --check "work/frontend/**/*.js" "work/frontend/**/*.css" "work/tests/ui/*.cjs"
+      - run: python -m compileall -q work/cafe work/scripts work/tests/api work/android/prepare_assets.py work/android/verify_apk.py

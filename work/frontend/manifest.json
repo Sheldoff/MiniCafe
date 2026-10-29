@@ -1,0 +1,26 @@
+{
+  "styles": [
+    "css/base.css",
+    "css/components.css",
+    "css/screens.css",
+    "css/theme.css",
+    "css/tablet.css"
+  ],
+  "scripts": [
+    "js/state.js",
+    "js/theme.js",
+    "js/api.js",
+    "js/router.js",
+    "js/cashier.js",
+    "js/payments.js",
+    "js/serving.js",
+    "js/editor.js",
+    "js/statistics.js",
+    "js/calculator.js",
+    "js/motion.js",
+    "js/shared.js",
+    "js/cash-swipe.js",
+    "js/events.js",
+    "js/startup.js"
+  ]
+}

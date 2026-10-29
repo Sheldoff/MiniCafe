@@ -1,0 +1,167 @@
+/* Tablet layouts share the same CSS in browser and Android WebView. */
+@media (min-width: 751px) {
+  main {
+    max-width: 1440px;
+    padding: 18px 24px 30px;
+  }
+  .chips button {
+    min-height: 44px;
+    padding: 9px 15px;
+  }
+  .compact-tiles {
+    gap: 12px;
+  }
+  .compact-tiles .product-visual {
+    height: 112px;
+  }
+  .compact-tiles .product-copy {
+    padding: 12px;
+    gap: 8px;
+  }
+  .compact-tiles .product-copy b {
+    font-size: 15px;
+    min-height: 38px;
+  }
+  .compact-tiles .tile-price {
+    font-size: 15px;
+  }
+  .selected-count {
+    min-width: 27px;
+    height: 27px;
+    font-size: 14px;
+  }
+  .cart-compact-main {
+    grid-template-columns: minmax(0, 1fr) 44px 44px 44px 26px auto;
+    gap: 6px;
+  }
+  .cart-compact-main :is(.qty-button, .note-icon) {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+  .cart-compact-main > b {
+    font-size: 15px;
+  }
+  .cart-compact-main > strong {
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  .cart-compact {
+    padding: 10px 0;
+  }
+  .cash-grid #cart {
+    max-height: min(52dvh, 650px);
+  }
+  .cash-grid .menu-panel {
+    max-height: calc(100dvh - 110px);
+  }
+  .cash-grid .menu-panel #tiles {
+    max-height: none;
+  }
+  .editor-product {
+    padding: 13px 0;
+    gap: 12px;
+  }
+  .editor-product b {
+    font-size: 15px;
+  }
+  .editor-product small {
+    font-size: 13px;
+  }
+  .editor-product button {
+    min-height: 44px;
+    padding: 9px 12px;
+  }
+  .editor-product .product-thumb,
+  .editor-placeholder {
+    width: 44px;
+    height: 44px;
+  }
+  .calc-price-input button {
+    min-height: 48px;
+  }
+  .order-dialog-card {
+    max-width: 540px;
+  }
+  .queue-item {
+    min-height: 60px;
+  }
+  .queue-title {
+    gap: 16px;
+  }
+  .report-document {
+    max-width: 1100px;
+    margin-inline: auto;
+  }
+}
+@media (min-width: 751px) and (max-width: 999px) {
+  .cash-switch {
+    display: flex;
+    gap: 8px;
+    margin: 0 0 14px;
+  }
+  .cash-switch button {
+    flex: 1;
+    min-height: 48px;
+    padding: 10px;
+  }
+  .cash-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cash-grid .cart-panel {
+    display: none;
+  }
+  .cash-grid.show-cart .cart-panel {
+    display: block;
+  }
+  .cash-grid.show-cart .menu-panel {
+    display: none;
+  }
+  .cash-grid .menu-panel {
+    max-height: calc(100dvh - 166px);
+  }
+  .compact-tiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .cash-grid .cart-panel {
+    padding: 22px;
+  }
+  .cash-grid #cart {
+    max-height: calc(100dvh - 490px);
+    min-height: 120px;
+  }
+  .menu-editor-grid.editing {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .photo-actions {
+    display: flex;
+  }
+  .photo-actions button {
+    flex: 1;
+    min-width: 0;
+  }
+  .queue-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .queue-grid .card {
+    padding: 16px;
+  }
+}
+@media (min-width: 1000px) {
+  .cash-grid {
+    grid-template-columns: minmax(0, 1.45fr) minmax(390px, 1fr);
+    align-items: start;
+  }
+  .cash-grid .cart-panel {
+    position: sticky;
+    top: 70px;
+  }
+  .compact-tiles {
+    grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+  }
+  .cash-grid #cart {
+    max-height: calc(100dvh - 440px);
+    min-height: 120px;
+  }
+}
