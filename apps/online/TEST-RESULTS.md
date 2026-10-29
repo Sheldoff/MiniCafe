@@ -14,6 +14,15 @@
 
 Live deployment: guest placeholder and API restrictions checked read-only.
 Real Telegram authorization/code exchange must be completed by the owner.
-Telegram currently responds `redirect_uri required` at the authorization page;
-the callback is included in the URL. Verify BotFather Allowed URLs and retest.
-Saving/uploading Client Secret alone does not prove the entire login works.
+BotFather Allowed URLs were corrected by the owner; Telegram authorization page
+now opens successfully. Saving/uploading Client Secret alone does not prove the
+entire login/code exchange works; owner confirmation remains required.
+
+Mobile login: first-party help page, same-tab redirect, no popup/iframe dependency.
+Unit tests cover PKCE, callback URI, secure HttpOnly flow cookie and cross-site
+start rejection. Read-only mobile browser smoke: tests/mobile-login.cjs (manual,
+uses the live Telegram page, never authenticates a person or mutates cafe data).
+It is not run in CI and does not replace real iPhone/Android device verification.
+Published-flow smoke passed in Android Chrome and iPhone WebKit browser
+emulation: same tab, no popup, secure flow cookie present, Telegram phone-number
+fallback visible. The provider localized its page into Ukrainian during testing.
