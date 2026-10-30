@@ -85,9 +85,13 @@ const base = "http://127.0.0.1:8791";
       await phoneRow.locator('[onclick*="cloudStaffDelete"]').click();
       await phoneRow.waitFor({ state: "detached" });
       await p.evaluate(() => change("server"));
-      await p
-        .getByRole("button", { name: "Меню телефона ↔ сайт", exact: true })
-        .click();
+      assert.equal(
+        await p
+          .getByRole("button", { name: "Меню телефона ↔ сайт", exact: true })
+          .count(),
+        0,
+      );
+      await p.evaluate(() => change("menu-transfer")); // Hidden return route used by the existing APK.
       p.once("dialog", (dialog) => dialog.accept());
       await p
         .getByRole("button", { name: "Сайт → телефон", exact: true })

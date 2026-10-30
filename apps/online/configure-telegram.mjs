@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
+import { parse } from "jsonc-parser";
 const root = dirname(fileURLToPath(import.meta.url));
 const data = JSON.parse(
   readFileSync(join(root, ".env.telegram.local.json"), "utf8"),
@@ -15,7 +16,7 @@ if (
   throw Error(
     "Fill Client ID and Client Secret in the private .env.telegram.local.json first",
   );
-const config = JSON.parse(readFileSync(join(root, "wrangler.jsonc"), "utf8"));
+const config = parse(readFileSync(join(root, "wrangler.jsonc"), "utf8"));
 if (config.vars.TELEGRAM_CLIENT_ID !== data.TELEGRAM_CLIENT_ID)
   throw Error("Client ID differs from this project configuration");
 const values = { TELEGRAM_CLIENT_SECRET: data.TELEGRAM_CLIENT_SECRET };

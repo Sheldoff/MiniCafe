@@ -7,6 +7,12 @@
 Worker: minicafe; окрема D1: minicafe-db. Ідентифікатори ресурсів у wrangler.jsonc
 не є паролями. Cloudflare-акаунт має збігатися з account_id цього файлу.
 
+Версія 0.4: компактна сторінка доступів і заявки через @minicafe_loginbot.
+Налаштування та робота заявок: docs/STAFF-REQUESTS-UA.md. Міграція 0006 додає
+приватні профілі, заявки, захист від дублів та повернення в APK-перенесення
+після OAuth. Webhook реєструється configure-bot.mjs register після deploy.
+Bot Token і webhook secret — лише Workers Secrets/приватний локальний JSON.
+
 Головна сторінка — гостьова заглушка «Меню формується», без запитів до D1.
 Вхід персоналу: /admin → /auth/login (підказки) → /auth/start → Telegram OIDC
 Authorization Code + PKCE у тій самій вкладці, без popup/iframe.

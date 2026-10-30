@@ -71,10 +71,11 @@ export async function identity(request, env) {
   const token = cookie(request, "__Host-minicafe_session");
   if (!/^[a-f0-9]{64}$/.test(token)) return null;
   const row = await env.DB.prepare(
-    `SELECT a.telegram_id,a.display_name,a.csrf,a.expires,
+    `SELECT a.telegram_id,a.display_name,a.csrf,a.expires,tp.username,
     CASE WHEN s.telegram_id IS NOT NULL THEN s.role ELSE p.role END AS role,
     CASE WHEN s.telegram_id IS NOT NULL THEN s.enabled ELSE p.enabled END AS enabled
     FROM auth_sessions a LEFT JOIN staff_access s ON s.telegram_id=a.telegram_id
+    LEFT JOIN telegram_profiles tp ON tp.telegram_id=a.telegram_id
     LEFT JOIN session_phone sp ON sp.token_hash=a.token_hash
     LEFT JOIN staff_phone p ON p.phone=sp.phone AND p.claimed_id=a.telegram_id
     WHERE a.token_hash=? AND a.expires>?`,
@@ -89,7 +90,13 @@ export async function identity(request, env) {
       ? row.role
       : null;
   return role
-    ? { id: row.telegram_id, name: row.display_name, role, csrf: row.csrf }
+    ? {
+        id: row.telegram_id,
+        name: row.display_name,
+        username: row.username || "",
+        role,
+        csrf: row.csrf,
+      }
     : null;
 }
 export function csrfAllowed(request, user) {
@@ -247,6 +254,18 @@ export async function authRoutes(request, env) {
         nonce,
         timestamp() + 600,
       ),
+      env.DB.prepare("DELETE FROM auth_flow_returns WHERE expires<=?").bind(
+        timestamp(),
+      ),
+      ...(url.searchParams.get("return") === "menu-transfer"
+        ? [
+            env.DB.prepare("INSERT INTO auth_flow_returns VALUES(?,?,?)").bind(
+              state,
+              "menu-transfer",
+              timestamp() + 600,
+            ),
+          ]
+        : []),
     ]);
     const target = new URL("https://oauth.telegram.org/auth");
     target.search = new URLSearchParams({
@@ -288,6 +307,11 @@ export async function authRoutes(request, env) {
       return errorPage(
         "Посилання входу прострочене або вже використане. Почніть заново.",
       );
+    const returnView = await env.DB.prepare(
+      "DELETE FROM auth_flow_returns WHERE state=? AND expires>? RETURNING destination",
+    )
+      .bind(state, timestamp())
+      .first();
     try {
       const response = await fetch("https://oauth.telegram.org/token", {
         method: "POST",
@@ -342,6 +366,9 @@ export async function authRoutes(request, env) {
         );
       const tokenHash = await hash(session);
       const statements = [
+        env.DB.prepare(
+          "INSERT INTO telegram_profiles VALUES(?,?,?,?) ON CONFLICT(telegram_id) DO UPDATE SET username=excluded.username,name=excluded.name,updated=excluded.updated",
+        ).bind(id, payload.preferred_username || null, name, timestamp()),
         env.DB.prepare("INSERT INTO auth_sessions VALUES(?,?,?,?,?)").bind(
           tokenHash,
           id,
@@ -358,7 +385,13 @@ export async function authRoutes(request, env) {
           ),
         );
       await env.DB.batch(statements);
-      const h = new Headers({ ...privateHeaders, Location: "/admin" });
+      const h = new Headers({
+        ...privateHeaders,
+        Location:
+          returnView?.destination === "menu-transfer"
+            ? "/admin#menu-transfer"
+            : "/admin",
+      });
       h.append("Set-Cookie", sessionCookie(session));
       h.append("Set-Cookie", flowCookie("", 0));
       return new Response(null, { status: 302, headers: h });

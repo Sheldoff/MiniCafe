@@ -6,6 +6,7 @@ export async function load(
     OR id IN (SELECT json_extract(a.value,'$.order') FROM metadata m,json_each(m.data,'$.issue_undo.bar') a
     UNION SELECT json_extract(a.value,'$.order') FROM metadata m,json_each(m.data,'$.issue_undo.instant') a)`,
   bindings = [],
+  includeImages = false,
 ) {
   const results = await db.batch([
     db.prepare("SELECT revision,data FROM metadata WHERE id=1"),
@@ -13,6 +14,7 @@ export async function load(
     db.prepare("SELECT data FROM sessions ORDER BY id"),
     db.prepare("SELECT data FROM expenses ORDER BY id"),
     db.prepare(orderQuery).bind(...bindings),
+    ...(includeImages ? [db.prepare("SELECT id,content FROM images")] : []),
   ]);
   const meta = results[0].results[0];
   const parsed = (n) => results[n].results.map((r) => JSON.parse(r.data));
@@ -23,6 +25,7 @@ export async function load(
     sessions: parsed(2),
     calculator_expenses: parsed(3),
     orders: parsed(4),
+    ...(includeImages ? { _images: results[5].results } : {}),
   };
 }
 export function mutationQuery(path, input, meta) {
@@ -149,7 +152,7 @@ export async function commit(
   statements.push(db.prepare("DELETE FROM mutation_guard"));
   await db.batch(statements);
 }
-export async function prepareImages(d) {
+export async function prepareImages(d, maxBytes = 450000) {
   const changes = [];
   for (const p of d.products)
     if ("image" in p) {
@@ -162,17 +165,26 @@ export async function prepareImages(d) {
       } else {
         if (
           typeof value !== "string" ||
-          value.length > 600000 ||
+          value.length > Math.ceil(maxBytes / 3) * 4 ||
           !/^[A-Za-z0-9+/]*={0,2}$/.test(value)
         )
-          fail("Фото завелике або некоректне (до 450 КБ)");
+          fail(
+            `Фото завелике або некоректне (до ${Math.round(maxBytes / 1000)} КБ)`,
+          );
         let bytes;
         try {
           bytes = Uint8Array.from(atob(value), (c) => c.charCodeAt(0));
         } catch {
           fail("Некоректне фото");
         }
-        if (bytes.length < 4 || bytes[0] !== 255 || bytes[1] !== 216)
+        if (
+          bytes.length < 4 ||
+          bytes.length > maxBytes ||
+          bytes[0] !== 255 ||
+          bytes[1] !== 216 ||
+          bytes.at(-2) !== 255 ||
+          bytes.at(-1) !== 217
+        )
           fail("Потрібне JPEG-зображення");
         const hash = await crypto.subtle.digest("SHA-256", bytes);
         p.image_version = [...new Uint8Array(hash)]

@@ -11,7 +11,7 @@ test("phone permissions require verified claims, pin identity and revoke immedia
   assert.equal(normalizePhone("+380671234567 ext 2"), null);
   const sqlite = new DatabaseSync(":memory:");
   sqlite.exec("PRAGMA foreign_keys=ON");
-  for (const file of ["0003_auth.sql", "0004_phone_access.sql"])
+  for (const file of ["0003_auth.sql", "0004_phone_access.sql", "0006_access_requests.sql"])
     sqlite.exec(
       readFileSync(new URL("../migrations/" + file, import.meta.url), "utf8"),
     );

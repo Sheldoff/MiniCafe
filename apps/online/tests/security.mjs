@@ -10,7 +10,17 @@ const headers = (digit = "1") => ({
 });
 const req = (path, options = {}) =>
   fetch(base + path, { redirect: "manual", ...options });
-for (const path of ["state", "stats", "history", "backup", "staff", "image/1"])
+for (const path of [
+  "state",
+  "stats",
+  "history",
+  "backup",
+  "staff",
+  "image/1",
+  "staff-requests",
+  "staff-requests/link",
+  "staff-requests/photo",
+])
   assert.equal((await req("/api/" + path)).status, 401, path);
 for (const path of [
   "order",
@@ -42,7 +52,15 @@ const state = await req("/api/state", { headers: headers() });
 assert.equal(state.status, 200);
 const tag = state.headers.get("etag");
 for (const digit of ["3", "4", "5", "6"]) {
-  for (const path of ["stats", "history", "backup", "staff"])
+  for (const path of [
+    "stats",
+    "history",
+    "backup",
+    "staff",
+    "staff-requests",
+    "staff-requests/link",
+    "staff-requests/photo",
+  ])
     assert.equal(
       (await req("/api/" + path, { headers: headers(digit) })).status,
       403,

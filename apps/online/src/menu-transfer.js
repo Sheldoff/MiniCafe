@@ -32,11 +32,7 @@ export function replaceMenu(d, products) {
   d.versions.products++;
 }
 async function exportMenu(d, env, url) {
-  const images = new Map(
-    (await env.DB.prepare("SELECT id,content FROM images").all()).results.map(
-      (x) => [x.id, x.content],
-    ),
-  );
+  const images = new Map(d._images.map((x) => [x.id, x.content]));
   for (const p of d.products) {
     if (images.has(p.id)) p.image = images.get(p.id);
     else if (p.image_asset) {
@@ -149,7 +145,12 @@ export async function menuTransfer(request, env) {
       { error: "Код використаний, прострочений або іншого напрямку" },
       401,
     );
-  const before = await load(env.DB, "SELECT data FROM orders WHERE 0");
+  const before = await load(
+    env.DB,
+    "SELECT data FROM orders WHERE 0",
+    [],
+    direction === "download",
+  );
   if (direction === "download") {
     const data = await exportMenu(before, env, url);
     const current = await env.DB.prepare(
@@ -180,7 +181,7 @@ export async function menuTransfer(request, env) {
     );
   const after = structuredClone(before);
   replaceMenu(after, input.products);
-  const images = await prepareImages(after);
+  const images = await prepareImages(after, 1500000);
   const guards = [
     env.DB.prepare(
       `INSERT INTO mutation_guard(ok) SELECT CASE WHEN EXISTS(SELECT 1 FROM menu_transfer t

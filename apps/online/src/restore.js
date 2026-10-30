@@ -52,10 +52,15 @@ export function restoreData(before, input) {
     integer(id);
     if (id && !sessionIds.has(id)) fail("Невідома сесія");
   };
-  let maxItem = 0;
+  let maxItem = 0,
+    maxHistoricalProduct = 0;
   for (const o of d.orders) {
-    string(o.request, 100);
-    if (!/^[A-Za-z0-9_-]+$/.test(o.request) || requests.has(o.request))
+    string(o.request, 200);
+    if (
+      !o.request ||
+      /[\u0000-\u001f\u007f]/.test(o.request) ||
+      requests.has(o.request)
+    )
       fail("Повторні запити замовлень");
     requests.add(o.request);
     validSession(o.session_id || 0);
@@ -69,6 +74,8 @@ export function restoreData(before, input) {
       if (itemIds.has(i.id)) fail("Повторні ID позицій");
       itemIds.add(i.id);
       maxItem = Math.max(maxItem, i.id);
+      if (Number.isSafeInteger(i.product_id) && i.product_id > 0)
+        maxHistoricalProduct = Math.max(maxHistoricalProduct, i.product_id);
       integer(i.qty, 1, 99);
       integer(i.price, 0, 100000000);
       string(i.name, 100);
@@ -121,12 +128,23 @@ export function restoreData(before, input) {
   validSession(d.active_session || 0);
   d.nextProduct = Math.max(
     before.nextProduct,
+    integer(d.nextProduct, 1, 2147483647),
+    maxHistoricalProduct + 1,
     ...d.products.map((p) => p.id + 1),
   );
-  d.nextOrder = Math.max(before.nextOrder, ...d.orders.map((o) => o.id + 1));
-  d.nextItem = Math.max(before.nextItem, maxItem + 1);
+  d.nextOrder = Math.max(
+    before.nextOrder,
+    integer(d.nextOrder, 1, 2147483647),
+    ...d.orders.map((o) => o.id + 1),
+  );
+  d.nextItem = Math.max(
+    before.nextItem,
+    integer(d.nextItem, 1, 2147483647),
+    maxItem + 1,
+  );
   d.nextSession = Math.max(
     before.nextSession,
+    integer(d.nextSession, 1, 2147483647),
     ...d.sessions.map((s) => s.id + 1),
   );
   d.active_session ||= 0;
