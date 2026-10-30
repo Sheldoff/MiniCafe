@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-const base = "http://127.0.0.1:8791";
+const base = process.env.CAFE_CLOUD_TEST_URL || "http://127.0.0.1:8791";
+if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))
+  throw Error("Local test URL required");
 const h = {
   Cookie: "__Host-minicafe_session=" + "1".repeat(64),
   "X-CSRF-Token": "2".repeat(64),

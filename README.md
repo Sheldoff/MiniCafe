@@ -8,7 +8,8 @@
   Wi-Fi/точка доступу та інтернет через Termux.
 - **[Онлайн Cloudflare](apps/online/README.md)** — окремий напрям для Workers,
   D1 та Telegram-входу з серверними ролями:
-  https://minicafe.minicafe.workers.dev . Гості поки бачать «Меню формується».
+  https://minicafe.minicafe.workers.dev . Гості обирають меню й отримують код для каси:
+  [інструкція](docs/GUEST-CODES-UA.md).
 - **Windows 3.36 — заморожено**: готовий EXE у Releases, незмінні джерела
   у гілці `archive/windows-3.36`. Нові EXE не збираються й не тестуються.
 

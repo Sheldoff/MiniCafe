@@ -1,12 +1,48 @@
 <!doctype html>
 <html lang="uk">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#173f35"><title>МініКафе · Меню</title>
-<style>
-:root{color-scheme:light dark;--page:#f5f4ef;--surface:#fffdf8;--text:#183d31;--muted:#596b60;--line:#d6dfd4;--accent:#215943;--on-accent:#fff}
-@media(prefers-color-scheme:dark){:root{--page:#141b18;--surface:#1e2924;--text:#e9efe9;--muted:#b0beb2;--line:#4c6254;--accent:#b3d9a4;--on-accent:#162619}}
-*{box-sizing:border-box}body{margin:0;background:var(--page);color:var(--text);font:16px/1.5 system-ui,sans-serif;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}header{width:100%;flex-shrink:0;max-width:1000px;margin:0 auto;padding:24px max(20px,env(safe-area-inset-right));display:flex;align-items:center;justify-content:space-between;gap:16px}header b{font-size:22px}a{color:var(--text);-webkit-tap-highlight-color:transparent}header a{font-size:14px;text-underline-offset:4px;padding:10px 0}main{flex:1;display:grid;place-items:center;padding:24px}.card{width:min(100%,480px);text-align:center;background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:48px 24px;animation:appear .22s ease-out}.cup{font-size:54px;margin-bottom:20px}h1{font-size:clamp(26px,5vw,34px);line-height:1.2;margin:0 0 16px}p{color:var(--muted);margin:0;max-width:340px;margin-inline:auto}footer{flex-shrink:0;text-align:center;padding:24px 24px max(24px,env(safe-area-inset-bottom));color:var(--muted);font-size:13px}a:focus-visible{outline:3px solid var(--accent);outline-offset:4px;border-radius:5px}@keyframes appear{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}@media(prefers-reduced-motion:reduce){.card{animation:none}}
-</style>
-</head>
-<body><header><b>☕ МініКафе</b><a href="/admin">Вхід для працівників</a></header><main><section class="card"><div class="cup" aria-hidden="true">☕</div><h1>Меню формується</h1><p>Готуємо для вас меню. Онлайн-замовлення незабаром стануть доступними.</p></section></main><footer>МініКафе · Затишне місце для зустрічей</footer></body></html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#173f35" />
+    <title>МініКафе · Меню</title>
+    <link rel="stylesheet" href="/guest.css" />
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="/admin" aria-label="МініКафе — вхід працівників"
+        >☕ МініКафе</a
+      >
+    </header>
+    <main>
+      <div id="guestStatus" role="status">Завантажуємо меню…</div>
+      <section id="guestMenu" hidden>
+        <button id="drinkChoice" class="drink-choice" type="button">
+          Вибрати напій <span aria-hidden="true">＋</span>
+        </button>
+        <div id="chosenDrinks"></div>
+        <div id="foodList"></div>
+      </section>
+    </main>
+    <footer id="checkout" hidden>
+      <div class="checkout-total">
+        <span>Разом <small id="guestCount"></small></span
+        ><strong id="guestTotal">0,00 ₴</strong>
+      </div>
+      <button id="guestSubmit" class="primary" disabled>
+        Оформити замовлення
+      </button>
+    </footer>
+    <dialog id="guestDialog" aria-labelledby="guestDialogTitle">
+      <div class="dialog-heading">
+        <h2 id="guestDialogTitle"></h2>
+        <button id="dialogClose" aria-label="Закрити">×</button>
+      </div>
+      <div id="dialogBody"></div>
+      <div id="dialogActions"></div>
+    </dialog>
+    <script src="/guest.js" defer></script>
+  </body>
+</html>

@@ -13,7 +13,10 @@ Worker: minicafe; окрема D1: minicafe-db. Ідентифікатори р�
 після OAuth. Webhook реєструється configure-bot.mjs register після deploy.
 Bot Token і webhook secret — лише Workers Secrets/приватний локальний JSON.
 
-Головна сторінка — гостьова заглушка «Меню формується», без запитів до D1.
+Головна сторінка — публічне меню з короткими кодами. Міграція 0007 відкриває
+гостьовий режим; адміністратор може закрити його на сторінці сервера.
+Інструкція: docs/GUEST-CODES-UA.md. Коди не створюють оплачених замовлень.
+
 Вхід персоналу: /admin → /auth/login (підказки) → /auth/start → Telegram OIDC
 Authorization Code + PKCE у тій самій вкладці, без popup/iframe.
 На сторінці Telegram доступний запасний вхід за номером телефону. Якщо сайт

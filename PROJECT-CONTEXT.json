@@ -65,12 +65,12 @@
       "status": "telegram_auth_deployed",
       "entry": "apps/online/README.md",
       "hosting": "Cloudflare Workers + D1",
-      "auth": "Telegram OIDC + PKCE, server-side roles and revocation; guest placeholder only",
+      "auth": "Telegram OIDC + PKCE, server-side roles and revocation; public menu and short-lived cashier codes",
       "url": "https://minicafe.minicafe.workers.dev",
       "sources": "apps/online/src",
       "database": "D1 minicafe-db",
       "deploy_docs": "apps/online/DEPLOY-UA.md",
-      "version": "0.4.3"
+      "version": "0.5.0"
     },
     "windows": {
       "status": "frozen",

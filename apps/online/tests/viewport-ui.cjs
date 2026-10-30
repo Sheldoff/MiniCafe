@@ -44,7 +44,9 @@ async function swipe(page, dx) {
       await p.setExtraHTTPHeaders({
         Cookie: "__Host-minicafe_session=" + "1".repeat(64),
       });
-      await p.goto("http://127.0.0.1:8791/admin");
+      await p.goto(
+        (process.env.CAFE_CLOUD_TEST_URL || "http://127.0.0.1:8791") + "/admin",
+      );
       await p.locator("[data-product]").first().waitFor();
       assert.match(
         await p.locator('meta[name="viewport"]').getAttribute("content"),
@@ -85,6 +87,7 @@ async function swipe(page, dx) {
           );
         }
         await p.evaluate(() => {
+          editorDraft = null;
           change("menu");
           const list = document.querySelector("#editorProducts");
           list.innerHTML = list.innerHTML.repeat(15);

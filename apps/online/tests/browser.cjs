@@ -5,7 +5,7 @@ const {
   webkit,
   chromeOptions,
 } = require("../../../work/tests/ui/helpers.cjs");
-const base = "http://127.0.0.1:8791";
+const base = process.env.CAFE_CLOUD_TEST_URL || "http://127.0.0.1:8791";
 (async () => {
   for (const [name, engine, options] of [
     ["Chrome", chromium, chromeOptions],
@@ -20,7 +20,7 @@ const base = "http://127.0.0.1:8791";
     p.on("pageerror", (e) => errors.push(e.message));
     try {
       await p.goto(base);
-      await p.locator("h1").waitFor();
+      await p.locator(".brand").waitFor();
       await p.setExtraHTTPHeaders({
         Cookie: "__Host-minicafe_session=" + "1".repeat(64),
       });

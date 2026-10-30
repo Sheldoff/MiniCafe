@@ -4,6 +4,7 @@ import { restoreData } from "./restore.js";
 import { normalizePhone } from "./phone.js";
 import { menuTransfer } from "./menu-transfer.js";
 import { accessRequests } from "./access-requests.js";
+import { guestOrders, codeForOrder } from "./guest-orders.js";
 import {
   authRoutes,
   identity,
@@ -58,6 +59,8 @@ async function handle(request, env, ctx) {
   if (application) return application;
   const transfer = await menuTransfer(request, env);
   if (transfer) return transfer;
+  const guest = await guestOrders(request, env);
+  if (guest) return guest;
   if (url.pathname.startsWith("/private/"))
     return new Response("Not found", { status: 404, headers });
   if (url.pathname === "/admin" || url.pathname === "/admin/") {
@@ -98,17 +101,6 @@ async function handle(request, env, ctx) {
       return json({ error: "Не знайдено" }, 404);
     return env.ASSETS.fetch(request);
   }
-  if (path === "public/menu" && request.method === "GET")
-    return json(
-      {
-        published: false,
-        accepting: false,
-        message: "Меню формується",
-        products: [],
-      },
-      200,
-      { "Cache-Control": "public,max-age=60" },
-    );
   if (path.startsWith("public/"))
     return json({ error: "Онлайн-замовлення ще не відкриті" }, 403);
   if (path === "ping" && request.method === "GET")
@@ -441,6 +433,13 @@ async function handle(request, env, ctx) {
     }
     const after =
       path === "restore" ? restoreData(before, input) : structuredClone(before);
+    const existingOrder =
+      path === "order" &&
+      before.orders.some((o) => o.request === input.request);
+    const guestCode =
+      path === "order" && input.public_code !== undefined && !existingOrder
+        ? await codeForOrder(env.DB, input.public_code, input.request)
+        : null;
     const { result, changed } =
       path === "restore"
         ? {
@@ -454,7 +453,21 @@ async function handle(request, env, ctx) {
       path === "restore" ? 1500000 : 450000,
     );
     try {
-      await commit(env.DB, before, after, images);
+      const guards = guestCode
+        ? [
+            env.DB.prepare(
+              "INSERT INTO mutation_guard(ok) SELECT CASE WHEN EXISTS(SELECT 1 FROM guest_codes WHERE code_hash=? AND expires>? AND (used_request IS NULL OR used_request=?)) THEN 1 ELSE 0 END",
+            ).bind(
+              guestCode.digest,
+              Math.floor(Date.now() / 1000),
+              input.request,
+            ),
+            env.DB.prepare(
+              "UPDATE guest_codes SET used_request=? WHERE code_hash=?",
+            ).bind(input.request, guestCode.digest),
+          ]
+        : [];
+      await commit(env.DB, before, after, images, guards);
       return json(result);
     } catch (error) {
       if (!String(error).includes("CHECK constraint failed")) throw error;
