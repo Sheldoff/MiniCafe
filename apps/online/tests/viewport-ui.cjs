@@ -46,6 +46,10 @@ async function swipe(page, dx) {
       });
       await p.goto("http://127.0.0.1:8791/admin");
       await p.locator("[data-product]").first().waitFor();
+      assert.match(
+        await p.locator('meta[name="viewport"]').getAttribute("content"),
+        /viewport-fit=cover/,
+      );
       for (const width of [390, 820, 1280]) {
         await p.setViewportSize({ width, height: 844 });
         await p.evaluate(() => change("cash"));
@@ -118,6 +122,52 @@ async function swipe(page, dx) {
       assert.ok(
         Math.abs(h.y + h.height / 2 - r.y - r.height / 2) < 2,
         name + " account and role share line",
+      );
+      // Desktop engines don't emulate Android's native chin. Inject its safe
+      // inset to verify our layout protects controls without shortening layers.
+      await p.setViewportSize({ width: 390, height: 844 });
+      await p.evaluate(() => {
+        document.documentElement.style.setProperty(
+          "--cloud-safe-bottom",
+          "34px",
+        );
+        change("cash");
+      });
+      await p.waitForTimeout(400);
+      assert.ok(
+        await p.evaluate(
+          () =>
+            Math.abs(
+              document.querySelector(".menu-panel").getBoundingClientRect()
+                .bottom -
+                (innerHeight - 34),
+            ) < 2,
+        ),
+        name + " safe content bottom",
+      );
+      await p.evaluate(() => toggleDrawer(true));
+      await p.waitForTimeout(400);
+      const layers = await p.evaluate(() => ({
+        drawer: document.querySelector("#appDrawer").getBoundingClientRect()
+          .bottom,
+        overlay: document
+          .querySelector("#drawerOverlay")
+          .getBoundingClientRect().bottom,
+        control: document.querySelector(".drawer-tools").getBoundingClientRect()
+          .bottom,
+        height: innerHeight,
+      }));
+      assert.ok(
+        Math.abs(layers.drawer - layers.height) < 1,
+        name + " drawer background reaches screen edge",
+      );
+      assert.ok(
+        Math.abs(layers.overlay - layers.height) < 1,
+        name + " overlay reaches screen edge",
+      );
+      assert.ok(
+        layers.control <= layers.height - 34,
+        name + " drawer controls above gesture zone",
       );
       console.log(
         "PASS " +

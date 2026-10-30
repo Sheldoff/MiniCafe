@@ -337,3 +337,24 @@ html.cloud-online .product-form-panel:not([hidden]) {
     grid-template-rows: minmax(0, 1fr) minmax(140px, 0.7fr);
   }
 }
+/* Fill Chrome Android's gesture area instead of leaving its native bottom chin.
+   Reserve the maximum inset for controls without per-frame padding relayout. */
+html.cloud-online {
+  --cloud-safe-bottom: env(
+    safe-area-max-inset-bottom,
+    env(safe-area-inset-bottom, 0px)
+  );
+}
+html.cloud-online #main {
+  padding-bottom: var(--cloud-safe-bottom);
+  padding-left: max(10px, env(safe-area-inset-left, 0px));
+  padding-right: max(10px, env(safe-area-inset-right, 0px));
+}
+html.cloud-online #appDrawer {
+  padding-bottom: calc(20px + var(--cloud-safe-bottom));
+  padding-left: max(20px, env(safe-area-inset-left, 0px));
+}
+html.cloud-online header {
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right, 0px));
+}
