@@ -12,6 +12,10 @@ from frontend_build import build_html
 out = HERE / 'dist'
 out.mkdir(exist_ok=True)
 html = build_html()
+# Opt in to Android Chrome edge-to-edge; otherwise Chrome adds a native bottom
+# chin outside the DOM, even when body and fixed overlays fill their viewport.
+html = html.replace('content="width=device-width,initial-scale=1"',
+                    'content="width=device-width,initial-scale=1,viewport-fit=cover"', 1)
 html = html.replace('</style>', (HERE / 'src/cloud.css').read_text(encoding='utf-8') + '</style>', 1)
 html = html.replace('<script>', '<script>window.CafeCloud=__CLOUD_CONTEXT__;</script><script>', 1)
 html += '<script>' + (HERE / 'src/cloud-ui.js').read_text(encoding='utf-8') + '</script>'

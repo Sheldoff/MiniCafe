@@ -9,6 +9,10 @@ function syncCloudLayout() {
   cancelAnimationFrame(cloudLayoutFrame);
   cloudLayoutFrame = requestAnimationFrame(() => {
     if (document.querySelector("#main").hidden) return;
+    const bottomInset =
+      parseFloat(
+        getComputedStyle(document.querySelector("#main")).paddingBottom,
+      ) || 0;
     const header = document.querySelector("header");
     const grid = document.querySelector(".cash-grid");
     document.documentElement.style.setProperty(
@@ -20,7 +24,7 @@ function syncCloudLayout() {
       const height = window.visualViewport?.height || innerHeight;
       document.documentElement.style.setProperty(
         "--cloud-cash-space",
-        Math.max(160, height - top) + "px",
+        Math.max(160, height - top - bottomInset) + "px",
       );
     }
     const products = document.querySelector(".menu-editor-grid");
@@ -30,7 +34,8 @@ function syncCloudLayout() {
         Math.max(
           240,
           (window.visualViewport?.height || innerHeight) -
-            cloudLayoutTop(products),
+            cloudLayoutTop(products) -
+            bottomInset,
         ) + "px",
       );
     }

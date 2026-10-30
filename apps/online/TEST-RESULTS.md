@@ -1,5 +1,18 @@
 # Telegram authentication validation — 2026-10-29
 
+## Online 0.4.3 — 2026-10-30
+
+- Screenshot identified Android Chrome's native bottom chin, outside the page DOM.
+  The canonical admin viewport lacked viewport-fit=cover (guest/login already had it).
+  Online builder now opts admin into edge-to-edge without changing APK assets.
+- Drawer/overlay backgrounds still reach viewport bottom; controls and bounded
+  content reserve the safe bottom inset. Prefer the maximum inset to avoid dynamic
+  padding relayout during browser toolbar movement; retain Safari fallback.
+- Chrome/WebKit regressions cover viewport opt-in, simulated 34px safe inset,
+  full-height layers and protected drawer controls, plus existing responsive checks.
+  Native Android Chrome chin cannot be verified by desktop browser emulation;
+  physical device confirmation remains necessary.
+
 ## Online 0.4.2 — 2026-10-30
 
 - Guest landing footer: replace the fixed 70svh content minimum with a flex column
