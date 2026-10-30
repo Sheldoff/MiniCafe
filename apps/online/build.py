@@ -12,8 +12,11 @@ from frontend_build import build_html
 out = HERE / 'dist'
 out.mkdir(exist_ok=True)
 html = build_html()
+html = html.replace('</style>', (HERE / 'src/cloud.css').read_text(encoding='utf-8') + '</style>', 1)
 html = html.replace('<script>', '<script>window.CafeCloud=__CLOUD_CONTEXT__;</script><script>', 1)
 html += '<script>' + (HERE / 'src/cloud-ui.js').read_text(encoding='utf-8') + '</script>'
+for source in ['staff-ui.js','online-layout.js']:
+    html += '<script>' + (HERE / 'src' / source).read_text(encoding='utf-8') + '</script>'
 (out / 'private').mkdir(exist_ok=True)
 (out / 'private/admin.html').write_text(html, encoding='utf-8')
 (out / 'index.html').write_text((HERE / 'src/guest.html').read_text(encoding='utf-8'), encoding='utf-8')

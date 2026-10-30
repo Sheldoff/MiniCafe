@@ -3,6 +3,7 @@ import { load, commit, mutationQuery, prepareImages } from "./storage.js";
 import { restoreData } from "./restore.js";
 import { normalizePhone } from "./phone.js";
 import { menuTransfer } from "./menu-transfer.js";
+import { accessRequests } from "./access-requests.js";
 import {
   authRoutes,
   identity,
@@ -48,11 +49,13 @@ const writes = new Set([
   "restore",
 ]);
 
-async function handle(request, env) {
+async function handle(request, env, ctx) {
   const url = new URL(request.url),
     path = url.pathname.slice(5);
   const authentication = await authRoutes(request, env);
   if (authentication) return authentication;
+  const application = await accessRequests(request, env, ctx);
+  if (application) return application;
   const transfer = await menuTransfer(request, env);
   if (transfer) return transfer;
   if (url.pathname.startsWith("/private/"))
@@ -75,6 +78,7 @@ async function handle(request, env) {
       csrf: user.csrf,
       role: user.role,
       name: user.name,
+      username: user.username || "",
     }).replace(/</g, "\\u003c");
     return new Response(
       (await asset.text()).replace("__CLOUD_CONTEXT__", context),
@@ -126,8 +130,8 @@ async function handle(request, env) {
       return json({
         staff: (
           await env.DB.prepare(
-            `SELECT telegram_id,role,enabled,updated,NULL AS phone FROM staff_access
-             UNION ALL SELECT claimed_id AS telegram_id,role,enabled,updated,phone FROM staff_phone
+            `SELECT s.telegram_id,s.role,s.enabled,s.updated AS updated,NULL AS phone,p.username,p.name FROM staff_access s LEFT JOIN telegram_profiles p ON p.telegram_id=s.telegram_id
+             UNION ALL SELECT s.claimed_id AS telegram_id,s.role,s.enabled,s.updated,s.phone,p.username,p.name FROM staff_phone s LEFT JOIN telegram_profiles p ON p.telegram_id=s.claimed_id
              ORDER BY updated DESC`,
           ).all()
         ).results,
@@ -337,10 +341,14 @@ async function handle(request, env) {
       });
     }
     if (path === "backup") {
-      const d = await load(env.DB, "SELECT data FROM orders ORDER BY id");
-      const images = (
-        await env.DB.prepare("SELECT id,content FROM images").all()
-      ).results;
+      const d = await load(
+        env.DB,
+        "SELECT data FROM orders ORDER BY id",
+        [],
+        true,
+      );
+      const images = d._images;
+      delete d._images;
       for (const p of d.products) {
         const image = images.find((i) => i.id === p.id);
         if (image) p.image = image.content;
@@ -441,7 +449,10 @@ async function handle(request, env) {
           }
         : mutate(after, path, input);
     if (!changed.size) return json(result);
-    const images = await prepareImages(after);
+    const images = await prepareImages(
+      after,
+      path === "restore" ? 1500000 : 450000,
+    );
     try {
       await commit(env.DB, before, after, images);
       return json(result);
@@ -454,9 +465,9 @@ async function handle(request, env) {
   return json({ error: "Дані одночасно змінилися. Повторіть дію." }, 409);
 }
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     try {
-      return await handle(request, env);
+      return await handle(request, env, ctx);
     } catch (error) {
       const internal = /D1_|SQLITE|no such|constraint/i.test(String(error));
       return json(

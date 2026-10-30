@@ -26,11 +26,10 @@
     "delivery": "Тільки видача їжі"
   },
   "latest_requested_changes": [
-    "Manual confirmed menu/photo/price/stock transfer between APK host and Cloudflare via one-use direction-scoped 5-minute codes",
-    "Strict stock disables at zero; stock_estimated permits negative counts; optional guest highlighted",
-    "Separate staff management page: add by verified phone or Telegram ID, edit role, revoke/delete",
-    "Removed Telegram banner, styled server actions, checked online forms at mobile/tablet/desktop widths",
-    "Fixed request ID generation for consecutive online receipts and late editor save navigation race"
+    "Online responsive viewport and reduced-motion toast cleanup; compact staff form and distinct request list",
+    "Telegram bot applies for access; owner reviews full provided profile and chooses role; rejection permits reapplication",
+    "Server heading shows account and role; redundant refresh/guest-link and public menu-transfer entry removed",
+    "Portable APK/web cafe backups verified using Java core and local D1; preserve legacy request IDs and source counters"
   ],
   "key_rules": [
     "Гроші — копійки у сервері",
@@ -71,7 +70,7 @@
       "sources": "apps/online/src",
       "database": "D1 minicafe-db",
       "deploy_docs": "apps/online/DEPLOY-UA.md",
-      "version": "0.3.0"
+      "version": "0.4.0"
     },
     "windows": {
       "status": "frozen",

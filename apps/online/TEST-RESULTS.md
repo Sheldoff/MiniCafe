@@ -1,5 +1,24 @@
 # Telegram authentication validation — 2026-10-29
 
+## Online 0.4 — 2026-10-30
+
+- Bot request unit tests mock Telegram: secret header, private identity, duplicate
+  update, consent-bound contact, no auto-grant, CSRF, role escalation rejection,
+  approve/reject, stale decision and renewed request. No test messages sent to users.
+- Browser UI Chrome/WebKit: compact staff controls, safe profile/details, role
+  acceptance, rejection, empty request hiding, account heading and removed duplicate
+  buttons. Viewport fills available space; reduced-motion toast clears and never
+  intercepts touches. Phone/tablet/desktop light/dark field layouts checked.
+- Real Java Android core → local web D1 → Java core → web backup round trip:
+  photos, mixed payments, historical request IDs containing dots, partial issue,
+  sessions, expenses and preserved source counters. No production restore tests.
+- Chrome/WebKit: JSON download and confirmed file restore; oversized old menu
+  photo resized in browser. Cafe records/images exported from one DB snapshot.
+- Simulated signed Telegram OAuth callback returns to the APK transfer page;
+  replay rejected and external return URLs ignored. Normal site has no transfer link.
+- APK/Windows executables were not rebuilt in this online-only change. No physical
+  iPhone/Android test claimed. The existing APK 3.37 remains compatible.
+
 ## Android 3.37 / online 0.3
 
 - Strict stock rejects excessive quantities, duplicate lines exceeding stock and
