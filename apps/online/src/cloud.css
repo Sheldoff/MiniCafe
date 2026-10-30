@@ -278,3 +278,62 @@ html.cloud-online #toast:empty {
     grid-template-columns: 90px minmax(0, 1fr);
   }
 }
+html.cloud-online #main {
+  padding-bottom: 0;
+}
+html.cloud-online .cash-grid {
+  min-height: var(--cloud-cash-space);
+}
+html.cloud-online .cash-grid .menu-panel #tiles {
+  scrollbar-width: none;
+}
+html.cloud-online .cash-grid .menu-panel #tiles::-webkit-scrollbar {
+  display: none;
+}
+.cloud-account-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.cloud-account-heading h2 {
+  margin: 0;
+  min-width: 0;
+  font-size: clamp(18px, 4vw, 24px);
+}
+.cloud-account-heading .staff-role {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+html.cloud-online .menu-editor-grid {
+  height: var(--cloud-products-space, calc(100dvh - 80px));
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+}
+html.cloud-online .product-list-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  margin-bottom: 0;
+}
+html.cloud-online .product-list-panel > :not(#editorProducts) {
+  flex-shrink: 0;
+}
+html.cloud-online #editorProducts {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+html.cloud-online .product-form-panel:not([hidden]) {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  margin-bottom: 0;
+}
+@media (max-width: 999px) {
+  html.cloud-online .menu-editor-grid.editing {
+    grid-template-rows: minmax(0, 1fr) minmax(140px, 0.7fr);
+  }
+}
