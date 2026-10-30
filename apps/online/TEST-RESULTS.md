@@ -1,5 +1,15 @@
 # Telegram authentication validation — 2026-10-29
 
+## Online 0.4.1 — 2026-10-30
+
+- Chrome/WebKit viewport regression at 390/820/1280: menu reaches viewport bottom,
+  scrollbar hidden without disabling scroll, horizontal gestures on blank cashier
+  surface work both ways, product search/actions stay fixed while the list scrolls.
+- First-load layout waits for main to become visible and uses layout offsets rather
+  than animated rectangles. Product editor remains independently scrollable.
+- Server account name and role share a row. Responsive light/dark field checks pass.
+- Online-only UI patch; APK/Windows and user data unchanged. No physical-device test.
+
 ## Online 0.4 — 2026-10-30
 
 - Bot request unit tests mock Telegram: secret header, private identity, duplicate
