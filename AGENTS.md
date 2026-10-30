@@ -8,7 +8,7 @@ work/cafe/desktop_engine.py, work/cafe/requirements.txt, work/desktop/ або
 work/scripts/build_desktop.ps1, не збирай/не тестуй EXE без нового прохання власника.
 work/cafe/frontend_build.py залишається активним спільним збирачем UI.
 Cloudflare-напрям: apps/online/DEPLOY-UA.md. Керування захищено Telegram OIDC;
-гості бачать «Меню формується». Не повертати відкритий admin API або
+гостям доступні лише публічне меню й тимчасові коди замовлень. Не повертати відкритий admin API або
 PUBLIC_TEST_MODE. Не публікувати приватні дані чи OAuth-токени.
 Тести API онлайн запускаються тільки проти локальної одноразової D1.
 Не запускати масові тести/restore проти публічного сервера користувача.

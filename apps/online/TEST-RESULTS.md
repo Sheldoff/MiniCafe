@@ -1,5 +1,20 @@
 # Telegram authentication validation — 2026-10-29
 
+## Online 0.5 — 2026-10-30
+
+- Public catalog projection excludes hidden products/private state; quantity,
+  strict/estimated availability and authoritative prices validated server-side.
+- Local D1: draft leaves orders/stock/statistics untouched; anonymous/bar lookup
+  rejected; same-origin/CSRF and role gates; admin disable; one-use redemption,
+  concurrent cashiers, payment retry idempotency, expiry unit checks. No public
+  server restore or mutation tests.
+- Chrome/WebKit: drink dialog, food quantities, code display, cashier import and
+  payment, used-code rejection; full editor/draft preservation, save/close row,
+  single name focus treatment, full-height drawer at phone/tablet/desktop sizes.
+- Shared cashier/queues/report/PDF/editor/calculator workflows and responsive
+  light/dark field checks exercised. Scrollbars visually hidden, scrolling kept.
+- APK/Windows sources unchanged. No physical Android/iPhone verification claimed.
+
 ## Online 0.4.3 — 2026-10-30
 
 - Screenshot identified Android Chrome's native bottom chin, outside the page DOM.
