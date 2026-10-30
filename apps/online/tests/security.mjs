@@ -46,7 +46,7 @@ assert.equal(
 assert.equal((await req("/api/state", { headers: headers("9") })).status, 401);
 assert.equal((await req("/private/admin.html")).status, 404);
 assert.equal((await req("/admin")).status, 302);
-assert.match(await (await req("/")).text(), /Меню формується/);
+assert.match(await (await req("/")).text(), /guestMenu/);
 assert.equal((await req("/auth/callback?state=bad&code=bad")).status, 400);
 const state = await req("/api/state", { headers: headers() });
 assert.equal(state.status, 200);

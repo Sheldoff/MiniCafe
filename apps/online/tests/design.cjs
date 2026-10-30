@@ -18,7 +18,9 @@ const {
       await page.setExtraHTTPHeaders({
         Cookie: "__Host-minicafe_session=" + "1".repeat(64),
       });
-      await page.goto("http://127.0.0.1:8791/admin");
+      await page.goto(
+        (process.env.CAFE_CLOUD_TEST_URL || "http://127.0.0.1:8791") + "/admin",
+      );
       await page.locator('[data-product="1"]').waitFor();
       for (const width of [390, 820, 1280])
         for (const theme of ["light", "dark"])
