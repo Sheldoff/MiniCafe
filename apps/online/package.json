@@ -1,13 +1,13 @@
 {
   "name": "minicafe-online",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "python build.py",
     "dev": "wrangler dev",
     "test": "node --test tests/*.test.js",
-    "test:api": "node tests/integration.mjs && node tests/security.mjs && node tests/transfer.mjs",
+    "test:api": "node tests/integration.mjs && node tests/guest-api.mjs && node tests/security.mjs && node tests/transfer.mjs",
     "test:ui": "node tests/browser.cjs",
     "deploy": "wrangler deploy"
   },
