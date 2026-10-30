@@ -70,7 +70,7 @@
       "sources": "apps/online/src",
       "database": "D1 minicafe-db",
       "deploy_docs": "apps/online/DEPLOY-UA.md",
-      "version": "0.4.1"
+      "version": "0.4.2"
     },
     "windows": {
       "status": "frozen",
