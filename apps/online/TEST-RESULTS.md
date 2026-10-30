@@ -1,5 +1,14 @@
 # Telegram authentication validation — 2026-10-29
 
+## Online 0.4.2 — 2026-10-30
+
+- Guest landing footer: replace the fixed 70svh content minimum with a flex column
+  filling the dynamic viewport. Main grows, header/footer retain their intrinsic
+  sizes, and long content can extend the document without overlap.
+- Chrome/WebKit measured footer against body/viewport at 390×844, 820×1180,
+  1440×1080 and 844×390; no empty area below footer or horizontal overflow.
+- This fixes the guest page, which has its own layout, separately from admin UI.
+
 ## Online 0.4.1 — 2026-10-30
 
 - Chrome/WebKit viewport regression at 390/820/1280: menu reaches viewport bottom,
