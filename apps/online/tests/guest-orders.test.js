@@ -4,7 +4,21 @@ import {
   publicProducts,
   validateSelection,
   codeForOrder,
+  validateGuestName,
 } from "../src/guest-orders.js";
+test("guest full name is required, normalized and bounded", () => {
+  assert.equal(validateGuestName("  Іван   Петренко "), "Іван Петренко");
+  assert.equal(validateGuestName("Марія-Анна О’Ніл"), "Марія-Анна О’Ніл");
+  for (const value of [
+    null,
+    "",
+    "Іван",
+    "123 456",
+    "<script> x",
+    "а".repeat(101) + " б",
+  ])
+    assert.throws(() => validateGuestName(value));
+});
 test("public menu exposes only active catalog fields and validates quantities without trusting prices", () => {
   const products = publicProducts([
     {

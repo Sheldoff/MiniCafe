@@ -1,5 +1,14 @@
 # Telegram authentication validation — 2026-10-29
 
+## Online 0.5.1 — 2026-10-31
+
+- Highlighted required guest full-name field. Empty/single-part names blocked in
+  UI and public-code API; whitespace normalized, length bounded to 100 characters.
+- Guest name participates in cached-code identity and is transferred to the cashier.
+  Existing nameless codes remain readable; guest menu/code responses expose no names.
+- Unit, disposable-local-D1 validation and Chrome/WebKit guest-to-cashier tests.
+  No physical-device or production-order test; no APK/Windows changes.
+
 ## Online 0.5 — 2026-10-30
 
 - Public catalog projection excludes hidden products/private state; quantity,

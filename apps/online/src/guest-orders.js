@@ -41,6 +41,19 @@ const available = (p) =>
   !!p.active &&
   !p.sold_out &&
   (p.stock == null || p.stock_estimated || p.stock > 0);
+export function validateGuestName(value) {
+  if (typeof value !== "string") fail("Вкажіть ім’я та прізвище");
+  const name = value.trim().replace(/\s+/g, " "),
+    parts = name.split(" ");
+  if (
+    name.length > 100 ||
+    /[<>\u0000-\u001f\u007f]/.test(name) ||
+    parts.length < 2 ||
+    parts.some((part) => !/\p{L}/u.test(part))
+  )
+    fail("Вкажіть ім’я та прізвище");
+  return name;
+}
 export function publicProducts(rows) {
   return rows
     .map((r) => JSON.parse(r.data))
@@ -186,6 +199,7 @@ export async function guestOrders(request, env) {
     const items = validateSelection(JSON.parse(row.data).items, products);
     return json({
       items,
+      guest: JSON.parse(row.data).guest || "",
       total: items.reduce((sum, p) => sum + p.price * p.qty, 0),
     });
   }
@@ -201,6 +215,7 @@ export async function guestOrders(request, env) {
     (await env.DB.prepare("SELECT data FROM products ORDER BY id").all())
       .results,
   );
+  const guest = validateGuestName(input?.guest);
   const items = validateSelection(input?.items, products),
     now = timestamp();
   await env.DB.batch([
@@ -221,7 +236,10 @@ export async function guestOrders(request, env) {
     )
       .bind(
         await hash(code),
-        JSON.stringify({ items: items.map(({ id, qty }) => ({ id, qty })) }),
+        JSON.stringify({
+          guest,
+          items: items.map(({ id, qty }) => ({ id, qty })),
+        }),
         now + 1800,
       )
       .run();

@@ -13,6 +13,7 @@ const headers = (digit) => ({
     : {}),
 });
 async function call(path, input, digit, status = 200) {
+  if (path === "public/code") input = { guest: "Іван Петренко", ...input };
   const r = await fetch(base + "/api/" + path, {
     method: input === undefined ? "GET" : "POST",
     headers: headers(digit),
@@ -46,6 +47,14 @@ try {
   await call("public-settings", { enabled: false }, "3", 403);
   const lookup = await call("guest-code", { code: code.code }, "3");
   assert.equal(lookup.items[0].qty, 2);
+  assert.equal(lookup.guest, "Іван Петренко");
+  for (const guest of [undefined, "", "Іван", "   ", "123 456"])
+    await call(
+      "public/code",
+      { guest, items: [{ id: p.id, qty: 1 }] },
+      undefined,
+      400,
+    );
   const badOrigin = await fetch(base + "/api/public/code", {
     method: "POST",
     headers: { ...headers(), Origin: "https://other.invalid" },
