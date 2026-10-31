@@ -77,6 +77,7 @@ function cloudEnterGuestCode() {
       chosenProducts.clear();
       closeOrderDialog();
       drawCart();
+      document.querySelector("#guest").value = j.guest || "";
       tiles("");
       await showCashPanel(true);
       toast("Замовлення завантажено. Перевірте ім’я та оплату.");

@@ -22,8 +22,26 @@ let products = [],
   submitting = false;
 let lastCode = null;
 const quantity = (source, id) => source[id] || 0;
+const guestName = () => $("#guestFullName").value.trim().replace(/\s+/g, " ");
+const validName = (name) =>
+  name.length <= 100 &&
+  !/[<>\u0000-\u001f\u007f]/.test(name) &&
+  name.split(" ").length >= 2 &&
+  name.split(" ").every((part) => /\p{L}/u.test(part));
+$("#guestFullName").oninput = () => {
+  $("#guestFullName").removeAttribute("aria-invalid");
+  $("#guestNameError").hidden = true;
+  drawSummary();
+};
+$("#guestFullName").onkeydown = (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    e.currentTarget.blur();
+  }
+};
 const selectionPayload = () =>
   JSON.stringify({
+    guest: guestName(),
     items: products
       .filter((p) => selection[p.id])
       .map((p) => ({ id: p.id, qty: selection[p.id] })),
@@ -144,6 +162,20 @@ $("#dialogActions").onclick = (e) => {
 $("#dialogClose").onclick = () => $("#guestDialog").close();
 $("#guestSubmit").onclick = async () => {
   if (submitting) return;
+  if (!validName(guestName())) {
+    const field = $("#guestFullName");
+    field.setAttribute("aria-invalid", "true");
+    $("#guestNameError").textContent = "Вкажіть, будь ласка, ім’я та прізвище.";
+    $("#guestNameError").hidden = false;
+    field.scrollIntoView({
+      block: "center",
+      behavior: matchMedia("(prefers-reduced-motion:reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
+    field.focus({ preventScroll: true });
+    return;
+  }
   submitting = true;
   drawSummary();
   try {

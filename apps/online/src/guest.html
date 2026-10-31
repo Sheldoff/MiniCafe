@@ -19,6 +19,22 @@
     <main>
       <div id="guestStatus" role="status">Завантажуємо меню…</div>
       <section id="guestMenu" hidden>
+        <div class="guest-identity">
+          <label for="guestFullName"
+            >Ім’я та прізвище <small>Обов’язково</small></label
+          >
+          <input
+            id="guestFullName"
+            type="text"
+            autocomplete="name"
+            maxlength="100"
+            required
+            placeholder="Введіть ім’я та прізвище"
+            aria-describedby="guestNameError"
+            enterkeyhint="done"
+          />
+          <small id="guestNameError" role="status" hidden></small>
+        </div>
         <button id="drinkChoice" class="drink-choice" type="button">
           Вибрати напій <span aria-hidden="true">＋</span>
         </button>

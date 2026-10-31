@@ -38,6 +38,19 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))
       const food = p.locator('#foodList [data-step="1"]').first();
       if (await food.count()) await food.click();
       await p.locator("#guestSubmit").click();
+      assert.equal(
+        await p.locator("#guestFullName").getAttribute("aria-invalid"),
+        "true",
+      );
+      assert.equal(await p.locator(".code").count(), 0);
+      await p.locator("#guestFullName").fill("Іван");
+      await p.locator("#guestSubmit").click();
+      assert.equal(
+        await p.locator("#guestFullName").getAttribute("aria-invalid"),
+        "true",
+      );
+      await p.locator("#guestFullName").fill("Іван Петренко");
+      await p.locator("#guestSubmit").click();
       await p.locator(".code").waitFor();
       const code = (await p.locator(".code").innerText()).trim();
       assert.match(code, /^\d{6}$/);
@@ -60,6 +73,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))
       await a.getByRole("button", { name: "Завантажити", exact: true }).click();
       await a.waitForFunction(() => mobileCart && cart.length > 0);
       assert.ok(await a.locator("#sum").innerText());
+      assert.equal(await a.locator("#guest").inputValue(), "Іван Петренко");
       await a.locator("#send").click();
       await a.waitForFunction(() => !busy && cart.length === 0);
       assert.equal(
