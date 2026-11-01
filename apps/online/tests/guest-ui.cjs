@@ -26,7 +26,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))
         await p.getByText("Вхід для працівників", { exact: true }).count(),
         0,
       );
-      assert.equal(await p.locator("a.brand").getAttribute("href"), "/admin");
+      assert.equal(await p.locator("a.brand").count(), 0);
       await p.locator("#drinkChoice").click();
       await p.locator('#dialogBody [data-step="1"]').first().click();
       await p.locator('#dialogBody [data-step="1"]').first().click();
@@ -53,7 +53,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))
       await p.locator("#guestSubmit").click();
       await p.locator(".code").waitFor();
       const code = (await p.locator(".code").innerText()).trim();
-      assert.match(code, /^\d{6}$/);
+      assert.match(code, /^\d{3}$/);
       await p.locator("[data-close]").click();
       assert.equal(await p.locator("#guestSubmit").innerText(), "Показати код");
       await p.locator("#guestSubmit").click();
@@ -69,13 +69,63 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))
       await a.goto(base + "/admin");
       await a.locator("[data-guest-code]").waitFor();
       await a.locator("[data-guest-code]").click();
-      await a.locator("#guestCodeInput").fill(code);
-      await a.getByRole("button", { name: "Завантажити", exact: true }).click();
+      await a.locator(`[data-pending-code="${code}"]`).click();
+
       await a.waitForFunction(() => mobileCart && cart.length > 0);
       assert.ok(await a.locator("#sum").innerText());
+      assert.ok(
+        await a.evaluate(
+          async (code) =>
+            (await (await fetch("/api/guest-codes")).json()).codes.some(
+              (c) => c.code === code,
+            ),
+          code,
+        ),
+        "loading draft must not remove code",
+      );
       assert.equal(await a.locator("#guest").inputValue(), "Іван Петренко");
       await a.locator("#send").click();
       await a.waitForFunction(() => !busy && cart.length === 0);
+      assert.equal(
+        await a.evaluate(
+          async (code) =>
+            (await (await fetch("/api/guest-codes")).json()).codes.some(
+              (c) => c.code === code,
+            ),
+          code,
+        ),
+        false,
+        "paid code disappears",
+      );
+      const badges = await a.evaluate(() => {
+        const saved = data.orders;
+        data.orders = [
+          {
+            items: [
+              {
+                route: "bar",
+                qty: 3,
+                status: "new",
+                unit_issued: [true, false, false],
+              },
+              { route: "bar", qty: 2, status: "new" },
+              { route: "instant", qty: 5, status: "new" },
+              { route: "instant", qty: 10, status: "cancelled" },
+            ],
+          },
+        ];
+        updateDrawer();
+        const result = [...document.querySelectorAll(".drawer-unit-count")].map(
+          (e) => e.textContent,
+        );
+        data.orders = [];
+        updateDrawer();
+        const empty = document.querySelectorAll(".drawer-unit-count").length;
+        data.orders = saved;
+        updateDrawer();
+        return { result, empty };
+      });
+      assert.deepEqual(badges, { result: ["4", "5"], empty: 0 });
       assert.equal(
         await a.evaluate(
           async (code) =>
@@ -97,14 +147,14 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))
       });
       await a.locator("#editorToggle").click();
       await a.locator("#pname").fill("Незбережена чернетка");
-      assert.equal(await a.locator(".product-list-panel").isVisible(), false);
+      assert.equal(await a.locator(".product-list-panel").isVisible(), true);
       const geometry = await a.locator(".product-form-panel").evaluate((e) => ({
         height: e.clientHeight,
         main: document.querySelector("#main").clientHeight,
         scroll: e.scrollHeight,
       }));
       assert.ok(
-        geometry.height > geometry.main * 0.85,
+        geometry.height > geometry.main * 0.4,
         "full editor fills main",
       );
       const close = a.locator("[data-close-editor]");

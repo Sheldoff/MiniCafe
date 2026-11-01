@@ -123,3 +123,6 @@ It is not run in CI and does not replace real iPhone/Android device verification
 Published-flow smoke passed in Android Chrome and iPhone WebKit browser
 emulation: same tab, no popup, secure flow cookie present, Telegram phone-number
 fallback visible. The provider localized its page into Ukrainian during testing.
+
+## Online 0.6 / Android 3.38 — 01.11.2026
+Тризначні коди, список неоплачених чернеток, лічильники порцій у drawer, список товарів поруч з редактором. Android має кнопку Онлайн, яка відкриває /admin системним браузером: це не вбудований WebView-вхід. Локальна база не синхронізується автоматично. Фізичні пристрої не тестувалися.

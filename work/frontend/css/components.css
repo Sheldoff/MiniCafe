@@ -619,3 +619,13 @@ button:focus:not(:focus-visible) {
   margin-left: 4px;
   margin-right: 4px;
 }
+.drawer-unit-count {
+  float: right;
+  min-width: 25px;
+  text-align: center;
+  border-radius: 20px;
+  background: var(--raised, #edf1e5);
+  color: var(--text, #214c3d);
+  padding: 1px 7px;
+  font-weight: 700;
+}

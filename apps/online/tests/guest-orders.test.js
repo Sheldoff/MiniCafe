@@ -93,13 +93,13 @@ test("short codes expire and are single-use, with same-request payment retries a
       };
     },
   };
-  await codeForOrder(db, "123456", "request1");
+  await codeForOrder(db, "123", "request1");
   row.used_request = "request1";
-  await codeForOrder(db, "123456", "request1");
-  await assert.rejects(codeForOrder(db, "123456", "request2"));
+  await codeForOrder(db, "123", "request1");
+  await assert.rejects(codeForOrder(db, "123", "request2"));
   row.expires = 0;
-  await assert.rejects(codeForOrder(db, "123456", "request1"));
+  await assert.rejects(codeForOrder(db, "123", "request1"));
   row = null;
-  await assert.rejects(codeForOrder(db, "123456", "request1"));
+  await assert.rejects(codeForOrder(db, "123", "request1"));
   await assert.rejects(codeForOrder(db, "12", "request1"));
 });

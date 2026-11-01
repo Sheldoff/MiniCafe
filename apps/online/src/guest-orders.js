@@ -94,7 +94,7 @@ export function validateSelection(items, products) {
   });
 }
 export async function codeForOrder(db, code, request) {
-  if (typeof code !== "string" || !/^\d{6}$/.test(code))
+  if (typeof code !== "string" || !/^\d{3}$/.test(code))
     fail("Некоректний код");
   const digest = await hash(code),
     now = timestamp();
@@ -120,6 +120,7 @@ export async function guestOrders(request, env) {
       "/api/public/menu",
       "/api/public/code",
       "/api/guest-code",
+      "/api/guest-codes",
       "/api/public-settings",
     ].includes(path)
   )
@@ -160,6 +161,21 @@ export async function guestOrders(request, env) {
         "SELECT (published AND accepting) AS enabled FROM public_settings WHERE id=1",
       ).first(),
     );
+  if (path === "/api/guest-codes" && request.method === "GET") {
+    const rows = (
+      await env.DB.prepare(
+        "SELECT data FROM guest_codes WHERE expires>? AND used_request IS NULL ORDER BY expires",
+      )
+        .bind(timestamp())
+        .all()
+    ).results;
+    return json({
+      codes: rows
+        .map((r) => JSON.parse(r.data))
+        .filter((d) => /^\d{3}$/.test(d.code || ""))
+        .map((d) => ({ code: d.code, guest: d.guest || "" })),
+    });
+  }
   if (request.method !== "POST")
     return json({ error: "Метод не підтримується" }, 405);
   if (publicRoute) {
@@ -224,12 +240,12 @@ export async function guestOrders(request, env) {
   ]);
   if (
     (await env.DB.prepare("SELECT count(*) AS n FROM guest_codes").first()).n >=
-    5000
+    900
   )
     return json({ error: "Тимчасово забагато замовлень" }, 429);
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 32; i++) {
     const code = String(
-      100000 + (crypto.getRandomValues(new Uint32Array(1))[0] % 900000),
+      100 + (crypto.getRandomValues(new Uint32Array(1))[0] % 900),
     );
     const result = await env.DB.prepare(
       "INSERT OR IGNORE INTO guest_codes(code_hash,data,expires) SELECT ?,?,? WHERE EXISTS(SELECT 1 FROM public_settings WHERE id=1 AND published=1 AND accepting=1)",
@@ -237,6 +253,7 @@ export async function guestOrders(request, env) {
       .bind(
         await hash(code),
         JSON.stringify({
+          code,
           guest,
           items: items.map(({ id, qty }) => ({ id, qty })),
         }),
