@@ -17,6 +17,7 @@ public class MainActivity extends Activity {
   private boolean online;
   private boolean jsonPicker;
   private byte[] onlineFile;
+  private CloudMenuTransfer menuTransfer;
   private int revealChecks = 0;
 
   private void revealWhenReady(WebView target) {
@@ -143,12 +144,31 @@ public class MainActivity extends Activity {
     layout.addView(web, new LinearLayout.LayoutParams(-1, 0, 1));
     setContentView(layout);
     web.getSettings()
-        .setUserAgentString(web.getSettings().getUserAgentString() + " MiniCafeAndroid");
+        .setUserAgentString(
+            web.getSettings().getUserAgentString()
+                + (online ? " MiniCafeAndroidOnline" : " MiniCafeAndroid"));
     web.getSettings().setJavaScriptEnabled(true);
     web.getSettings().setDomStorageEnabled(true);
     web.getSettings().setAllowFileAccess(false);
     web.getSettings().setAllowContentAccess(true);
     web.getSettings().setMediaPlaybackRequiresUserGesture(true);
+    if (online) {
+      menuTransfer = new CloudMenuTransfer(this);
+      web.addJavascriptInterface(
+          new Object() {
+            @JavascriptInterface
+            public void transfer(String direction, String code) {
+              runOnUiThread(
+                  () -> {
+                    if (online
+                        && web.getUrl() != null
+                        && web.getUrl().startsWith(OnlineActivity.ORIGIN + "/admin"))
+                      menuTransfer.request(direction, code);
+                  });
+            }
+          },
+          "CafeMenuTransfer");
+    }
     if (online)
       web.addJavascriptInterface(
           new Object() {
