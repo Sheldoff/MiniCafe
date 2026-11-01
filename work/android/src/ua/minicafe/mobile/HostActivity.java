@@ -58,7 +58,7 @@ public class HostActivity extends Activity {
 
   private Button button(String name, Runnable action) {
     Button b = CafeUi.button(this, name, false);
-    LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1, -2);
+    LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1, px(64));
     p.topMargin = px(8);
     root.addView(b, p);
     b.setOnClickListener(v -> action.run());
@@ -116,7 +116,7 @@ public class HostActivity extends Activity {
   }
 
   private void remoteConnection() {
-    root.addView(text("Вставте повне посилання з ?key=… або відскануйте QR-код сервера.", 13));
+
     remoteAddress = new EditText(this);
     remoteAddress.setSingleLine(true);
     remoteAddress.setInputType(17);
@@ -266,7 +266,7 @@ public class HostActivity extends Activity {
       if (page.isEmpty()) {
         root.addView(text("☕ МініКафе", 16));
         CafeUi.label(root, "Підключення", 28, false);
-        CafeUi.label(root, "Оберіть сервер для роботи каси та видачі.", 14, true);
+        navigationButton("Онлайн", () -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://minicafe.minicafe.workers.dev/admin"))));
         LinearLayout page = root;
         root = CafeUi.card(page);
         CafeUi.label(root, "Сервер на цьому пристрої", 19, false);

@@ -438,3 +438,32 @@ html.cloud-online .cloud-code-form input {
   letter-spacing: 4px;
   text-align: center;
 }
+html.cloud-online .menu-editor-grid.editing .product-list-panel {
+  display: flex;
+}
+html.cloud-online .menu-editor-grid.editing {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) minmax(160px, 0.7fr);
+}
+@media (min-width: 1000px) {
+  html.cloud-online .menu-editor-grid.editing {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+}
+.pending-code-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  max-height: 35dvh;
+  overflow: auto;
+}
+.pending-code-list button {
+  text-align: left;
+  min-height: 44px;
+}
+
+html.cloud-online .menu-editor-grid.editing #editorToggle {
+  display: none;
+}

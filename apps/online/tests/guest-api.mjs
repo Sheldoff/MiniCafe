@@ -37,8 +37,15 @@ try {
   const code = await call("public/code", {
     items: [{ id: p.id, qty: 2, price: 1 }],
   });
-  assert.match(code.code, /^\d{6}$/);
+  assert.match(code.code, /^\d{3}$/);
   assert.equal(code.total, p.price * 2);
+  await call("guest-codes", undefined, undefined, 401);
+  await call("guest-codes", undefined, "4", 403);
+  assert.ok(
+    (await call("guest-codes", undefined, "3")).codes.some(
+      (c) => c.code === code.code && c.guest === "Іван Петренко",
+    ),
+  );
   const after = await call("state", undefined, "1");
   assert.equal(after.orders.length, before.orders.length);
   assert.equal(after.revision, before.revision);
@@ -77,6 +84,12 @@ try {
     items: [{ id: p.id, qty: 2 }],
   };
   const order = await call("order", payload, "3");
+  assert.equal(
+    (await call("guest-codes", undefined, "3")).codes.some(
+      (c) => c.code === code.code,
+    ),
+    false,
+  );
   assert.equal(
     (await call("order", payload, "3")).id,
     order.id,

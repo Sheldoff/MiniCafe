@@ -180,6 +180,34 @@ function updateDrawer() {
     .forEach((b) => b.classList.toggle("selected", b.dataset.view === view));
   syncThemeControl();
   syncRefreshIndicator();
+  for (const [target, route] of [
+    ["bar", "bar"],
+    ["delivery", "instant"],
+  ]) {
+    const button = old.querySelector(`[data-view="${target}"]`);
+    if (!button) continue;
+    let count = 0;
+    for (const order of data.orders || [])
+      for (const item of order.items || []) {
+        if (
+          item.route !== route ||
+          ["delivered", "cancelled"].includes(item.status)
+        )
+          continue;
+        count += Array.isArray(item.unit_issued)
+          ? item.unit_issued.filter((v) => !v).length
+          : item.qty;
+      }
+    let badge = button.querySelector(".drawer-unit-count");
+    if (count) {
+      if (!badge) {
+        badge = document.createElement("span");
+        badge.className = "drawer-unit-count";
+        button.appendChild(badge);
+      }
+      badge.textContent = count;
+    } else badge?.remove();
+  }
   let h = document.querySelector("header");
   if (!document.querySelector("#drawerToggle")) {
     let b = document.createElement("button");
