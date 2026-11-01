@@ -463,3 +463,7 @@ html.cloud-online .menu-editor-grid.editing {
   text-align: left;
   min-height: 44px;
 }
+
+html.cloud-online .menu-editor-grid.editing #editorToggle {
+  display: none;
+}

@@ -10,7 +10,7 @@ drawCategories = function () {
     b.dataset.guestCode = "";
     b.className = "guest-code-button";
     b.textContent = "Код";
-    b.onclick = cloudEnterGuestCode;
+    b.onclick = () => cloudEnterGuestCode();
     host.appendChild(b);
   }
 };
@@ -44,6 +44,7 @@ function cloudEnterGuestCode() {
     if (!/^\d{3}$/.test(code)) return;
     const currentDraft = draft,
       submit = box.querySelector("[type=submit]");
+    if (submit.disabled) return;
     submit.disabled = true;
     try {
       const r = await fetch("/api/guest-code", {
@@ -235,9 +236,14 @@ cloudEnterGuestCode = function () {
           .join("") || '<p class="muted">Немає неоплачених кодів</p>';
       list.onclick = (e) => {
         const b = e.target.closest("[data-pending-code]");
-        if (b) {
+        if (b && !box.querySelector("[type=submit]").disabled) {
           box.querySelector("input").value = b.dataset.pendingCode;
-          box.querySelector("form").requestSubmit();
+          const form = box.querySelector("form");
+          if (form.requestSubmit) form.requestSubmit();
+          else
+            form.dispatchEvent(
+              new Event("submit", { bubbles: true, cancelable: true }),
+            );
         }
       };
     })
