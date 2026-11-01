@@ -42,8 +42,13 @@ public class OnlineActivity extends Activity {
     check.setOnClickListener(v -> poll());
     Button back = CafeUi.button(this, "Локальна робота", false);
     root.addView(back);
-    back.setOnClickListener(v -> finish());
-    if (getIntent().getData() == null && secret == null) {
+    back.setOnClickListener(
+        v -> {
+          startActivity(
+              new Intent(this, HostActivity.class).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));
+          finish();
+        });
+    if (secret == null) {
       String cookies = CookieManager.getInstance().getCookie(ORIGIN);
       if (!getIntent().getBooleanExtra("reauth", false)
           && cookies != null
@@ -51,7 +56,7 @@ public class OnlineActivity extends Activity {
         openApp();
         return;
       }
-      begin();
+      if (getIntent().getData() == null) begin();
     }
   }
 
