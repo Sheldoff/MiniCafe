@@ -50,6 +50,7 @@ public class MainActivity extends Activity {
     super.onCreate(state);
     online = getIntent().getBooleanExtra("online", false);
     if (online) {
+      getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
       server = OnlineActivity.ORIGIN;
       showWeb(server + "/admin");
       return;
@@ -255,7 +256,7 @@ public class MainActivity extends Activity {
                   .setMessage(
                       online
                           ? "Перевірте інтернет і доступність сайту МініКафе. Потім оновіть"
-                                + " сторінку або повторіть вхід."
+                              + " сторінку або повторіть вхід."
                           : "Перевірте Wi-Fi, адресу та запуск сервера на головному телефоні або"
                               + " ноутбуці. Потім натисніть «Оновити» або змініть підключення.")
                   .setPositiveButton("Добре", null)
