@@ -53,7 +53,7 @@
     "private_password_file_separate": "work/android/signing.local.json",
     "certificate_fingerprint_file": "work/android/signing-cert.sha256"
   },
-  "validation_limit": "Local Android original suites retained; cloud domain + local D1 API and Chrome/WebKit tested. No physical iPhone/Android cloud testing. Windows frozen.",
+  "validation_limit": "Android 3.41: full local-android checks.py without skips (signed APK, 21 Java suites, local API, Chrome/WebKit). Online 0.10.0: 17 unit/SQLite tests, local D1 API and Chrome/WebKit including card payment history. No physical phone testing; Windows frozen.",
   "development_tracks": {
     "policy": "docs/PROJECT-TRACKS-UA.md",
     "local_android": {
