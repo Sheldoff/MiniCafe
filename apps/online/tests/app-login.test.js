@@ -62,19 +62,39 @@ test("APK handoff requires browser CSRF approval, device proof, live rights and 
     }),
     env,
   );
-  assert.equal(start.status, 302);
+  assert.equal(start.status, 200);
   assert.equal(
     (
       await appLogin(
         new Request(origin + "/auth/app/start?challenge=" + challenge, {
-          headers: { Cookie: cookie, "Sec-Fetch-Site": "cross-site" },
+          headers: {
+            Cookie: cookie,
+            "Sec-Fetch-Site": "cross-site",
+            "Sec-Fetch-Dest": "iframe",
+            "Sec-Fetch-Mode": "navigate",
+          },
         }),
         env,
       )
     ).status,
     403,
   );
-  assert.equal(start.headers.get("location"), "/auth/app/confirm");
+  assert.match(await start.text(), /href="\/auth\/app\/confirm"/);
+  assert.equal(
+    (
+      await appLogin(
+        new Request(origin + "/auth/app/start?challenge=" + challenge, {
+          headers: {
+            "Sec-Fetch-Site": "cross-site",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+          },
+        }),
+        env,
+      )
+    ).status,
+    200,
+  );
   assert.ok(!start.headers.get("set-cookie").includes(secret));
   const form = await appLogin(
     new Request(origin + "/auth/app/confirm", { headers: { Cookie: cookie } }),

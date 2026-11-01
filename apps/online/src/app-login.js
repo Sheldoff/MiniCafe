@@ -39,23 +39,23 @@ export async function appLogin(request, env) {
     return null;
   if (path === "/auth/app/start" && request.method === "GET") {
     if (
-      request.headers.get("Sec-Fetch-Site") === "cross-site" ||
-      (request.headers.has("Origin") &&
-        request.headers.get("Origin") !== url.origin)
+      (request.headers.has("Sec-Fetch-Dest") &&
+        request.headers.get("Sec-Fetch-Dest") !== "document") ||
+      (request.headers.has("Sec-Fetch-Mode") &&
+        request.headers.get("Sec-Fetch-Mode") !== "navigate")
     )
       return json({ error: "Почніть вхід із застосунку" }, 403);
     const challenge = url.searchParams.get("challenge");
     if (!/^[a-f0-9]{64}$/.test(challenge || ""))
       return json({ error: "Некоректний запит" }, 400);
     const user = await identity(request, env);
-    return new Response(null, {
-      status: 302,
-      headers: {
-        ...headers,
-        Location: user ? "/auth/app/confirm" : "/auth/start",
-        "Set-Cookie": appCookie(challenge),
-      },
-    });
+    // A rendered first-party page resets the navigation initiator. Redirecting
+    // directly can carry Android's cross-site metadata into /auth/start.
+    const response = page(
+      `<p>Продовжте вхід через Telegram, потім поверніться до застосунку.</p><a style="display:block;padding:16px;background:#215943;color:white;border-radius:12px;text-align:center" href="${user ? "/auth/app/confirm" : "/auth/start"}">Продовжити вхід</a>`,
+    );
+    response.headers.set("Set-Cookie", appCookie(challenge));
+    return response;
   }
   if (path === "/auth/app/confirm") {
     const user = await identity(request, env);
