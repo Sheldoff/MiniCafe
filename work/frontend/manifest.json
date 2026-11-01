@@ -5,7 +5,8 @@
     "css/screens.css",
     "css/theme.css",
     "css/tablet.css",
-    "css/app-layout.css"
+    "css/app-layout.css",
+    "css/card-payments.css"
   ],
   "scripts": [
     "js/state.js",
@@ -14,6 +15,7 @@
     "js/router.js",
     "js/cashier.js",
     "js/payments.js",
+    "js/card-payments.js",
     "js/serving.js",
     "js/editor.js",
     "js/statistics.js",

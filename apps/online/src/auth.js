@@ -110,14 +110,20 @@ export function csrfAllowed(request, user) {
   );
 }
 export function canRead(role, path) {
-  return role === "admin" || path === "state" || path.startsWith("image/");
+  return (
+    role === "admin" ||
+    path === "state" ||
+    path.startsWith("image/") ||
+    (["cash", "service"].includes(role) && path === "card-payments")
+  );
 }
 export function canWrite(role, path, input) {
   if (role === "admin") return true;
-  if (role === "cash") return path === "order";
+  if (role === "cash") return ["order", "card-payment/hide"].includes(path);
   if (role === "service")
     return [
       "order",
+      "card-payment/hide",
       "issue",
       "issue-unit",
       "issue-item",

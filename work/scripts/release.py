@@ -88,6 +88,7 @@ def main():
             and not set(p.relative_to(ROOT).parts).intersection(
                 {"__pycache__", "node_modules", "dist", "build", "originals", ".wrangler", ".wrangler-auth"}
             )
+            and not any(part.startswith(".wrangler") for part in p.relative_to(ROOT).parts)
             and not p.name.startswith((".dev.vars", ".env"))
         )
     # Images are source assets, not test screenshots.

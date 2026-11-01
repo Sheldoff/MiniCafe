@@ -38,6 +38,7 @@ const writes = new Set([
   "delete-product",
   "availability",
   "order",
+  "card-payment/hide",
   "issue",
   "issue-unit",
   "issue-item",
@@ -208,6 +209,24 @@ async function handle(request, env, ctx) {
     return json({ ok: true });
   }
   if (request.method === "GET") {
+    if (path === "card-payments") {
+      const before = url.searchParams.has("before")
+        ? Number(url.searchParams.get("before"))
+        : Number.MAX_SAFE_INTEGER;
+      if (!Number.isSafeInteger(before) || before < 1)
+        fail("Некоректна сторінка");
+      const rows = (
+        await env.DB.prepare(
+          "SELECT id,json_extract(data,'$.payment.card_amount') AS amount FROM orders WHERE id<? AND coalesce(json_extract(data,'$.card_history_hidden'),0)=0 AND coalesce(json_extract(data,'$.stats_cleared'),0)=0 AND coalesce(json_extract(data,'$.gift'),0)=0 AND json_extract(data,'$.payment.card_amount')>0 ORDER BY id DESC LIMIT 51",
+        )
+          .bind(before)
+          .all()
+      ).results;
+      return json({
+        payments: rows.slice(0, 50),
+        next_before: rows.length > 50 ? rows[49].id : null,
+      });
+    }
     if (path === "state") {
       const meta = await env.DB.prepare(
         "SELECT revision FROM metadata WHERE id=1",
