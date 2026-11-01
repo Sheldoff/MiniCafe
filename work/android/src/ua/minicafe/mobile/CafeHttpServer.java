@@ -16,6 +16,13 @@ public final class CafeHttpServer extends NanoHTTPD {
   private final String key, html, htmlETag;
   private final byte[] pdfFont;
   private final AccessControl access;
+  private final Map<String, String> guestAssets = new HashMap<>();
+  private final Map<String, Integer> guestRates = new HashMap<>();
+  private long guestPeriod;
+
+  public void setGuestAssets(Map<String, String> assets) {
+    guestAssets.putAll(assets);
+  }
 
   public CafeHttpServer(int port, CafeStore store, String key, String html) {
     this(port, store, key, html, null);
@@ -52,6 +59,9 @@ public final class CafeHttpServer extends NanoHTTPD {
     Response r =
         newFixedLengthResponse(status, "application/json; charset=utf-8", value.toString());
     r.addHeader("Cache-Control", "no-store");
+    // A rejected POST may still have an unread body. Do not let NanoHTTPD
+    // parse it as the next request on a reused connection.
+    if (status.getRequestStatus() >= 400) r.closeConnection(true);
     return r;
   }
 
@@ -59,6 +69,20 @@ public final class CafeHttpServer extends NanoHTTPD {
   public Response serve(IHTTPSession s) {
     try {
       String path = s.getUri();
+      if (s.getMethod() == Method.GET && guestAssets.containsKey(path)) {
+        String mime =
+            path.endsWith(".js")
+                ? "application/javascript"
+                : path.endsWith(".css") ? "text/css" : "text/html";
+        Response r =
+            newFixedLengthResponse(
+                Response.Status.OK, mime + "; charset=utf-8", guestAssets.get(path));
+        r.addHeader("Cache-Control", "no-cache");
+        r.addHeader("Referrer-Policy", "no-referrer");
+        r.addHeader("X-Content-Type-Options", "nosniff");
+        r.addHeader("X-Frame-Options", "DENY");
+        return r;
+      }
       if (s.getMethod() == Method.GET && path.equals("/")) {
         Response r =
             htmlETag.equals(s.getHeaders().get("if-none-match"))
@@ -76,6 +100,8 @@ public final class CafeHttpServer extends NanoHTTPD {
               ? s.getParms().get("key")
               : s.getHeaders().get("x-cafe-key");
       String role = access.role(auth);
+      Response guest = guestApi(s, path, role);
+      if (guest != null) return guest;
       if (role == null)
         return json(
             Response.Status.FORBIDDEN,
@@ -232,5 +258,73 @@ public final class CafeHttpServer extends NanoHTTPD {
         return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text/plain", "Помилка");
       }
     }
+  }
+
+  private JSONObject smallBody(IHTTPSession s) throws Exception {
+    if (!s.getHeaders().getOrDefault("content-type", "").startsWith("application/json"))
+      throw new IllegalArgumentException("Потрібен JSON");
+    int size = Integer.parseInt(s.getHeaders().getOrDefault("content-length", "0"));
+    if (size < 1 || size > 65536)
+      throw new IllegalArgumentException("Запит завеликий або порожній");
+    byte[] body = new byte[size];
+    new DataInputStream(s.getInputStream()).readFully(body);
+    return new JSONObject(new String(body, "UTF-8"));
+  }
+
+  private synchronized boolean guestRate(String ip) {
+    long period = System.currentTimeMillis() / 600000;
+    if (guestPeriod != period) {
+      guestRates.clear();
+      guestPeriod = period;
+    }
+    if (!guestRates.containsKey(ip) && guestRates.size() >= 1024) return false;
+    int count = guestRates.containsKey(ip) ? guestRates.get(ip) : 0;
+    guestRates.put(ip, count + 1);
+    return count < 60;
+  }
+
+  private Response guestApi(IHTTPSession s, String path, String role) throws Exception {
+    boolean pub = path.equals("/api/public/menu") || path.equals("/api/public/code");
+    boolean settings = path.equals("/api/public-settings");
+    if (!pub && !settings && !path.equals("/api/guest-code") && !path.equals("/api/guest-codes"))
+      return null;
+    if (!pub
+        && (settings
+            ? !"admin".equals(role)
+            : !Arrays.asList("admin", "cash", "service").contains(role)))
+      return json(Response.Status.FORBIDDEN, new JSONObject().put("error", "Недостатньо прав"));
+    if (s.getMethod() == Method.GET) {
+      if (path.equals("/api/public/menu")) return json(Response.Status.OK, store.publicMenu());
+      if (settings) return json(Response.Status.OK, store.publicSettings(null));
+      if (path.equals("/api/guest-codes"))
+        return json(Response.Status.OK, store.pendingGuestCodes());
+    }
+    if (s.getMethod() == Method.POST
+        && !path.equals("/api/guest-codes")
+        && !path.equals("/api/public/menu")) {
+      String origin = s.getHeaders().get("origin");
+      if ("cross-site".equals(s.getHeaders().get("sec-fetch-site"))
+          || (origin != null
+              && (!Arrays.asList("http", "https").contains(new java.net.URI(origin).getScheme())
+                  || !s.getHeaders()
+                      .getOrDefault("host", "")
+                      .equalsIgnoreCase(new java.net.URI(origin).getRawAuthority()))))
+        return json(Response.Status.FORBIDDEN, new JSONObject().put("error", "Інший сайт"));
+      if (pub && !guestRate(s.getRemoteIpAddress()))
+        return json(
+            Response.Status.TOO_MANY_REQUESTS,
+            new JSONObject().put("error", "Забагато запитів. Спробуйте пізніше."));
+      JSONObject input = smallBody(s);
+      if (settings) {
+        if (!(input.get("enabled") instanceof Boolean))
+          throw new IllegalArgumentException("Некоректне значення");
+        return json(Response.Status.OK, store.publicSettings(input.getBoolean("enabled")));
+      }
+      if (pub) return json(Response.Status.OK, store.createGuestCode(input));
+      return json(Response.Status.OK, store.guestCode(input.getString("code")));
+    }
+    return json(
+        Response.Status.METHOD_NOT_ALLOWED,
+        new JSONObject().put("error", "Метод не підтримується"));
   }
 }

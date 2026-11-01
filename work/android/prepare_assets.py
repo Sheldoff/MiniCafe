@@ -48,6 +48,9 @@ package = Path(sys.argv[1]) if len(sys.argv) > 1 else root / "build/packaged-ass
 package.mkdir(parents=True, exist_ok=True)
 for name in ["index.html", "default-menu.json", "pdf-font.bin"]:
     shutil.copyfile(root / "assets" / name, package / name)
+# Guest page is shared with the website; no second copy to maintain.
+for name in ["guest.html", "guest.js", "guest.css"]:
+    shutil.copyfile(root.parents[1] / "apps/online/src" / name, package / name)
 shutil.copyfile(
     root / "assets/fonts/LICENSE-DejaVu.txt", package / "LICENSE-DejaVu.txt"
 )

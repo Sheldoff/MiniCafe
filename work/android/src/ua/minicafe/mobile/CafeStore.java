@@ -744,6 +744,141 @@ public final class CafeStore {
     return integer;
   }
 
+  public synchronized JSONObject publicSettings(Boolean enabled) throws Exception {
+    if (enabled != null) {
+      JSONObject work = new JSONObject(data.toString()).put("public_menu_enabled", enabled);
+      persist(work, new String[0]);
+      data = work;
+    }
+    return new JSONObject().put("enabled", data.optBoolean("public_menu_enabled", false));
+  }
+
+  /** Public projection never includes history, staff keys or guest identities. */
+  public synchronized JSONObject publicMenu() throws Exception {
+    boolean enabled = data.optBoolean("public_menu_enabled", false);
+    JSONArray rows = new JSONArray(), ps = data.getJSONArray("products");
+    if (enabled)
+      for (int i = 0; i < ps.length(); i++) {
+        JSONObject p = ps.getJSONObject(i);
+        if (p.optInt("active", 1) != 1) continue;
+        int limit =
+            p.has("stock") && !p.isNull("stock") && !p.optBoolean("stock_estimated")
+                ? (int) Math.max(0, Math.min(99, p.getLong("stock")))
+                : 99;
+        rows.put(
+            new JSONObject()
+                .put("id", p.getInt("id"))
+                .put("name", p.getString("name"))
+                .put("category", p.getString("category"))
+                .put("route", p.getString("route"))
+                .put("price", p.getLong("price"))
+                .put("available", !p.optBoolean("sold_out") && limit > 0)
+                .put("limit", limit));
+      }
+    return new JSONObject()
+        .put("accepting", enabled)
+        .put("published", enabled)
+        .put("products", rows);
+  }
+
+  private static JSONArray liveGuestCodes(JSONObject source) throws Exception {
+    JSONArray rows = new JSONArray(), old = source.optJSONArray("guest_codes");
+    if (old != null)
+      for (int i = 0; i < old.length(); i++)
+        if (old.getJSONObject(i).getLong("expires") > System.currentTimeMillis())
+          rows.put(old.get(i));
+    return rows;
+  }
+
+  public synchronized JSONObject createGuestCode(JSONObject input) throws Exception {
+    if (!data.optBoolean("public_menu_enabled", false))
+      throw new IllegalArgumentException("Гостьове меню закрите");
+    String guest = input.getString("guest").trim().replaceAll("\\s+", " ");
+    String[] names = guest.split(" ");
+    if (guest.length() > 100 || names.length < 2 || guest.matches(".*[<>\\p{Cntrl}].*"))
+      throw new IllegalArgumentException("Вкажіть ім’я та прізвище");
+    for (String name : names)
+      if (!name.matches(".*\\p{L}.*"))
+        throw new IllegalArgumentException("Вкажіть ім’я та прізвище");
+    JSONArray inputRows = input.getJSONArray("items"),
+        products = publicMenu().getJSONArray("products");
+    if (inputRows.length() < 1 || inputRows.length() > 100)
+      throw new IllegalArgumentException("Оберіть від 1 до 100 позицій");
+    Map<Integer, Integer> quantities = new LinkedHashMap<>();
+    for (int i = 0; i < inputRows.length(); i++) {
+      JSONObject row = inputRows.getJSONObject(i);
+      int id = (int) exactNumber(row, "id", 1, Integer.MAX_VALUE),
+          qty = (int) exactNumber(row, "qty", 1, 99);
+      quantities.put(id, quantities.containsKey(id) ? quantities.get(id) + qty : qty);
+    }
+    JSONArray items = new JSONArray();
+    long total = 0;
+    for (Map.Entry<Integer, Integer> entry : quantities.entrySet()) {
+      JSONObject p = find(products, entry.getKey());
+      int qty = entry.getValue();
+      if (!p.getBoolean("available") || qty > p.getInt("limit") || qty > 99)
+        throw new IllegalArgumentException(
+            "Позиція закінчилась або кількість змінилася. Оновіть меню.");
+      items.put(new JSONObject().put("id", entry.getKey()).put("qty", qty));
+      total += p.getLong("price") * qty;
+    }
+    JSONObject work = new JSONObject(data.toString());
+    JSONArray codes = liveGuestCodes(work);
+    Set<String> used = new HashSet<>();
+    for (int i = 0; i < codes.length(); i++) used.add(codes.getJSONObject(i).getString("code"));
+    if (used.size() >= 900)
+      throw new IllegalArgumentException("Забагато кодів. Спробуйте пізніше.");
+    int start = new java.security.SecureRandom().nextInt(900);
+    String code = "";
+    for (int i = 0; i < 900; i++) {
+      String candidate = String.valueOf(100 + (start + i) % 900);
+      if (!used.contains(candidate)) {
+        code = candidate;
+        break;
+      }
+    }
+    codes.put(
+        new JSONObject()
+            .put("code", code)
+            .put("guest", guest)
+            .put("items", items)
+            .put("expires", System.currentTimeMillis() + 1800000L));
+    work.put("guest_codes", codes);
+    persist(work, new String[0]);
+    data = work;
+    return new JSONObject().put("code", code).put("total", total).put("expires_in", 1800);
+  }
+
+  private static JSONObject findGuestCode(JSONObject source, String code) throws Exception {
+    if (!code.matches("[0-9]{3}")) throw new IllegalArgumentException("Введіть 3 цифри");
+    JSONArray codes = liveGuestCodes(source);
+    for (int i = 0; i < codes.length(); i++) {
+      JSONObject row = codes.getJSONObject(i);
+      if (code.equals(row.getString("code")) && !row.has("used_request")) return row;
+    }
+    throw new IllegalArgumentException("Код прострочений, уже використаний або не знайдений");
+  }
+
+  public synchronized JSONObject guestCode(String code) throws Exception {
+    JSONObject row = findGuestCode(data, code);
+    return new JSONObject()
+        .put("guest", row.getString("guest"))
+        .put("items", new JSONArray(row.getJSONArray("items").toString()));
+  }
+
+  public synchronized JSONObject pendingGuestCodes() throws Exception {
+    JSONArray codes = liveGuestCodes(data), rows = new JSONArray();
+    for (int i = 0; i < codes.length(); i++) {
+      JSONObject row = codes.getJSONObject(i);
+      if (!row.has("used_request"))
+        rows.put(
+            new JSONObject()
+                .put("code", row.getString("code"))
+                .put("guest", row.getString("guest")));
+    }
+    return new JSONObject().put("codes", rows);
+  }
+
   public synchronized JSONObject mutate(String path, JSONObject d) throws Exception {
     JSONObject work = new JSONObject(data.toString()), result = new JSONObject().put("ok", true);
     JSONArray ps = work.getJSONArray("products"), orders = work.getJSONArray("orders");
@@ -977,6 +1112,10 @@ public final class CafeStore {
       for (int i = 0; i < orders.length(); i++)
         if (req.equals(orders.getJSONObject(i).getString("request")))
           return new JSONObject().put("id", orders.getJSONObject(i).getInt("id"));
+      // Consume in the same atomic commit as payment; failed payment and load
+      // leave the draft available. Request retries above remain idempotent.
+      if (d.has("public_code"))
+        findGuestCode(work, d.getString("public_code")).put("used_request", req);
       JSONArray inputs = d.getJSONArray("items"), items = new JSONArray();
       if (inputs.length() < 1 || inputs.length() > 300)
         throw new IllegalArgumentException("Додайте товари до замовлення");
