@@ -1,5 +1,13 @@
 # Telegram authentication validation — 2026-10-29
 
+## Online 0.7.1 — 01.11.2026
+
+- Fix Android-origin Chrome navigation rejection: allow top-level document
+  navigations to app/start, reject subresources/frames, render a first-party
+  continue page so Android's cross-site metadata does not carry into auth/start.
+- Device proof, browser approval CSRF/origin and one-use session checks retained.
+  Unit regression covers cross-site document vs iframe. APK 3.39 unchanged.
+
 ## Online 0.7 / Android 3.39 — 01.11.2026
 
 - OnlineActivity authorizes via browser and redeems a private 256-bit device proof

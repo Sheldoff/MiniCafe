@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import http from "node:http";
 import { createHash, randomBytes } from "node:crypto";
 const base = process.env.CAFE_CLOUD_TEST_URL || "http://127.0.0.1:8791";
 if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))
@@ -14,12 +15,32 @@ for (const [digit, role] of [
     digit.repeat(64) +
     "; __Host-minicafe_app=" +
     challenge;
-  const start = await fetch(base + "/auth/app/start?challenge=" + challenge, {
-    redirect: "manual",
-    headers: { Cookie: browserCookie },
+  const start = await new Promise((resolve, reject) => {
+    http
+      .get(
+        base + "/auth/app/start?challenge=" + challenge,
+        {
+          headers: {
+            Cookie: browserCookie,
+            "Sec-Fetch-Site": "cross-site",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+          },
+        },
+        (r) => {
+          let text = "";
+          r.on("data", (c) => (text += c));
+          r.on("end", () =>
+            resolve(
+              new Response(text, { status: r.statusCode, headers: r.headers }),
+            ),
+          );
+        },
+      )
+      .on("error", reject);
   });
-  assert.equal(start.status, 302);
-  assert.equal(start.headers.get("location"), "/auth/app/confirm");
+  assert.equal(start.status, 200);
+  assert.match(await start.text(), /href="\/auth\/app\/confirm"/);
   const poll = () =>
     fetch(base + "/api/app/poll", {
       method: "POST",
