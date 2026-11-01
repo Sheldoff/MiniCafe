@@ -12,7 +12,8 @@ function cashGestureBlocked(target) {
     busy ||
     document.body.classList.contains("drawer-open") ||
     !!document.querySelector("#orderDialog") ||
-    !target.closest(".cash-grid") ||
+    !document.querySelector(".cash-grid") ||
+    !target.closest("#main") ||
     !!target.closest("input,textarea,select,a,[contenteditable=true]") ||
     !!target.closest("button:not(.tile)") ||
     !!document.querySelector(".cash-swiping")

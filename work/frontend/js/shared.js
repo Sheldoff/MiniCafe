@@ -23,13 +23,15 @@ function toast(s, success = false) {
     );
   e.hideTimer = setTimeout(() => {
     let a = (e.toastMotion = motion(e, [{ opacity: 1 }, { opacity: 0 }], 120));
-    a?.finished.then(
-      () => {
-        if (e.toastMotion === a) e.style.display = "none";
-      },
-      () => {},
-    );
-  }, 5000);
+    if (a)
+      a.finished.then(
+        () => {
+          if (e.toastMotion === a) e.style.display = "none";
+        },
+        () => {},
+      );
+    else e.style.display = "none";
+  }, 3500);
 }
 
 function cancelItem(id) {

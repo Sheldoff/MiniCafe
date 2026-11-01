@@ -1,4 +1,5 @@
 // Online-only integration. Local Android sources retain their own server controls.
+document.documentElement.classList.add("cloud-online");
 document.title = "МініКафе онлайн";
 const originalCloudRender = render;
 render = function () {
@@ -55,6 +56,14 @@ async function cloudTransferCode(direction) {
     });
     const j = await r.json();
     if (!r.ok) throw Error(j.error);
+    if (
+      window.CafeAndroidOnline &&
+      window.CafeMenuTransfer &&
+      window.CafeCloud.role === "admin"
+    ) {
+      window.CafeMenuTransfer.transfer(direction, j.code);
+      return;
+    }
     const box = document.querySelector("#transferCode");
     if (!box) return;
     if (view !== "menu-transfer" || !box.isConnected) return;

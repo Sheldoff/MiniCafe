@@ -140,6 +140,7 @@ def main():
                 "CAFE_TEST_KEY": "phone-test-key",
                 "CAFE_SCREENSHOT": str(results / "menu.png"),
             }
+            run(["node", ROOT / "apps/online/tests/guest-ui.cjs"], env={**env, "CAFE_LOCAL_GUEST": "1"})
             for test in [
                 "editor-calculator",
                 "cashier",

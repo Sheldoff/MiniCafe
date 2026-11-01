@@ -247,6 +247,10 @@ async function rowStates(page, selector, reports, label) {
               h: document
                 .querySelector(".product-form-panel")
                 .getBoundingClientRect().height,
+              opacity: Number(
+                getComputedStyle(document.querySelector(".product-form-panel"))
+                  .opacity,
+              ),
             });
             if (performance.now() - start > 460) resolve(result);
             else requestAnimationFrame(frame);
@@ -255,6 +259,10 @@ async function rowStates(page, selector, reports, label) {
         }),
     );
     assert(samples.some((v) => v.t > 250 && v.h > 10));
+    assert(
+      samples.some((v) => v.opacity > 0 && v.opacity < 1),
+      "editor fades in",
+    );
     assert(await p.locator(".product-form-panel").evaluate((e) => !e.hidden));
     let closing = await p.evaluate(
       () =>
@@ -268,6 +276,7 @@ async function rowStates(page, selector, reports, label) {
               t: performance.now() - start,
               h: el.getBoundingClientRect().height,
               hidden: el.hidden,
+              opacity: Number(getComputedStyle(el).opacity),
             });
             if (performance.now() - start > 460) resolve(result);
             else requestAnimationFrame(frame);
@@ -276,7 +285,11 @@ async function rowStates(page, selector, reports, label) {
         }),
     );
     let lastVisible = closing.filter((v) => !v.hidden).at(-1);
-    assert(!lastVisible || lastVisible.h < 6, JSON.stringify(lastVisible));
+    // The shared full-height editor fades out rather than resizing its fields.
+    assert(
+      !lastVisible || lastVisible.opacity < 0.1,
+      JSON.stringify(lastVisible),
+    );
     await p.evaluate(() => {
       openProductEditor(true);
       setTimeout(() => closeProductEditor(true), 60);

@@ -74,6 +74,10 @@ async function swipe(
     await swipe(p, ".cart-name", 160);
     assert.equal(await p.evaluate(() => mobileCart), false);
     assert.equal(await p.locator("#guest").inputValue(), "Свайп гість");
+    await swipe(p, "#main", -150);
+    assert.equal(await p.evaluate(() => mobileCart), true);
+    await swipe(p, "#main", 150);
+    assert.equal(await p.evaluate(() => mobileCart), false);
     await swipe(p, "[data-product]", 15);
     assert.equal(await p.evaluate(() => mobileCart), false);
     await swipe(p, "[data-product]", 20, 140);

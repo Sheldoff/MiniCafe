@@ -19,7 +19,7 @@ html = html.replace('content="width=device-width,initial-scale=1"',
 html = html.replace('</style>', (HERE / 'src/cloud.css').read_text(encoding='utf-8') + '</style>', 1)
 html = html.replace('<script>', '<script>window.CafeCloud=__CLOUD_CONTEXT__;</script><script>', 1)
 html += '<script>' + (HERE / 'src/cloud-ui.js').read_text(encoding='utf-8') + '</script>'
-for source in ['staff-ui.js','online-layout.js','guest-admin-ui.js']:
+for source in ['staff-ui.js','guest-admin-ui.js']:
     html += '<script>' + (HERE / 'src' / source).read_text(encoding='utf-8') + '</script>'
 (out / 'private').mkdir(exist_ok=True)
 (out / 'private/admin.html').write_text(html, encoding='utf-8')

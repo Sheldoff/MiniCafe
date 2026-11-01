@@ -4,7 +4,11 @@ const {
   webkit,
   chromeOptions,
 } = require("../../../work/tests/ui/helpers.cjs");
-const base = process.env.CAFE_CLOUD_TEST_URL || "http://127.0.0.1:8791";
+const local = process.env.CAFE_LOCAL_GUEST === "1";
+const base =
+  (local ? process.env.CAFE_TEST_URL : process.env.CAFE_CLOUD_TEST_URL) ||
+  "http://127.0.0.1:8791";
+const key = process.env.CAFE_TEST_KEY || "phone-test-key";
 if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))
   throw Error("Local server required");
 (async () => {
@@ -20,7 +24,12 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))
       });
       const errors = [];
       p.on("pageerror", (e) => errors.push(e.message));
-      await p.goto(base);
+      if (local)
+        await p.request.post(base + "/api/public-settings", {
+          headers: { "X-Cafe-Key": key },
+          data: { enabled: true },
+        });
+      await p.goto(base + (local ? "/guest" : ""));
       await p.locator("#drinkChoice").waitFor();
       assert.equal(
         await p.getByText("Вхід для працівників", { exact: true }).count(),
@@ -63,10 +72,18 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))
         hasTouch: true,
       });
       a.on("pageerror", (e) => errors.push(e.message));
-      await a.setExtraHTTPHeaders({
-        Cookie: "__Host-minicafe_session=" + "1".repeat(64),
-      });
-      await a.goto(base + "/admin");
+      if (local)
+        await a.addInitScript(() => {
+          // Plain LAN HTTP lacks randomUUID in browsers; localhost normally has it.
+          Object.defineProperty(window.crypto, "randomUUID", {
+            value: undefined,
+          });
+        });
+      if (!local)
+        await a.setExtraHTTPHeaders({
+          Cookie: "__Host-minicafe_session=" + "1".repeat(64),
+        });
+      await a.goto(base + (local ? "/?key=" + key : "/admin"));
       await a.locator("[data-guest-code]").waitFor();
       await a.locator("[data-guest-code]").click();
       await a.locator(`[data-pending-code="${code}"]`).click();
@@ -76,9 +93,9 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))
       assert.ok(
         await a.evaluate(
           async (code) =>
-            (await (await fetch("/api/guest-codes")).json()).codes.some(
-              (c) => c.code === code,
-            ),
+            (
+              await (await fetch("/api/guest-codes", { headers: auth })).json()
+            ).codes.some((c) => c.code === code),
           code,
         ),
         "loading draft must not remove code",
@@ -89,9 +106,9 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))
       assert.equal(
         await a.evaluate(
           async (code) =>
-            (await (await fetch("/api/guest-codes")).json()).codes.some(
-              (c) => c.code === code,
-            ),
+            (
+              await (await fetch("/api/guest-codes", { headers: auth })).json()
+            ).codes.some((c) => c.code === code),
           code,
         ),
         false,
