@@ -11,7 +11,10 @@ import {
 } from "./auth.js";
 const headers = {
   "Cache-Control": "no-store",
-  "Referrer-Policy": "no-referrer",
+  // no-referrer makes a browser form POST send Origin: null, which correctly
+  // fails validOrigin. Keep same-origin form provenance without leaking URLs
+  // to Telegram or other external destinations.
+  "Referrer-Policy": "same-origin",
   "X-Frame-Options": "DENY",
   "Content-Security-Policy":
     "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
