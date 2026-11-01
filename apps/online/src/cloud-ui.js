@@ -130,14 +130,7 @@ async function cloudBackup() {
     });
     if (!r.ok)
       throw Error("Не вдалося завантажити копію. Перевірте з’єднання та вхід.");
-    const url = URL.createObjectURL(await r.blob()),
-      a = document.createElement("a");
-    a.href = url;
-    a.download = "MiniCafe-backup.json";
-    document.body.append(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    await cloudSaveBlob(await r.blob(), "MiniCafe-backup.json");
   } catch (e) {
     toast(e.message);
   }
@@ -208,6 +201,33 @@ function cloudScript(src) {
   });
 }
 let cloudPdfReady;
+async function cloudSaveBlob(blob, name) {
+  if (window.CafeAndroidOnline && window.CafeOnlineFiles) {
+    if (blob.size > 20000000)
+      throw Error(
+        "Файл завеликий для збереження в APK; збережіть його через браузер.",
+      );
+    const encoded = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(",")[1]);
+      reader.onerror = () => reject(Error("Не вдалося прочитати файл"));
+      reader.readAsDataURL(blob);
+    });
+    window.CafeOnlineFiles.save(
+      encoded,
+      name.endsWith(".pdf") ? "pdf" : "json",
+    );
+    return;
+  }
+  const url = URL.createObjectURL(blob),
+    a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
 exportStatistics = async function () {
   if (!statsCurrent) return;
   try {
@@ -272,14 +292,10 @@ exportStatistics = async function () {
       page.drawText(current, { x: 40, y, size: 11, font });
       y -= 22;
     }
-    const url = URL.createObjectURL(
+    await cloudSaveBlob(
       new Blob([await pdf.save()], { type: "application/pdf" }),
+      "MiniCafe-report.pdf",
     );
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "MiniCafe-report.pdf";
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
   } catch (e) {
     toast(e.message);
   }

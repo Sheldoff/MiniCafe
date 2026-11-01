@@ -14,6 +14,9 @@ public class MainActivity extends Activity {
   private final Handler revealHandler = new Handler();
   private boolean pageRevealed = false;
   private boolean settingsOpening = false;
+  private boolean online;
+  private boolean jsonPicker;
+  private byte[] onlineFile;
   private int revealChecks = 0;
 
   private void revealWhenReady(WebView target) {
@@ -45,6 +48,13 @@ public class MainActivity extends Activity {
   public void onCreate(Bundle state) {
     CafeUi.applyTheme(this);
     super.onCreate(state);
+    online = getIntent().getBooleanExtra("online", false);
+    if (online) {
+      getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+      server = OnlineActivity.ORIGIN;
+      showWeb(server + "/admin");
+      return;
+    }
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     String remote = getIntent().getStringExtra("connectUrl");
     if (remote != null) {
@@ -139,15 +149,78 @@ public class MainActivity extends Activity {
     web.getSettings().setAllowFileAccess(false);
     web.getSettings().setAllowContentAccess(true);
     web.getSettings().setMediaPlaybackRequiresUserGesture(true);
+    if (online)
+      web.addJavascriptInterface(
+          new Object() {
+            @JavascriptInterface
+            public void save(String encoded, String kind) {
+              if (!online
+                  || isFinishing()
+                  || encoded == null
+                  || encoded.length() > 28000000
+                  || !("json".equals(kind) || "pdf".equals(kind))) return;
+              try {
+                byte[] bytes = android.util.Base64.decode(encoded, android.util.Base64.DEFAULT);
+                if ("json".equals(kind)) new org.json.JSONObject(new String(bytes, "UTF-8"));
+                else if (bytes.length < 5 || !new String(bytes, 0, 5, "US-ASCII").equals("%PDF-"))
+                  return;
+                runOnUiThread(
+                    () -> {
+                      if (onlineFile != null) return;
+                      onlineFile = bytes;
+                      try {
+                        startActivityForResult(
+                            new Intent(Intent.ACTION_CREATE_DOCUMENT)
+                                .addCategory(Intent.CATEGORY_OPENABLE)
+                                .setType(
+                                    "pdf".equals(kind) ? "application/pdf" : "application/json")
+                                .putExtra(Intent.EXTRA_TITLE, "MiniCafe-online." + kind),
+                            66);
+                      } catch (Exception e) {
+                        onlineFile = null;
+                        Toast.makeText(
+                                MainActivity.this,
+                                "Не вдалося відкрити збереження файла",
+                                Toast.LENGTH_LONG)
+                            .show();
+                      }
+                    });
+              } catch (Exception e) {
+                runOnUiThread(
+                    () ->
+                        Toast.makeText(
+                                MainActivity.this, "Не вдалося підготувати файл", Toast.LENGTH_LONG)
+                            .show());
+              }
+            }
+          },
+          "CafeOnlineFiles");
     web.setWebViewClient(
         new WebViewClient() {
+          @Override
+          public WebResourceResponse shouldInterceptRequest(WebView v, WebResourceRequest request) {
+            Uri target = request.getUrl();
+            if (online
+                && ("http".equals(target.getScheme()) || "https".equals(target.getScheme()))
+                && !("https".equals(target.getScheme())
+                    && "minicafe.minicafe.workers.dev".equals(target.getHost())
+                    && (target.getPort() == -1 || target.getPort() == 443)))
+              return new WebResourceResponse(
+                  "text/plain", "UTF-8", new java.io.ByteArrayInputStream(new byte[0]));
+            return super.shouldInterceptRequest(v, request);
+          }
+
           @Override
           public void onPageFinished(WebView v, String loaded) {
             Uri current = Uri.parse(loaded), base = Uri.parse(server);
             if (!base.getHost().equals(current.getHost()) || base.getPort() != current.getPort())
               return;
             v.evaluateJavascript(
-                "window.CafeNative=true;window.CafeNativeHold=false;document.querySelectorAll('[data-native]').forEach(b=>b.hidden=false);",
+                online
+                    ? "window.CafeNative=false;window.CafeAndroidOnline=true;if(!window.cafeOnlineThemeInstalled&&typeof"
+                          + " setCafeTheme==='function'){window.cafeOnlineThemeInstalled=true;let"
+                          + " originalTheme=setCafeTheme;setCafeTheme=function(mode,animate,notify){originalTheme(mode,animate,false);if(notify!==false)location.href='minicafe://theme?mode='+encodeURIComponent(mode);};}"
+                    : "window.CafeNative=true;window.CafeNativeHold=false;document.querySelectorAll('[data-native]').forEach(b=>b.hidden=false);",
                 null);
             String savedTheme = getSharedPreferences("appearance", 0).getString("theme", null);
             String initial =
@@ -181,8 +254,11 @@ public class MainActivity extends Activity {
               new AlertDialog.Builder(MainActivity.this)
                   .setTitle("Немає зв’язку із сервером")
                   .setMessage(
-                      "Перевірте Wi-Fi, адресу та запуск сервера на головному телефоні або"
-                          + " ноутбуці. Потім натисніть «Оновити» або змініть підключення.")
+                      online
+                          ? "Перевірте інтернет і доступність сайту МініКафе. Потім оновіть"
+                              + " сторінку або повторіть вхід."
+                          : "Перевірте Wi-Fi, адресу та запуск сервера на головному телефоні або"
+                              + " ноутбуці. Потім натисніть «Оновити» або змініть підключення.")
                   .setPositiveButton("Добре", null)
                   .show();
           }
@@ -196,7 +272,9 @@ public class MainActivity extends Activity {
             fileCallback = callback;
             Intent pick = new Intent(Intent.ACTION_GET_CONTENT);
             pick.addCategory(Intent.CATEGORY_OPENABLE);
-            pick.setType("image/*");
+            jsonPicker =
+                online && java.util.Arrays.toString(params.getAcceptTypes()).contains("json");
+            pick.setType(jsonPicker ? "application/json" : "image/*");
             try {
               startActivityForResult(
                   Intent.createChooser(pick, "Оберіть фото товару з галереї або файлів"), 42);
@@ -241,6 +319,21 @@ public class MainActivity extends Activity {
   }
 
   private boolean navigate(WebView view, Uri target) {
+    if (online
+        && "https".equals(target.getScheme())
+        && "minicafe.minicafe.workers.dev".equals(target.getHost())
+        && target.getPath().startsWith("/auth/")) {
+      startActivity(new Intent(this, OnlineActivity.class).putExtra("reauth", true));
+      finish();
+      return true;
+    }
+    if (online
+        && "https".equals(target.getScheme())
+        && "minicafe.minicafe.workers.dev".equals(target.getHost())
+        && "/".equals(target.getPath())) {
+      settings();
+      return true;
+    }
     Uri base = Uri.parse(server);
     if ("minicafe".equals(target.getScheme())) {
       if ("theme".equals(target.getHost())) {
@@ -497,6 +590,30 @@ public class MainActivity extends Activity {
   @Override
   protected void onActivityResult(int request, int result, Intent data) {
     super.onActivityResult(request, result, data);
+    if (request == 66) {
+      final byte[] bytes = onlineFile;
+      onlineFile = null;
+      if (result == RESULT_OK && data != null && data.getData() != null && bytes != null) {
+        final Uri destination = data.getData();
+        new Thread(
+                () -> {
+                  try (java.io.OutputStream out =
+                      getContentResolver().openOutputStream(destination)) {
+                    out.write(bytes);
+                    runOnUiThread(
+                        () -> Toast.makeText(this, "Файл збережено", Toast.LENGTH_LONG).show());
+                  } catch (Exception e) {
+                    runOnUiThread(
+                        () ->
+                            Toast.makeText(this, "Не вдалося зберегти файл", Toast.LENGTH_LONG)
+                                .show());
+                  }
+                },
+                "MiniCafe-online-file")
+            .start();
+      }
+      return;
+    }
     if (request == 55) {
       byte[] memory = pendingPdf;
       pendingPdf = null;
@@ -541,6 +658,12 @@ public class MainActivity extends Activity {
       }
       final ValueCallback<Uri[]> pending = fileCallback;
       Uri selected = data.getData();
+      if (jsonPicker) {
+        jsonPicker = false;
+        fileCallback = null;
+        pending.onReceiveValue(new Uri[] {selected});
+        return;
+      }
       Toast.makeText(this, "Готуємо фото…", Toast.LENGTH_SHORT).show();
       new Thread(
               () -> {
