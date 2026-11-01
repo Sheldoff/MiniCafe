@@ -38,6 +38,12 @@ export async function appLogin(request, env) {
   if (!["/auth/app/start", "/auth/app/confirm", "/api/app/poll"].includes(path))
     return null;
   if (path === "/auth/app/start" && request.method === "GET") {
+    if (
+      request.headers.get("Sec-Fetch-Site") === "cross-site" ||
+      (request.headers.has("Origin") &&
+        request.headers.get("Origin") !== url.origin)
+    )
+      return json({ error: "Почніть вхід із застосунку" }, 403);
     const challenge = url.searchParams.get("challenge");
     if (!/^[a-f0-9]{64}$/.test(challenge || ""))
       return json({ error: "Некоректний запит" }, 400);
