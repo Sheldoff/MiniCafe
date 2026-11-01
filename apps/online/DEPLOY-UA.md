@@ -125,3 +125,6 @@ minicafe.minicafe.workers.dev. Після першої реєстрації пі
 Статичні залежності: pdf-lib 1.17.1 (MIT), @pdf-lib/fontkit 1.1.1 (MIT),
 DejaVu Sans (ліцензія включена). Ліцензії додаються до assets/vendor під час build.
 Windows 3.36 заморожений; цей cloud-випуск не створює нових APK/EXE.
+
+## Оплати банки (0.9.0)
+Інструкція: docs/MONO-PAYMENTS-UA.md. Міграція 0009 та Workers Secrets MONO_TOKEN, MONO_JAR_ID, MONO_JAR_URL. Cron приблизно раз на хвилину; webhook банку не змінюється. Android-local не змінено.

@@ -18,19 +18,6 @@
   background: var(--page);
   color: var(--text);
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --page: #141b18;
-    --surface: #1e2924;
-    --text: #e9efe9;
-    --muted: #b0beb2;
-    --line: #4c6254;
-    --accent: #b3d9a4;
-    --on: #162619;
-    --raised: #29382f;
-  }
-}
 * {
   box-sizing: border-box;
   scrollbar-width: none;
@@ -306,12 +293,4 @@ dialog::backdrop {
   display: block;
   margin-top: 8px;
   color: #9c3928;
-}
-@media (prefers-color-scheme: dark) {
-  #guestNameError {
-    color: #f0b7a9;
-  }
-  .guest-identity input[aria-invalid="true"] {
-    border-color: #f0b7a9;
-  }
 }

@@ -21,6 +21,75 @@ let products = [],
   dialogItems = [],
   submitting = false;
 let lastCode = null;
+let paymentTimer = null,
+  paymentRequest = null,
+  pendingPayment = null;
+try {
+  pendingPayment = JSON.parse(localStorage.getItem("minicafe-pending-payment"));
+} catch {}
+function savePending(value) {
+  pendingPayment = value;
+  try {
+    if (value)
+      localStorage.setItem("minicafe-pending-payment", JSON.stringify(value));
+    else localStorage.removeItem("minicafe-pending-payment");
+  } catch {}
+}
+function showPayment(j) {
+  clearTimeout(paymentTimer);
+  showDialog(
+    "Оплата замовлення",
+    `<p>Перекажіть <strong>${money(j.total)}</strong> на банку «Кафе».</p><p>Обов’язково вставте в коментар до переказу цей код без змін:</p><p><input id="paymentReference" aria-label="Код оплати" readonly value="${escapeHtml(j.reference)}"></p><p>Оплатіть до ${new Date(j.expires * 1000).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}. Без правильного коментаря автоматична перевірка неможлива.</p><p id="paymentStatus" role="status">Очікуємо оплату. Перевірка може тривати кілька хвилин. Не переказуйте повторно.</p>`,
+    '<button id="copyPaymentReference">Копіювати код</button><a class="primary" href="https://send.monobank.ua/jar/5wkP16948Q" target="_blank" rel="noopener">Перейти до банки</a><button data-close>Закрити</button>',
+  );
+  $("#copyPaymentReference").onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(j.reference);
+      $("#copyPaymentReference").textContent = "Скопійовано";
+    } catch {
+      $("#paymentReference").select();
+    }
+  };
+  const check = async () => {
+    if (pendingPayment?.token !== j.token) return;
+    const label = $("#paymentStatus");
+    try {
+      const r = await fetch("/api/public/payment-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: j.token }),
+      });
+      const result = await r.json();
+      if (!r.ok) throw Error();
+      const messages = {
+        fulfilled: `Оплату підтверджено. Замовлення №${result.order_id} передано на приготування.`,
+        paid: "Оплату підтверджено. Передаємо замовлення на приготування.",
+        review:
+          "Оплату отримано, але замовлення потребує перевірки касиром. Покажіть касиру код оплати. Не платіть повторно.",
+        expired:
+          "Час оплати минув. Якщо вже переказали кошти — зверніться до касира з кодом оплати. Не платіть повторно.",
+      };
+      if (label)
+        label.textContent =
+          messages[result.status] ||
+          "Очікуємо оплату. Перевірка може тривати кілька хвилин. Не переказуйте повторно.";
+      if (["fulfilled", "review", "expired"].includes(result.status)) {
+        if (label) {
+          $("#dialogActions").innerHTML =
+            "<button data-close>Закрити</button><button data-new-order>Нове замовлення</button>";
+        }
+        return;
+      }
+    } catch {
+      if (label)
+        label.textContent =
+          "Перевірка тимчасово недоступна. Не платіть повторно; зверніться до касира з кодом оплати.";
+    }
+    paymentTimer = setTimeout(check, 15000);
+  };
+  check();
+}
+
 const quantity = (source, id) => source[id] || 0;
 const guestName = () => $("#guestFullName").value.trim().replace(/\s+/g, " ");
 const validName = (name) =>
@@ -80,9 +149,10 @@ function drawSummary() {
   const t = totals(selection);
   $("#guestCount").textContent = t.qty ? `· ${t.qty} шт.` : "";
   $("#guestTotal").textContent = money(t.sum);
-  $("#guestSubmit").disabled = !t.qty || submitting;
-  $("#guestSubmit").textContent =
-    lastCode?.payload === selectionPayload() && lastCode.until > Date.now()
+  $("#guestSubmit").disabled = (!t.qty && !pendingPayment) || submitting;
+  $("#guestSubmit").textContent = pendingPayment
+    ? "Показати оплату"
+    : lastCode?.payload === selectionPayload() && lastCode.until > Date.now()
       ? "Показати код"
       : "Оформити замовлення";
 }
@@ -147,6 +217,9 @@ $("#dialogBody").onclick = (e) => {
 $("#dialogActions").onclick = (e) => {
   if (e.target.closest("[data-new-order]")) {
     lastCode = null;
+    paymentRequest = null;
+    savePending(null);
+    clearTimeout(paymentTimer);
     selection = {};
     drawMenu();
     $("#guestDialog").close();
@@ -161,6 +234,10 @@ $("#dialogActions").onclick = (e) => {
 };
 $("#dialogClose").onclick = () => $("#guestDialog").close();
 $("#guestSubmit").onclick = async () => {
+  if (pendingPayment) {
+    showPayment(pendingPayment);
+    return;
+  }
   if (submitting) return;
   if (!validName(guestName())) {
     const field = $("#guestFullName");
@@ -180,6 +257,13 @@ $("#guestSubmit").onclick = async () => {
   drawSummary();
   try {
     const payload = selectionPayload();
+    if (!paymentRequest || paymentRequest.payload !== payload)
+      paymentRequest = {
+        payload,
+        token:
+          crypto.randomUUID().replaceAll("-", "") +
+          crypto.randomUUID().replaceAll("-", ""),
+      };
     let j;
     if (lastCode?.payload === payload && lastCode.until > Date.now())
       j = lastCode.result;
@@ -187,10 +271,18 @@ $("#guestSubmit").onclick = async () => {
       const r = await fetch("/api/public/code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: payload,
+        body: JSON.stringify({
+          ...JSON.parse(payload),
+          payment_request: paymentRequest.token,
+        }),
       });
       j = await r.json();
       if (!r.ok) throw Error(j.error);
+      if (j.payment) {
+        savePending(j);
+        showPayment(j);
+        return;
+      }
       lastCode = {
         payload,
         result: j,
@@ -219,6 +311,11 @@ $("#guestSubmit").onclick = async () => {
     const j = await r.json();
     if (!r.ok) throw Error(j.error);
     products = j.products;
+    if (pendingPayment) {
+      showPayment(pendingPayment);
+      $("#checkout").hidden = false;
+      drawSummary();
+    }
     if (!j.accepting || !products.length) {
       $("#guestStatus").textContent = j.accepting
         ? "Меню формується"
