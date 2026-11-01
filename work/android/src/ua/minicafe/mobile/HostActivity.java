@@ -266,7 +266,7 @@ public class HostActivity extends Activity {
       if (page.isEmpty()) {
         root.addView(text("☕ МініКафе", 16));
         CafeUi.label(root, "Підключення", 28, false);
-        navigationButton("Онлайн", () -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://minicafe.minicafe.workers.dev/admin"))));
+        navigationButton("Онлайн", () -> startActivity(new Intent(this, OnlineActivity.class)));
         LinearLayout page = root;
         root = CafeUi.card(page);
         CafeUi.label(root, "Сервер на цьому пристрої", 19, false);

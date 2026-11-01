@@ -70,6 +70,9 @@ export function validOrigin(request) {
 export async function identity(request, env) {
   const token = cookie(request, "__Host-minicafe_session");
   if (!/^[a-f0-9]{64}$/.test(token)) return null;
+  return identityByHash(await hash(token), env);
+}
+export async function identityByHash(tokenHash, env) {
   const row = await env.DB.prepare(
     `SELECT a.telegram_id,a.display_name,a.csrf,a.expires,tp.username,
     CASE WHEN s.telegram_id IS NOT NULL THEN s.role ELSE p.role END AS role,
@@ -80,7 +83,7 @@ export async function identity(request, env) {
     LEFT JOIN staff_phone p ON p.phone=sp.phone AND p.claimed_id=a.telegram_id
     WHERE a.token_hash=? AND a.expires>?`,
   )
-    .bind(await hash(token), timestamp())
+    .bind(tokenHash, timestamp())
     .first();
   if (!row) return null;
   const role = admins(env).has(row.telegram_id)
@@ -387,8 +390,9 @@ export async function authRoutes(request, env) {
       await env.DB.batch(statements);
       const h = new Headers({
         ...privateHeaders,
-        Location:
-          returnView?.destination === "menu-transfer"
+        Location: /^[a-f0-9]{64}$/.test(cookie(request, "__Host-minicafe_app"))
+          ? "/auth/app/confirm"
+          : returnView?.destination === "menu-transfer"
             ? "/admin#menu-transfer"
             : "/admin",
       });

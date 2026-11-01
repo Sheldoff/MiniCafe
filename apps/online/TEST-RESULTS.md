@@ -1,5 +1,20 @@
 # Telegram authentication validation — 2026-10-29
 
+## Online 0.7 / Android 3.39 — 01.11.2026
+
+- OnlineActivity authorizes via browser and redeems a private 256-bit device proof
+  once over HTTPS. The browser keeps its own session; a new role-checked session
+  is installed as a Secure/HttpOnly first-party WebView cookie. No token in URI.
+- Unit/local D1 API: explicit CSRF approval, wrong origin/proof rejection, expiry,
+  one-use redemption, independent browser session, admin/bar access, phone grant
+  continuity, revoked access and logout. Telegram JWT validation is unchanged.
+- Chrome/WebKit: native JSON/PDF save handoff simulated with a mock bridge; normal
+  browser paths and local APK UI/API regressions retained. Android JSON file picker
+  and original-signed APK compile/verification passed; physical device flow untested.
+- Full checks.py without skips: work/tests/results/4031f52ff5854487a5e9cdede1bb4f1c.
+  Final native theme/error handling was additionally recompiled and APK-verified.
+  No production restore tests, no Windows build or new APK signing key.
+
 ## Online 0.5.1 — 2026-10-31
 
 - Highlighted required guest full-name field. Empty/single-part names blocked in
