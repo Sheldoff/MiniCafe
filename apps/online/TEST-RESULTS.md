@@ -1,5 +1,16 @@
 # Telegram authentication validation — 2026-10-29
 
+## Online 0.7.2 — 01.11.2026
+
+- Reproduced actual Chrome form approval failure: no-referrer policy causes
+  Origin: null on POST. Same-origin policy restores form provenance and still
+  suppresses referrers to external sites. Origin/CSRF validation is unchanged;
+  explicit null-origin and cross-site requests remain rejected.
+- Real Chrome and WebKit form submission against disposable local D1 now passes,
+  including one-use APK redemption and session rights. Regression command:
+  npm run test:app-login (after local migrations, seed-auth and dev server).
+- APK 3.39 unchanged. Physical Android/real Telegram approval not tested here.
+
 ## Online 0.7.1 — 01.11.2026
 
 - Fix Android-origin Chrome navigation rejection: allow top-level document

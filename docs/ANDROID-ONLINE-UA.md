@@ -48,3 +48,8 @@ JavaScript-інтерфейсом читання cookies/файлів або т�
 нативного збереження), повний `work/scripts/checks.py`. Вхід з реальним Telegram
 і повернення на фізичному Android потребують перевірки власником; емуляція
 Chrome/WebKit не доводить роботу Android intent/cookie provider на його телефоні.
+
+`npm run test:app-login` у apps/online перевіряє справжнє надсилання форми
+підтвердження в Chrome/WebKit проти локальної тестової D1. На HTML сторінках
+app-входу зберігайте Referrer-Policy: same-origin: no-referrer перетворює Origin
+форми на null і блокує підтвердження. Не послаблюйте серверні Origin/CSRF перевірки.

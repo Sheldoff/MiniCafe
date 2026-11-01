@@ -100,6 +100,7 @@ test("APK handoff requires browser CSRF approval, device proof, live rights and 
     new Request(origin + "/auth/app/confirm", { headers: { Cookie: cookie } }),
     env,
   );
+  assert.equal(form.headers.get("Referrer-Policy"), "same-origin");
   assert.match(await form.text(), /&lt;Admin&gt;/);
   const approve = (headers = {}, value = csrf) =>
     appLogin(
@@ -116,6 +117,8 @@ test("APK handoff requires browser CSRF approval, device proof, live rights and 
       env,
     );
   assert.equal((await approve({ Origin: "https://evil.example" })).status, 403);
+  assert.equal((await approve({ Origin: "null" })).status, 403);
+  assert.equal((await approve({ "Sec-Fetch-Site": "cross-site" })).status, 403);
   assert.equal((await approve({}, "bad")).status, 403);
   const poll = (proof = secret, extra = {}) =>
     appLogin(
