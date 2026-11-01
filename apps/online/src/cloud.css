@@ -4,8 +4,9 @@ html.cloud-online #nav[hidden] {
 html.cloud-online #main {
   width: 100%;
   max-width: 1600px;
-  min-height: calc(100dvh - var(--cloud-header, 52px));
-  padding: 12px 18px max(10px, env(safe-area-inset-bottom));
+  padding-top: 12px;
+  padding-left: max(18px, env(safe-area-inset-left));
+  padding-right: max(18px, env(safe-area-inset-right));
 }
 html.cloud-online .cash-grid .menu-panel {
   height: var(--cloud-cash-space, calc(100dvh - 115px));
@@ -30,7 +31,6 @@ html.cloud-online #toast:empty {
 }
 .cloud-server-panel h2 {
   overflow-wrap: anywhere;
-  margin-bottom: 8px;
 }
 .cloud-server-actions {
   display: grid;
@@ -249,7 +249,9 @@ html.cloud-online #toast:empty {
 }
 @media (max-width: 540px) {
   html.cloud-online #main {
-    padding: 10px 10px max(10px, env(safe-area-inset-bottom));
+    padding-top: 10px;
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
   }
   .staff-grant-card,
   .staff-list-panel {
@@ -277,193 +279,4 @@ html.cloud-online #toast:empty {
   .profile-fields > div {
     grid-template-columns: 90px minmax(0, 1fr);
   }
-}
-html.cloud-online #main {
-  padding-bottom: 0;
-}
-html.cloud-online .cash-grid {
-  min-height: var(--cloud-cash-space);
-}
-html.cloud-online .cash-grid .menu-panel #tiles {
-  scrollbar-width: none;
-}
-html.cloud-online .cash-grid .menu-panel #tiles::-webkit-scrollbar {
-  display: none;
-}
-.cloud-account-heading {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-.cloud-account-heading h2 {
-  margin: 0;
-  min-width: 0;
-  font-size: clamp(18px, 4vw, 24px);
-}
-.cloud-account-heading .staff-role {
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-html.cloud-online .menu-editor-grid {
-  height: var(--cloud-products-space, calc(100dvh - 80px));
-  min-height: 0;
-  grid-template-rows: minmax(0, 1fr);
-}
-html.cloud-online .product-list-panel {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  margin-bottom: 0;
-}
-html.cloud-online .product-list-panel > :not(#editorProducts) {
-  flex-shrink: 0;
-}
-html.cloud-online #editorProducts {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-html.cloud-online .product-form-panel:not([hidden]) {
-  height: 100%;
-  min-height: 0;
-  overflow-y: auto;
-  margin-bottom: 0;
-}
-@media (max-width: 999px) {
-  html.cloud-online .menu-editor-grid.editing {
-    grid-template-rows: minmax(0, 1fr) minmax(140px, 0.7fr);
-  }
-}
-/* Fill Chrome Android's gesture area instead of leaving its native bottom chin.
-   Reserve the maximum inset for controls without per-frame padding relayout. */
-html.cloud-online {
-  --cloud-safe-bottom: env(
-    safe-area-max-inset-bottom,
-    env(safe-area-inset-bottom, 0px)
-  );
-}
-html.cloud-online #main {
-  padding-bottom: var(--cloud-safe-bottom);
-  padding-left: max(10px, env(safe-area-inset-left, 0px));
-  padding-right: max(10px, env(safe-area-inset-right, 0px));
-}
-html.cloud-online #appDrawer {
-  padding-bottom: calc(20px + var(--cloud-safe-bottom));
-  padding-left: max(20px, env(safe-area-inset-left, 0px));
-}
-html.cloud-online header {
-  padding-left: max(12px, env(safe-area-inset-left, 0px));
-  padding-right: max(12px, env(safe-area-inset-right, 0px));
-}
-/* Bound the application itself; each long view scrolls inside the main surface. */
-html.cloud-online,
-html.cloud-online body {
-  height: 100%;
-  min-height: 100dvh;
-}
-html.cloud-online body {
-  height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-html.cloud-online header {
-  flex-shrink: 0;
-}
-html.cloud-online #main {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-}
-html.cloud-online #appDrawer,
-html.cloud-online #drawerOverlay {
-  top: 0;
-  bottom: auto;
-  height: 100dvh;
-}
-html.cloud-online * {
-  scrollbar-width: none;
-}
-html.cloud-online *::-webkit-scrollbar {
-  display: none;
-}
-html.cloud-online .menu-editor-grid {
-  overflow: hidden;
-}
-html.cloud-online .menu-editor-grid.editing {
-  display: block;
-}
-html.cloud-online .menu-editor-grid.editing .product-list-panel {
-  display: none;
-}
-html.cloud-online .menu-editor-grid.editing .product-form-panel {
-  height: 100%;
-  width: 100%;
-  overflow: auto;
-}
-html.cloud-online .editor-save-actions {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  align-items: stretch;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 18px;
-}
-html.cloud-online .editor-save-actions button {
-  flex: 1;
-  min-height: 46px;
-}
-html.cloud-online .guest-name-field {
-  border: 1px solid var(--accent, #27634f);
-  box-shadow: none;
-}
-html.cloud-online .guest-name-field:focus {
-  border-color: var(--accent, #27634f);
-  outline: none;
-  box-shadow: 0 0 0 2px
-    color-mix(in srgb, var(--accent, #27634f) 25%, transparent);
-}
-html.cloud-online #categories .guest-code-button {
-  margin-left: auto;
-  flex-shrink: 0;
-  background: var(--raised, #eaf0e3);
-  color: var(--text, #183d31);
-}
-html.cloud-online .cloud-code-form input {
-  width: 100%;
-  font-size: 24px;
-  letter-spacing: 4px;
-  text-align: center;
-}
-html.cloud-online .menu-editor-grid.editing .product-list-panel {
-  display: flex;
-}
-html.cloud-online .menu-editor-grid.editing {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) minmax(160px, 0.7fr);
-}
-@media (min-width: 1000px) {
-  html.cloud-online .menu-editor-grid.editing {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr);
-  }
-}
-.pending-code-list {
-  display: grid;
-  gap: 8px;
-  margin-top: 18px;
-  max-height: 35dvh;
-  overflow: auto;
-}
-.pending-code-list button {
-  text-align: left;
-  min-height: 44px;
-}
-
-html.cloud-online .menu-editor-grid.editing #editorToggle {
-  display: none;
 }

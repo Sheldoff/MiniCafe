@@ -1,0 +1,194 @@
+html.cafe-app #main {
+  width: 100%;
+  max-width: 1600px;
+  padding-bottom: 0;
+}
+html.cafe-app .cash-grid .menu-panel {
+  height: var(--cloud-cash-space, calc(100dvh - 115px));
+  max-height: none;
+  margin-bottom: 0;
+}
+html.cafe-app .cash-grid .menu-panel #tiles {
+  max-height: none;
+  align-content: start;
+}
+html.cafe-app .cash-grid {
+  min-height: var(--cloud-cash-space);
+}
+html.cafe-app .cash-grid .menu-panel #tiles {
+  scrollbar-width: none;
+}
+html.cafe-app .cash-grid .menu-panel #tiles::-webkit-scrollbar {
+  display: none;
+}
+.cloud-account-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.cloud-account-heading h2 {
+  margin: 0;
+  min-width: 0;
+  font-size: clamp(18px, 4vw, 24px);
+}
+.cloud-account-heading .staff-role {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+html.cafe-app .menu-editor-grid {
+  height: var(--cloud-products-space, calc(100dvh - 80px));
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+}
+html.cafe-app .product-list-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  margin-bottom: 0;
+}
+html.cafe-app .product-list-panel > :not(#editorProducts) {
+  flex-shrink: 0;
+}
+html.cafe-app #editorProducts {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+html.cafe-app .product-form-panel:not([hidden]) {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  margin-bottom: 0;
+}
+@media (max-width: 999px) {
+  html.cafe-app .menu-editor-grid.editing {
+    grid-template-rows: minmax(0, 1fr) minmax(140px, 0.7fr);
+  }
+}
+/* Fill Chrome Android's gesture area instead of leaving its native bottom chin.
+   Reserve the maximum inset for controls without per-frame padding relayout. */
+html.cafe-app {
+  --cloud-safe-bottom: env(
+    safe-area-max-inset-bottom,
+    env(safe-area-inset-bottom, 0px)
+  );
+}
+html.cafe-app #main {
+  padding-bottom: var(--cloud-safe-bottom);
+  padding-left: max(10px, env(safe-area-inset-left, 0px));
+  padding-right: max(10px, env(safe-area-inset-right, 0px));
+}
+html.cafe-app #appDrawer {
+  padding-bottom: calc(20px + var(--cloud-safe-bottom));
+  padding-left: max(20px, env(safe-area-inset-left, 0px));
+}
+html.cafe-app header {
+  padding-left: max(12px, env(safe-area-inset-left, 0px));
+  padding-right: max(12px, env(safe-area-inset-right, 0px));
+}
+/* Bound the application itself; each long view scrolls inside the main surface. */
+html.cafe-app,
+html.cafe-app body {
+  height: 100%;
+  min-height: 100dvh;
+}
+html.cafe-app body {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+html.cafe-app header {
+  flex-shrink: 0;
+}
+html.cafe-app #main {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+html.cafe-app #appDrawer,
+html.cafe-app #drawerOverlay {
+  top: 0;
+  bottom: auto;
+  height: 100dvh;
+}
+html.cafe-app * {
+  scrollbar-width: none;
+}
+html.cafe-app *::-webkit-scrollbar {
+  display: none;
+}
+html.cafe-app .menu-editor-grid {
+  overflow: hidden;
+}
+html.cafe-app .menu-editor-grid.editing .product-form-panel {
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+}
+html.cafe-app .editor-save-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+html.cafe-app .editor-save-actions button {
+  flex: 1;
+  min-height: 46px;
+}
+html.cafe-app .guest-name-field {
+  border: 1px solid var(--accent, #27634f);
+  box-shadow: none;
+}
+html.cafe-app .guest-name-field:focus {
+  border-color: var(--accent, #27634f);
+  outline: none;
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--accent, #27634f) 25%, transparent);
+}
+html.cafe-app #categories .guest-code-button {
+  margin-left: auto;
+  flex-shrink: 0;
+  background: var(--raised, #eaf0e3);
+  color: var(--text, #183d31);
+}
+html.cafe-app .cloud-code-form input {
+  width: 100%;
+  font-size: 24px;
+  letter-spacing: 4px;
+  text-align: center;
+}
+html.cafe-app .menu-editor-grid.editing .product-list-panel {
+  display: flex;
+}
+html.cafe-app .menu-editor-grid.editing {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) minmax(160px, 0.7fr);
+}
+@media (min-width: 1000px) {
+  html.cafe-app .menu-editor-grid.editing {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+}
+.pending-code-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  max-height: 35dvh;
+  overflow: auto;
+}
+.pending-code-list button {
+  text-align: left;
+  min-height: 44px;
+}
+
+html.cafe-app .menu-editor-grid.editing #editorToggle {
+  display: none;
+}

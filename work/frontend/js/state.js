@@ -1,6 +1,9 @@
 // Available before the first render, so Android does not animate its first page twice.
+window.CafeAndroidOnline =
+  window.CafeAndroidOnline || /MiniCafeAndroidOnline/.test(navigator.userAgent);
 window.CafeNative =
-  window.CafeNative || /MiniCafeAndroid/.test(navigator.userAgent);
+  !window.CafeAndroidOnline &&
+  (window.CafeNative || /MiniCafeAndroid/.test(navigator.userAgent));
 const token =
     new URLSearchParams(location.search).get("key") ||
     (window.CafeCloud ? "cloud-session" : ""),

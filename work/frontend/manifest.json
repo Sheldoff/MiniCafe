@@ -4,7 +4,8 @@
     "css/components.css",
     "css/screens.css",
     "css/theme.css",
-    "css/tablet.css"
+    "css/tablet.css",
+    "css/app-layout.css"
   ],
   "scripts": [
     "js/state.js",
@@ -21,6 +22,8 @@
     "js/shared.js",
     "js/cash-swipe.js",
     "js/events.js",
+    "js/layout.js",
+    "js/guest-codes.js",
     "js/startup.js"
   ]
 }

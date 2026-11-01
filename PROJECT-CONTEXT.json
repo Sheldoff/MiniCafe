@@ -1,7 +1,7 @@
 {
   "application": "МініКафе",
-  "version": "3.39",
-  "android_version_code": 51,
+  "version": "3.40",
+  "android_version_code": 52,
   "purpose": "Каса, окремі черги напоїв і їжі, гнучке меню, статистика/PDF, калькулятор, резервні копії",
   "entry_document": "START-HERE-UA.md",
   "human_prompt": "NEXT-CHAT-PROMPT-UA.txt",
@@ -26,10 +26,9 @@
     "delivery": "Тільки видача їжі"
   },
   "latest_requested_changes": [
-    "Online responsive viewport and reduced-motion toast cleanup; compact staff form and distinct request list",
-    "Telegram bot applies for access; owner reviews full provided profile and chooses role; rejection permits reapplication",
-    "Server heading shows account and role; redundant refresh/guest-link and public menu-transfer entry removed",
-    "Portable APK/web cafe backups verified using Java core and local D1; preserve legacy request IDs and source counters"
+    "Shared Android/online guest menu with persistent three-digit unpaid drafts and atomic payment redemption",
+    "Admin-only menu transfer from online APK Server screen; removed connection-screen transfer",
+    "Shared full-height layout, editor list visibility, empty-area cashier swipes and reduced-motion cleanup"
   ],
   "key_rules": [
     "Гроші — копійки у сервері",
@@ -59,7 +58,7 @@
       "status": "active",
       "entry": "apps/local-android/README.md",
       "sources": "work/android",
-      "version": "3.39"
+      "version": "3.40"
     },
     "online": {
       "status": "telegram_auth_deployed",
@@ -70,7 +69,7 @@
       "sources": "apps/online/src",
       "database": "D1 minicafe-db",
       "deploy_docs": "apps/online/DEPLOY-UA.md",
-      "version": "0.7.2"
+      "version": "0.8.0"
     },
     "windows": {
       "status": "frozen",

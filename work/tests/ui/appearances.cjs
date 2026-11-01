@@ -166,7 +166,7 @@ const { chromium, webkit, base, key, chromeOptions } = require("./helpers.cjs");
         await p.evaluate(() => {
           const native = window.setTimeout;
           window.setTimeout = (fn, ms, ...args) =>
-            native(fn, ms === 5000 ? 220 : ms, ...args);
+            native(fn, ms === 3500 ? 220 : ms, ...args);
           window.restoreTimer = () => (window.setTimeout = native);
           toast("Перше повідомлення");
         });

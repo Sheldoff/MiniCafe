@@ -164,6 +164,15 @@ public class ServerService extends Service {
                       new AccessControl(new File(getFilesDir(), "staff-access.json"), key(this));
                   CafeHttpServer http =
                       new CafeHttpServer(8765, database, key(this), html, font, permissions);
+                  java.util.Map<String, String> guestAssets = new java.util.HashMap<>();
+                  for (String name : new String[] {"guest.html", "guest.js", "guest.css"}) {
+                    try (InputStream in = getAssets().open(name)) {
+                      guestAssets.put(
+                          name.equals("guest.html") ? "/guest" : "/" + name,
+                          new String(CafeStore.readBytes(in, 1000000), "UTF-8"));
+                    }
+                  }
+                  http.setGuestAssets(guestAssets);
                   synchronized (this) {
                     if (stopped) return;
                     stage("Відкриття порту 8765");

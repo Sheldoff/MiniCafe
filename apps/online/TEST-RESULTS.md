@@ -1,5 +1,22 @@
 # Telegram authentication validation — 2026-10-29
 
+## Online 0.8 / Android 3.40 — 01.11.2026
+
+- Canonical guest cashier flow, full-height layout, visible list beside/below editor,
+  blank-main swipes and reduced-motion toast handling shared with Android.
+- Local Java server: closed-by-default public catalog, persistent three-digit drafts,
+  atomic payment redemption, role/origin/size/rate protections. Rejected HTTP requests
+  close unread-body connections so subsequent requests cannot be misparsed.
+- Menu transfer removed from HostActivity. Online APK admin Server page invokes a
+  scoped native bridge: live /api/me admin check, explicit confirmation, existing
+  one-use menu capability, same local-store/menu-revision checks. No automatic sync.
+- New Java guest domain/HTTP suites; shared guest browser suite also runs in full
+  Android checks. Cloud WebView bridge tested with a mock; physical devices untested.
+- Full checks.py without skips passed: work/tests/results/a86af92d14484341bf6d0d3febfacb77.
+  Original signing certificate verified. Online unit/local API, Chrome/WebKit guest,
+  viewport and mocked APK transfer checks passed. Online 0.8 deployed as
+  f77427ab-2eb4-4784-95ce-8abad3fd755b; public GET 200 and protected /admin 302 verified.
+
 ## Online 0.7.2 — 01.11.2026
 
 - Reproduced actual Chrome form approval failure: no-referrer policy causes

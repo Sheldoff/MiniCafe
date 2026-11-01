@@ -80,7 +80,7 @@ function menu(reset = false) {
   imageLoading = false;
   imageDraft = undefined;
   document.querySelector("#main").innerHTML =
-    `<div class="grid menu-editor-grid"><section class="panel product-form-panel" hidden><h2>Редактор меню</h2><p class="muted">Додавайте товари, змінюйте ціни та доступність.</p><form id="form" onsubmit="saveProduct(event)"><input id="pid" type="hidden"><label>Назва</label><input id="pname" required><label>Категорія</label><input id="pcategory" required value="Їжа" autocomplete="off" oninput="suggestCategories(this.value)" onfocus="suggestCategories(this.value)"><div id="categorySuggestions" class="category-suggestions"></div><label>Обробка</label><select id="proute"><option value="bar">Передати бариста</option><option value="instant" selected>Передати на видачу їжі</option></select><label>Ціна, грн</label><input data-money id="pprice" type="number" min="0" step="0.01" required><label for="pstock">Кількість, необов’язково</label><input id="pstock" type="number" min="0" max="1000000" step="1" inputmode="numeric" placeholder="Кількість"><label class="stock-mode"><input id="pestimated" type="checkbox" onchange="document.querySelector('#pstock').min=this.checked?'-1000000':'0'">Орієнтовна кількість</label><small class="muted">З галочкою залишок може бути від’ємним.</small><label>Зображення товару</label><div class="image-editor"><div id="picturePreview" class="image-preview">Зображення ще не додано</div><input id="pimage" aria-label="Зображення товару" type="file" accept="image/*" style="display:none" onchange="choosePicture(this)"><div class="row photo-actions"><button type="button" class="primary" onclick="document.querySelector('#pimage').value='';document.querySelector('#pimage').click()">Обрати фото</button><button type="submit">Зберегти фото</button><button type="button" onclick="removePicture()">Прибрати</button></div></div><input id="pactive" type="checkbox" checked hidden><button id="activeToggle" type="button" class="active-toggle" aria-pressed="true" onclick="toggleProductActive()">● Показувати товар у меню</button><div class="row"><button class="primary">Зберегти</button></div></form></section><section class="panel product-list-panel"><div class="row" style="margin:0 0 10px"><h2 class="grow" style="margin:0">Товари</h2><button id="editorToggle" onclick="toggleProductEditor()" aria-expanded="false">＋ Новий товар</button></div><input id="productSearch" type="search" placeholder="Пошук за назвою" aria-label="Пошук товарів" oninput="filterEditorProducts(this.value)"><div id="editorProducts">${editorProductRows("")}</div></section></div>`;
+    `<div class="grid menu-editor-grid"><section class="panel product-form-panel" hidden><h2>Редактор меню</h2><p class="muted">Додавайте товари, змінюйте ціни та доступність.</p><form id="form" onsubmit="saveProduct(event)"><input id="pid" type="hidden"><label>Назва</label><input id="pname" required><label>Категорія</label><input id="pcategory" required value="Їжа" autocomplete="off" oninput="suggestCategories(this.value)" onfocus="suggestCategories(this.value)"><div id="categorySuggestions" class="category-suggestions"></div><label>Обробка</label><select id="proute"><option value="bar">Передати бариста</option><option value="instant" selected>Передати на видачу їжі</option></select><label>Ціна, грн</label><input data-money id="pprice" type="number" min="0" step="0.01" required><label for="pstock">Кількість, необов’язково</label><input id="pstock" type="number" min="0" max="1000000" step="1" inputmode="numeric" placeholder="Кількість"><label class="stock-mode"><input id="pestimated" type="checkbox" onchange="document.querySelector('#pstock').min=this.checked?'-1000000':'0'">Орієнтовна кількість</label><small class="muted">З галочкою залишок може бути від’ємним.</small><label>Зображення товару</label><div class="image-editor"><div id="picturePreview" class="image-preview">Зображення ще не додано</div><input id="pimage" aria-label="Зображення товару" type="file" accept="image/*" style="display:none" onchange="choosePicture(this)"><div class="row photo-actions"><button type="button" class="primary" onclick="document.querySelector('#pimage').value='';document.querySelector('#pimage').click()">Обрати фото</button><button type="submit">Зберегти фото</button><button type="button" onclick="removePicture()">Прибрати</button></div></div><input id="pactive" type="checkbox" checked hidden><button id="activeToggle" type="button" class="active-toggle" aria-pressed="true" onclick="toggleProductActive()">● Показувати товар у меню</button><div class="row editor-save-actions"><button class="primary">Зберегти</button><button type="button" data-close-editor onclick="closeProductEditor()">Закрити редактор</button></div></form></section><section class="panel product-list-panel"><div class="row" style="margin:0 0 10px"><h2 class="grow" style="margin:0">Товари</h2><button id="editorToggle" onclick="toggleProductEditor()" aria-expanded="false">＋ Новий товар</button></div><input id="productSearch" type="search" placeholder="Пошук за назвою" aria-label="Пошук товарів" oninput="filterEditorProducts(this.value)"><div id="editorProducts">${editorProductRows("")}</div></section></div>`;
   restoreEditorDraft();
   decorateMoneyFields();
 }
@@ -125,57 +125,46 @@ function animateEditorGap(grid, open) {
   );
 }
 function openProductEditor(fromHistory = false) {
-  let panel = document.querySelector(".product-form-panel");
+  const panel = document.querySelector(".product-form-panel");
   if (!panel) return;
-  let fresh = panel.hidden || panel.dataset.closing === "true",
-    grid = panel.closest(".menu-editor-grid");
+  panel.editorMotion?.cancel();
   panel.dataset.closing = "false";
-  grid.classList.add("editing");
+  panel.hidden = false;
+  panel.style.height = "";
+  panel.style.overflow = "";
+  panel.style.opacity = "";
+  panel.closest(".menu-editor-grid").classList.add("editing");
   updateEditorToggle(true);
-  if (fresh) {
-    animateEditorGap(grid, true);
-    let a = disclosure(panel, true, 400);
-    panel.editorMotion = a;
-    const finished = () => {
-      if (panel.editorMotion !== a) return;
-      let bounds = panel.getBoundingClientRect();
-      if (bounds.top < 60 || bounds.top > innerHeight - 100)
-        panel.scrollIntoView({
-          behavior: matchMedia("(prefers-reduced-motion:reduce)").matches
-            ? "auto"
-            : "smooth",
-          block: "start",
-        });
-    };
-    if (a) a.finished.then(finished, () => {});
-    else finished();
-    if (!window.CafeNative && !fromHistory && !history.state?.cafeEditor)
-      history.pushState(
-        { ...history.state, cafeEditor: true },
-        "",
-        location.href,
-      );
-  }
+  panel.editorMotion = appear(panel, 180, false);
+  if (!window.CafeNative && !fromHistory && !history.state?.cafeEditor)
+    history.pushState(
+      { ...history.state, cafeEditor: true },
+      "",
+      location.href,
+    );
 }
 function closeProductEditor(fromHistory = false) {
   captureEditorDraft();
   if (editorDraft) editorDraft.open = false;
-  let panel = document.querySelector(".product-form-panel");
+  const panel = document.querySelector(".product-form-panel");
   if (!panel || panel.hidden || panel.dataset.closing === "true") return;
   document.activeElement?.blur();
+  panel.editorMotion?.cancel();
   panel.dataset.closing = "true";
   updateEditorToggle(false);
-  let grid = panel.closest(".menu-editor-grid");
-  animateEditorGap(grid, false);
-  let a = disclosure(panel, false, 400);
-  panel.editorMotion = a;
-  const done = () => {
+  const a = (panel.editorMotion = motion(
+    panel,
+    [{ opacity: 1 }, { opacity: 0 }],
+    140,
+  ));
+  const finish = () => {
     if (panel.editorMotion !== a) return;
+    panel.hidden = true;
     panel.dataset.closing = "false";
-    grid.classList.remove("editing");
+    panel.closest(".menu-editor-grid").classList.remove("editing");
   };
-  if (a) a.finished.then(done, () => {});
-  else done();
+  if (a) a.finished.then(finish, () => {});
+  else finish();
   if (!window.CafeNative && !fromHistory && history.state?.cafeEditor)
     history.back();
 }
