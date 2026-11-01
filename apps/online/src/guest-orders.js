@@ -1,3 +1,4 @@
+import { monoEnabled, createPayment } from "./mono-payments.js";
 import {
   identity,
   csrfAllowed,
@@ -149,6 +150,7 @@ export async function guestOrders(request, env) {
       {
         published: enabled,
         accepting: enabled,
+        online_payment: monoEnabled(env),
         products: enabled ? publicProducts(result[1].results) : [],
       },
       200,
@@ -234,6 +236,7 @@ export async function guestOrders(request, env) {
   const guest = validateGuestName(input?.guest);
   const items = validateSelection(input?.items, products),
     now = timestamp();
+  if (monoEnabled(env)) return createPayment(env, input, guest, items);
   await env.DB.batch([
     env.DB.prepare("DELETE FROM guest_codes WHERE expires<=?").bind(now),
     env.DB.prepare("DELETE FROM rate_limits WHERE expires<=?").bind(now),

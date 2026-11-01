@@ -1,3 +1,4 @@
+import { paymentRoutes, syncMono } from "./mono-payments.js";
 import { mutate, report, selected, undoAvailable, fail } from "./domain.js";
 import { load, commit, mutationQuery, prepareImages } from "./storage.js";
 import { restoreData } from "./restore.js";
@@ -62,6 +63,8 @@ async function handle(request, env, ctx) {
   if (application) return application;
   const transfer = await menuTransfer(request, env);
   if (transfer) return transfer;
+  const payment = await paymentRoutes(request, env);
+  if (payment) return payment;
   const guest = await guestOrders(request, env);
   if (guest) return guest;
   if (url.pathname.startsWith("/private/"))
@@ -481,6 +484,9 @@ async function handle(request, env, ctx) {
   return json({ error: "Дані одночасно змінилися. Повторіть дію." }, 409);
 }
 export default {
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(syncMono(env));
+  },
   async fetch(request, env, ctx) {
     try {
       return await handle(request, env, ctx);

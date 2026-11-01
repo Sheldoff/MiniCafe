@@ -26,6 +26,7 @@
     "delivery": "Тільки видача їжі"
   },
   "latest_requested_changes": [
+    "Online monobank jar payment verification; exact reference and amount; paid orders atomically enter queue; docs/MONO-PAYMENTS-UA.md",
     "Shared Android/online guest menu with persistent three-digit unpaid drafts and atomic payment redemption",
     "Admin-only menu transfer from online APK Server screen; removed connection-screen transfer",
     "Shared full-height layout, editor list visibility, empty-area cashier swipes and reduced-motion cleanup"
@@ -69,7 +70,7 @@
       "sources": "apps/online/src",
       "database": "D1 minicafe-db",
       "deploy_docs": "apps/online/DEPLOY-UA.md",
-      "version": "0.8.0"
+      "version": "0.9.0"
     },
     "windows": {
       "status": "frozen",
