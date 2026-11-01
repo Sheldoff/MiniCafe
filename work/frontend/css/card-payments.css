@@ -1,0 +1,42 @@
+.card-payment-history {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border, #d6dfd4);
+}
+.card-payment-history h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+#cardPaymentHistory {
+  max-height: 300px;
+  overflow-y: auto;
+}
+.card-payment-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 48px;
+  border-bottom: 1px solid var(--border, #d6dfd4);
+}
+.card-payment-row strong {
+  font-variant-numeric: tabular-nums;
+}
+.card-payment-row .card-payment-remove {
+  flex: 0 0 44px;
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted, #596b60);
+  font-size: 26px;
+}
+.card-payment-row .card-payment-remove:hover {
+  color: var(--danger, #9c3928);
+  background: var(--raised, #eaf0e3);
+}
+#cardPaymentMore {
+  margin-top: 10px;
+  width: 100%;
+}

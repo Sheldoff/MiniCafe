@@ -612,6 +612,40 @@ public final class CafeStore {
     return CafeStats.report(reportSnapshot(session, day, offset), session, day, offset);
   }
 
+  public synchronized JSONObject cardPayments(long before) throws Exception {
+    if (before < 1) throw new IllegalArgumentException("Некоректна сторінка");
+    List<JSONObject> matching = new ArrayList<>();
+    JSONArray orders = data.getJSONArray("orders");
+    for (int i = 0; i < orders.length(); i++) {
+      JSONObject order = orders.getJSONObject(i), payment = order.optJSONObject("payment");
+      if (order.getLong("id") < before
+          && !order.optBoolean("gift")
+          && !order.optBoolean("stats_cleared")
+          && !order.optBoolean("card_history_hidden")
+          && payment != null
+          && payment.optLong("card_amount") > 0) matching.add(order);
+    }
+    Collections.sort(
+        matching,
+        new Comparator<JSONObject>() {
+          public int compare(JSONObject a, JSONObject b) {
+            return Long.compare(b.optLong("id"), a.optLong("id"));
+          }
+        });
+    JSONArray rows = new JSONArray();
+    for (int i = 0; i < Math.min(50, matching.size()); i++) {
+      JSONObject order = matching.get(i);
+      rows.put(
+          new JSONObject()
+              .put("id", order.getLong("id"))
+              .put("amount", order.getJSONObject("payment").getLong("card_amount")));
+    }
+    return new JSONObject()
+        .put("payments", rows)
+        .put(
+            "next_before", matching.size() > 50 ? matching.get(49).getLong("id") : JSONObject.NULL);
+  }
+
   public JSONObject history(Integer session, String day, int offset, int page) throws Exception {
     if (page < 0 || page > 100000) throw new IllegalArgumentException("Некоректна сторінка");
     JSONObject snapshot = reportSnapshot(session, day, offset);
@@ -1105,6 +1139,13 @@ public final class CafeStore {
       for (int i = 0; i < ps.length(); i++)
         if (ps.getJSONObject(i).getInt("id") != id) keep.put(ps.getJSONObject(i));
       work.put("products", keep);
+    } else if (path.equals("/api/card-payment/hide")) {
+      JSONObject order = find(orders, (int) exactNumber(d, "id", 1, Integer.MAX_VALUE));
+      JSONObject payment = order.optJSONObject("payment");
+      if (order.optBoolean("gift") || payment == null || payment.optLong("card_amount") <= 0)
+        throw new IllegalArgumentException("Карткову оплату не знайдено");
+      if (order.optBoolean("card_history_hidden")) return result;
+      order.put("card_history_hidden", true);
     } else if (path.equals("/api/order")) {
       String req = d.getString("request");
       if (req.isEmpty() || req.length() > 200)
@@ -1351,6 +1392,7 @@ public final class CafeStore {
         || path.equals("/api/undo-issue")
         || path.equals("/api/order")
         || path.equals("/api/status")
+        || path.equals("/api/card-payment/hide")
         || path.equals("/api/stats/clear")) domains.add("orders");
     if (path.contains("session") || path.equals("/api/order") || path.equals("/api/stats/clear"))
       domains.add("sessions");

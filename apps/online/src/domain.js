@@ -135,6 +135,14 @@ export function mutate(d, path, input) {
     if (typeof input.sold_out !== "boolean") fail("Некоректна наявність");
     find(p, input.id).sold_out = input.sold_out;
     changed.add("products");
+  } else if (path === "card-payment/hide") {
+    const order = find(orders, integer(input.id, 1));
+    if (order.gift || !order.payment || order.payment.card_amount <= 0)
+      fail("Карткову оплату не знайдено");
+    if (!order.card_history_hidden) {
+      order.card_history_hidden = true;
+      changed.add("orders");
+    }
   } else if (path === "order") {
     const idempotency = requestId(input.request);
     const existing = orders.find((o) => o.request === idempotency);

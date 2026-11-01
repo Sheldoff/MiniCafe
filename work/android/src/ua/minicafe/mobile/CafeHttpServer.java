@@ -177,6 +177,12 @@ public final class CafeHttpServer extends NanoHTTPD {
           response.addHeader("Cache-Control", "no-store");
           return response;
         }
+        if (path.equals("/api/card-payments")) {
+          String before = s.getParms().get("before");
+          return json(
+              Response.Status.OK,
+              store.cardPayments(before == null ? Long.MAX_VALUE : Long.parseLong(before)));
+        }
         if (path.equals("/api/history")) {
           String sid = s.getParms().get("session"),
               day = s.getParms().get("day"),

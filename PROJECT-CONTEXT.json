@@ -1,7 +1,7 @@
 {
   "application": "МініКафе",
-  "version": "3.40",
-  "android_version_code": 52,
+  "version": "3.41",
+  "android_version_code": 53,
   "purpose": "Каса, окремі черги напоїв і їжі, гнучке меню, статистика/PDF, калькулятор, резервні копії",
   "entry_document": "START-HERE-UA.md",
   "human_prompt": "NEXT-CHAT-PROMPT-UA.txt",
@@ -26,6 +26,7 @@
     "delivery": "Тільки видача їжі"
   },
   "latest_requested_changes": [
+    "Shared online + APK cashier card payment history: show card portion only, persistent server-side hide without changing orders/statistics",
     "Online monobank jar payment verification; exact reference and amount; paid orders atomically enter queue; docs/MONO-PAYMENTS-UA.md",
     "Shared Android/online guest menu with persistent three-digit unpaid drafts and atomic payment redemption",
     "Admin-only menu transfer from online APK Server screen; removed connection-screen transfer",
@@ -59,7 +60,7 @@
       "status": "active",
       "entry": "apps/local-android/README.md",
       "sources": "work/android",
-      "version": "3.40"
+      "version": "3.41"
     },
     "online": {
       "status": "telegram_auth_deployed",
@@ -70,7 +71,7 @@
       "sources": "apps/online/src",
       "database": "D1 minicafe-db",
       "deploy_docs": "apps/online/DEPLOY-UA.md",
-      "version": "0.9.0"
+      "version": "0.10.0"
     },
     "windows": {
       "status": "frozen",
@@ -80,5 +81,6 @@
       "build_or_test": false
     },
     "data_sync": "Separate databases; manual, confirmed menu-only transfer via one-use capability; no order/statistics sync"
-  }
+  },
+  "development_policy": "Future shared product updates must ship in both online and Android APK; Windows stays frozen"
 }

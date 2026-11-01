@@ -219,6 +219,7 @@ async function fetchState() {
         (changed && view === "history"))
     )
       orders();
+    if (ordersChanged && view === "cash") loadCardPayments();
     if (
       productsChanged &&
       view === "cash" &&

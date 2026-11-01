@@ -83,6 +83,7 @@ public final class AccessControl {
 
   public boolean readAllowed(String role, String path) {
     return "admin".equals(role)
+        || (("cash".equals(role) || "service".equals(role)) && path.equals("/api/card-payments"))
         || path.equals("/api/state")
         || path.equals("/api/ping")
         || path.startsWith("/api/image/");
@@ -90,10 +91,12 @@ public final class AccessControl {
 
   public boolean writeAllowed(String role, String path, JSONObject body) {
     if ("admin".equals(role)) return true;
-    if ("cash".equals(role)) return path.equals("/api/order");
+    if ("cash".equals(role))
+      return path.equals("/api/order") || path.equals("/api/card-payment/hide");
     if ("service".equals(role))
       return Arrays.asList(
                   "/api/order",
+                  "/api/card-payment/hide",
                   "/api/issue",
                   "/api/issue-unit",
                   "/api/issue-item",
@@ -101,6 +104,7 @@ public final class AccessControl {
                   "/api/availability")
               .contains(path)
           && (path.equals("/api/order")
+              || path.equals("/api/card-payment/hide")
               || path.equals("/api/availability")
               || Arrays.asList("bar", "instant").contains(body.optString("route")));
     String route = "bar".equals(role) ? "bar" : "instant";

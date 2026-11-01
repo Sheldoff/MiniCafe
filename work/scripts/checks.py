@@ -144,6 +144,7 @@ def main():
             for test in [
                 "editor-calculator",
                 "cashier",
+                "card-payments",
                 "interaction",
                 "statistics",
                 "optimized",

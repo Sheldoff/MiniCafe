@@ -27,7 +27,7 @@ function cash() {
   payMode = "mixed";
   mixedAuto = true;
   document.querySelector("#main").innerHTML =
-    `<div class="cash-switch"><button onclick="showCashPanel(false)">Меню</button><button id="cartTab" onclick="showCashPanel(true)">Замовлення</button></div><div class="grid cash-grid"><section class="panel menu-panel"><div id="categories" class="chips"></div><div id="tiles"></div><div id="menuPages"></div></section><section class="panel cart-panel"><input class="guest-name-field" id="guest" aria-label="Ім’я гостя" placeholder="Ім’я гостя"><div id="cart"></div><div class="total" data-gift-hold><span id="totalLabel">Разом</span><b id="sum"></b></div><div class="payment-box"><div class="pay-fields"><label>Готівкою, грн<input data-money id="received" inputmode="decimal" placeholder="0,00" oninput="paymentEdited('cash')"></label><label>Карткою, грн<input data-money id="cardPaid" inputmode="decimal" placeholder="0,00" oninput="paymentEdited('card')"></label></div><div class="paid-line"><span>Внесено разом</span><b id="paidSum">0,00 ₴</b></div><div id="change" role="status" aria-live="polite">До сплати: —</div></div><button id="send" class="primary" onclick="send()">Відправити замовлення</button></section></div>`;
+    `<div class="cash-switch"><button onclick="showCashPanel(false)">Меню</button><button id="cartTab" onclick="showCashPanel(true)">Замовлення</button></div><div class="grid cash-grid"><section class="panel menu-panel"><div id="categories" class="chips"></div><div id="tiles"></div><div id="menuPages"></div></section><section class="panel cart-panel"><input class="guest-name-field" id="guest" aria-label="Ім’я гостя" placeholder="Ім’я гостя"><div id="cart"></div><div class="total" data-gift-hold><span id="totalLabel">Разом</span><b id="sum"></b></div><div class="payment-box"><div class="pay-fields"><label>Готівкою, грн<input data-money id="received" inputmode="decimal" placeholder="0,00" oninput="paymentEdited('cash')"></label><label>Карткою, грн<input data-money id="cardPaid" inputmode="decimal" placeholder="0,00" oninput="paymentEdited('card')"></label></div><div class="paid-line"><span>Внесено разом</span><b id="paidSum">0,00 ₴</b></div><div id="change" role="status" aria-live="polite">До сплати: —</div></div><button id="send" class="primary" onclick="send()">Відправити замовлення</button><section class="card-payment-history" aria-labelledby="cardPaymentHistoryTitle"><h3 id="cardPaymentHistoryTitle">Історія оплат карткою</h3><div id="cardPaymentHistory" aria-live="polite"></div><button id="cardPaymentMore" hidden onclick="loadCardPayments(false)">Показати ще</button></section></section></div>`;
   categoryFilter = "";
   menuPage = 0;
   drawCategories();
@@ -36,6 +36,7 @@ function cash() {
   drawCart();
   showCashPanel(false, true);
   highlightPay();
+  loadCardPayments();
 }
 
 async function toggleItemNote(i) {
