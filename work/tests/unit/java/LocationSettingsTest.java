@@ -98,6 +98,41 @@ public class LocationSettingsTest {
     check(
         order(s, id).getJSONArray("items").getJSONObject(0).getString("status").equals("new"),
         "Undo failed");
+
+    s.mutate(
+        "/api/location/save",
+        loc(cash, "Каса низ", "cash")
+            .put("mode", "split")
+            .put("bar_target", bar)
+            .put("delivery_target", destination));
+    int splitId =
+        s.mutate(
+                "/api/order",
+                new JSONObject()
+                    .put("request", "split")
+                    .put("location_id", cash)
+                    .put("card_amount", 0)
+                    .put("cash_given", 10000)
+                    .put(
+                        "items",
+                        new JSONArray()
+                            .put(new JSONObject().put("id", 1).put("qty", 1))
+                            .put(new JSONObject().put("id", food).put("qty", 1))))
+            .getInt("id");
+    JSONArray splitItems = order(s, splitId).getJSONArray("items");
+    check(
+        splitItems.getJSONObject(0).getString("location_id").equals(bar),
+        "Split drink target wrong");
+    check(
+        splitItems.getJSONObject(1).getString("location_id").equals(destination),
+        "Split food target wrong");
+    check(
+        order(s, id)
+            .getJSONArray("items")
+            .getJSONObject(0)
+            .getString("location_id")
+            .equals(destination),
+        "Existing order rerouted after config edit");
     JSONObject payment = order(s, id).getJSONObject("payment");
     check(
         s.cardPayments(Long.MAX_VALUE)

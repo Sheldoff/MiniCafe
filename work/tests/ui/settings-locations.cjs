@@ -87,8 +87,24 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
       assert.equal(await p.locator("#guest").inputValue(), "Локаційний Гість");
       assert.equal(await p.evaluate(() => cart.length), 1);
 
+      await p.route("**/api/order", async (route) => {
+        const response = await route.fetch();
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        await route.fulfill({ response });
+      });
       await p.locator("#send").click();
-      await p.waitForFunction(() => !busy && cart.length === 0);
+      await p.waitForFunction(() => busy);
+      await p.evaluate(() => {
+        change("cash");
+        add(1);
+        document.querySelector("#guest").value = "Інша чернетка";
+      });
+      await p.waitForFunction(() => !busy);
+      assert.equal(await p.evaluate(() => cart.length), 1);
+      assert.equal(await p.locator("#guest").inputValue(), "Інша чернетка");
+      await p.unroute("**/api/order");
+      await p.evaluate((id) => change("cash", id), cashId);
+      assert.equal(await p.evaluate(() => cart.length), 0);
       const order = await p.evaluate(() =>
         data.orders.find((o) => o.guest === "Локаційний Гість"),
       );
