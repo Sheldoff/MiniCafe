@@ -1,7 +1,7 @@
 {
   "application": "МініКафе",
-  "version": "3.42",
-  "android_version_code": 54,
+  "version": "3.43",
+  "android_version_code": 55,
   "purpose": "Каса, окремі черги напоїв і їжі, гнучке меню, статистика/PDF, калькулятор, резервні копії",
   "entry_document": "START-HERE-UA.md",
   "human_prompt": "NEXT-CHAT-PROMPT-UA.txt",
@@ -26,6 +26,7 @@
     "delivery": "Тільки видача їжі"
   },
   "latest_requested_changes": [
+    "Settings, configurable locations and isolated routing/undo; named card history and transactions; full-screen editor; photo guest cards, cashier codes and payment toggle; delete additional expenses",
     "Simplified jar checkout: single copy-and-open button, prefilled amount, persistent payment status, explicit paste requirement and clipboard failure fallback",
     "Shared online + APK cashier card payment history: show card portion only, persistent server-side hide without changing orders/statistics",
     "Online monobank jar payment verification; exact reference and amount; paid orders atomically enter queue; docs/MONO-PAYMENTS-UA.md",
@@ -54,14 +55,14 @@
     "private_password_file_separate": "work/android/signing.local.json",
     "certificate_fingerprint_file": "work/android/signing-cert.sha256"
   },
-  "validation_limit": "Android 3.42: full checks.py without skips passed (21 Java suites, local API, Chrome/WebKit); final signed APK rebuilt/verified after checkout guard refinement. Online 0.10.1: 17 unit/SQLite tests and final Chrome/WebKit payment scenarios passed. No real transfer or physical phone testing; Windows frozen.",
+  "validation_limit": "Android 3.43: full checks.py without skips passed (22 Java suites, local API, Chrome/WebKit). Online 0.11.0: 18 Node/SQLite tests, disposable D1 API and Android/D1 backup interoperability, Chrome/WebKit general and new feature scenarios passed. Deployed Worker 1c2d1921-4918-45df-8395-39c36bca4eb4. No real transfer or physical phone testing; Windows frozen.",
   "development_tracks": {
     "policy": "docs/PROJECT-TRACKS-UA.md",
     "local_android": {
       "status": "active",
       "entry": "apps/local-android/README.md",
       "sources": "work/android",
-      "version": "3.42"
+      "version": "3.43"
     },
     "online": {
       "status": "telegram_auth_deployed",
@@ -72,7 +73,7 @@
       "sources": "apps/online/src",
       "database": "D1 minicafe-db",
       "deploy_docs": "apps/online/DEPLOY-UA.md",
-      "version": "0.10.1"
+      "version": "0.11.0"
     },
     "windows": {
       "status": "frozen",

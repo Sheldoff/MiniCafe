@@ -1,3 +1,10 @@
+import {
+  validateLocation,
+  applyRouting,
+  inLocation,
+  undoKey,
+  fulfillmentRoute,
+} from "./locations.js";
 // Money is integer kopiykas. Reducer works on a private snapshot; DB commit is atomic.
 export const now = () =>
   new Date().toISOString().slice(0, 19).replace("T", " ");
@@ -135,6 +142,33 @@ export function mutate(d, path, input) {
     if (typeof input.sold_out !== "boolean") fail("Некоректна наявність");
     find(p, input.id).sold_out = input.sold_out;
     changed.add("products");
+  } else if (path === "location/save") {
+    d.locations ||= [];
+    const row = validateLocation(input, d.locations),
+      index = d.locations.findIndex((l) => l.id === row.id);
+    if (index < 0) d.locations.push(row);
+    else d.locations[index] = row;
+    changed.add("locations");
+  } else if (path === "settings/update") {
+    if (typeof input.online_payment_enabled !== "boolean")
+      fail("Некоректне налаштування");
+    d.online_payment_enabled = input.online_payment_enabled;
+    changed.add("locations");
+  } else if (path === "expenses/delete") {
+    const old = d.calculator_expenses.find((e) => e.id === input.id);
+    if (old && old.kind !== "additional") fail("Це не додаткові витрати");
+    if (old) {
+      d.calculator_expenses = d.calculator_expenses.filter(
+        (e) => e.id !== input.id,
+      );
+      d.expenses_version++;
+      changed.add("expenses");
+    }
+  } else if (path === "transaction/hide") {
+    const o = find(orders, integer(input.id, 1));
+    if (!(o.payment?.card_amount > 0)) fail("Карткову оплату не знайдено");
+    o.transaction_history_hidden = true;
+    changed.add("orders");
   } else if (path === "card-payment/hide") {
     const order = find(orders, integer(input.id, 1));
     if (order.gift || !order.payment || order.payment.card_amount <= 0)
@@ -207,6 +241,7 @@ export function mutate(d, path, input) {
         total,
       },
     });
+    applyRouting(orders[orders.length - 1], input, d.locations || []);
     result = { id };
     ["orders", "products", "sessions", "expenses"].forEach((x) =>
       changed.add(x),
@@ -217,7 +252,10 @@ export function mutate(d, path, input) {
     const units = [];
     const selected = path === "issue" ? o.items : [find(o.items, input.id)];
     for (const i of selected) {
-      if (i.route !== input.route || i.status === "cancelled") {
+      if (
+        !inLocation(i, input.route, input.location_id) ||
+        i.status === "cancelled"
+      ) {
         if (path !== "issue") fail("Позиція іншої видачі");
         continue;
       }
@@ -234,12 +272,12 @@ export function mutate(d, path, input) {
       }
       apply(i, values);
     }
-    remember(d, input.route, o.id, units);
+    remember(d, undoKey(input.route, input.location_id), o.id, units);
     event(o, "Оновлено видачу");
     changed.add("orders");
   } else if (path === "undo-issue") {
     routeCheck(input.route);
-    const stack = d.issue_undo[input.route] || [];
+    const stack = d.issue_undo[undoKey(input.route, input.location_id)] || [];
     let restored = false;
     while (stack.length && !restored) {
       const action = stack.pop(),
@@ -247,7 +285,12 @@ export function mutate(d, path, input) {
       if (!o) continue;
       for (const u of action.units) {
         const i = o.items.find((i) => i.id === u.id);
-        if (!i || i.route !== input.route || i.status === "cancelled") continue;
+        if (
+          !i ||
+          !inLocation(i, input.route, input.location_id) ||
+          i.status === "cancelled"
+        )
+          continue;
         const values = flags(i);
         if (values[u.unit]) {
           values[u.unit] = false;

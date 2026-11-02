@@ -30,42 +30,44 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))
           data: { enabled: true },
         });
       await p.goto(base + (local ? "/guest" : ""));
-      await p.locator("#drinkChoice").waitFor();
+      await p.locator("#foodList .menu-row").first().waitFor();
       assert.equal(
         await p.getByText("Вхід для працівників", { exact: true }).count(),
         0,
       );
       assert.equal(await p.locator("a.brand").count(), 0);
-      await p.locator("#drinkChoice").click();
-      await p.locator('#dialogBody [data-step="1"]').first().click();
-      await p.locator('#dialogBody [data-step="1"]').first().click();
-      await p.locator("#confirmChoice").click();
-      assert.match(await p.locator("#chosenDrinks").innerText(), /× 2/);
-      await p.locator("#chosenDrinks button").first().click();
-      await p.locator('#dialogBody [data-step="-1"]').first().click();
-      await p.locator("#confirmChoice").click();
+      await p.locator('#foodList [data-step="1"]').first().click();
+      await p.locator('#foodList [data-step="1"]').first().click();
+      assert.equal(
+        await p.locator("#foodList .quantity").first().innerText(),
+        "2",
+      );
+      await p.locator('#foodList [data-step="-1"]').first().click();
       const food = p.locator('#foodList [data-step="1"]').first();
       if (await food.count()) await food.click();
-      await p.locator("#guestSubmit").click();
+      await p.locator("#guestCodeSubmit").click();
       assert.equal(
         await p.locator("#guestFullName").getAttribute("aria-invalid"),
         "true",
       );
       assert.equal(await p.locator(".code").count(), 0);
       await p.locator("#guestFullName").fill("Іван");
-      await p.locator("#guestSubmit").click();
+      await p.locator("#guestCodeSubmit").click();
       assert.equal(
         await p.locator("#guestFullName").getAttribute("aria-invalid"),
         "true",
       );
       await p.locator("#guestFullName").fill("Іван Петренко");
-      await p.locator("#guestSubmit").click();
+      await p.locator("#guestCodeSubmit").click();
       await p.locator(".code").waitFor();
       const code = (await p.locator(".code").innerText()).trim();
       assert.match(code, /^\d{3}$/);
       await p.locator("[data-close]").click();
-      assert.equal(await p.locator("#guestSubmit").innerText(), "Показати код");
-      await p.locator("#guestSubmit").click();
+      assert.equal(
+        await p.locator("#guestCodeSubmit").innerText(),
+        "Показати код",
+      );
+      await p.locator("#guestCodeSubmit").click();
       assert.equal((await p.locator(".code").innerText()).trim(), code);
       const a = await b.newPage({
         viewport: { width: 390, height: 844 },
@@ -164,7 +166,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))
       });
       await a.locator("#editorToggle").click();
       await a.locator("#pname").fill("Незбережена чернетка");
-      assert.equal(await a.locator(".product-list-panel").isVisible(), true);
+      assert.equal(await a.locator(".product-list-panel").isVisible(), false);
       const geometry = await a.locator(".product-form-panel").evaluate((e) => ({
         height: e.clientHeight,
         main: document.querySelector("#main").clientHeight,
@@ -221,7 +223,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))
       }
       await p.screenshot({ path: ".wrangler/guest-code-" + name + ".png" });
       await p.locator("[data-new-order]").click();
-      assert.equal(await p.locator("#guestSubmit").isDisabled(), true);
+      assert.equal(await p.locator("#guestCodeSubmit").isDisabled(), true);
       assert.deepEqual(errors, []);
       console.log(
         "PASS " +

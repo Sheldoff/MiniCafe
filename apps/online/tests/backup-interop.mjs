@@ -55,13 +55,15 @@ run(java, [
   dir,
   path.join(root, "work/android/assets/default-menu/drink-1.jpg"),
 ]);
-const base = "http://127.0.0.1:8791",
+const base = process.env.CAFE_CLOUD_TEST_URL || "http://127.0.0.1:8791",
   headers = {
     Cookie: "__Host-minicafe_session=" + "1".repeat(64),
     "X-CSRF-Token": "2".repeat(64),
     Origin: base,
     "Content-Type": "application/json",
   };
+if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))
+  throw Error("Local disposable server required");
 const get = async () => {
   const r = await fetch(base + "/api/backup", { headers });
   assert.equal(r.status, 200);

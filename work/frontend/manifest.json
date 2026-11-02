@@ -6,7 +6,8 @@
     "css/theme.css",
     "css/tablet.css",
     "css/app-layout.css",
-    "css/card-payments.css"
+    "css/card-payments.css",
+    "css/settings.css"
   ],
   "scripts": [
     "js/state.js",
@@ -26,6 +27,7 @@
     "js/events.js",
     "js/layout.js",
     "js/guest-codes.js",
+    "js/settings.js",
     "js/startup.js"
   ]
 }

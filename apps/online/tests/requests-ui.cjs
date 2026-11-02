@@ -30,7 +30,9 @@ const {
       await p.goto("http://127.0.0.1:8791/admin#staff");
       await p.locator("#staffForm").waitFor();
       assert.equal(
-        await p.getByRole("button", { name: "← Сервер", exact: true }).count(),
+        await p
+          .getByRole("button", { name: "← Налаштування", exact: true })
+          .count(),
         0,
       );
       await p.locator(".request-entry").first().waitFor();

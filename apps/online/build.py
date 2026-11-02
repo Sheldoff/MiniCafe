@@ -21,6 +21,7 @@ html = html.replace('<script>', '<script>window.CafeCloud=__CLOUD_CONTEXT__;</sc
 html += '<script>' + (HERE / 'src/cloud-ui.js').read_text(encoding='utf-8') + '</script>'
 for source in ['staff-ui.js','guest-admin-ui.js']:
     html += '<script>' + (HERE / 'src' / source).read_text(encoding='utf-8') + '</script>'
+html += '<script>if(view==="server")settingsExtras();</script>'
 (out / 'private').mkdir(exist_ok=True)
 (out / 'private/admin.html').write_text(html, encoding='utf-8')
 (out / 'index.html').write_text((HERE / 'src/guest.html').read_text(encoding='utf-8'), encoding='utf-8')

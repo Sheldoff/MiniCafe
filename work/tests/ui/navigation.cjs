@@ -47,7 +47,7 @@ const { chromium, webkit, base, key, chromeOptions } = require("./helpers.cjs");
     );
     assert.equal(
       await page.locator(".drawer-tools button").last().innerText(),
-      "Сервер",
+      "Налаштування",
     );
     await page.evaluate(() => {
       cart = [{ ...data.products[0], qty: 1, note: "" }];

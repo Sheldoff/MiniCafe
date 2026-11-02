@@ -21,6 +21,8 @@ let products = [],
   dialogItems = [],
   submitting = false;
 let lastCode = null;
+let guestPaymentEnabled = false,
+  guestCheckoutMode = "pay";
 let paymentTimer = null,
   paymentRequest = null,
   pendingPayment = null;
@@ -169,7 +171,7 @@ const totals = (source) =>
     { qty: 0, sum: 0 },
   );
 function row(p, source) {
-  return `<div class="menu-row ${p.available ? "" : "is-unavailable"}" data-id="${p.id}"><span class="item-name"><b>${escapeHtml(p.name)}</b><small>${money(p.price)}${p.available ? "" : " · Закінчилось"}</small></span><div class="qty-controls"><button type="button" data-step="-1" aria-label="Зменшити ${escapeHtml(p.name)}" ${quantity(source, p.id) ? "" : "disabled"}>−</button><b class="quantity">${quantity(source, p.id)}</b><button type="button" data-step="1" aria-label="Додати ${escapeHtml(p.name)}" ${p.available && quantity(source, p.id) < p.limit ? "" : "disabled"}>＋</button></div></div>`;
+  return `<div class="menu-row ${p.available ? "" : "is-unavailable"}" data-id="${p.id}">${p.image_url ? `<img class="guest-product-photo" src="${escapeHtml(p.image_url)}" alt="" loading="lazy" onerror="this.hidden=true">` : `<span class="guest-product-placeholder" aria-hidden="true">${p.route === "bar" ? "☕" : "🥐"}</span>`}<span class="item-name"><b>${escapeHtml(p.name)}</b><small>${money(p.price)}${p.available ? "" : " · Закінчилось"}</small></span><div class="qty-controls"><button type="button" data-step="-1" aria-label="Зменшити ${escapeHtml(p.name)}" ${quantity(source, p.id) ? "" : "disabled"}>−</button><b class="quantity">${quantity(source, p.id)}</b><button type="button" data-step="1" aria-label="Додати ${escapeHtml(p.name)}" ${p.available && quantity(source, p.id) < p.limit ? "" : "disabled"}>＋</button></div></div>`;
 }
 function updateRow(host, source, id) {
   const p = products.find((p) => p.id === id),
@@ -192,21 +194,29 @@ function drawSummary() {
     )
     .join("");
   const t = totals(selection);
+  $("#chosenDrinks").innerHTML = "";
+  const liveCode =
+    lastCode?.payload === selectionPayload() && lastCode.until > Date.now();
+  $("#guestSubmit").hidden =
+    (!guestPaymentEnabled || liveCode) && !pendingPayment;
+  $("#guestCodeSubmit").textContent =
+    lastCode?.payload === selectionPayload() && lastCode.until > Date.now()
+      ? "Показати код"
+      : "Створити код для каси";
+  $("#guestCodeSubmit").disabled = !t.qty || submitting || !!pendingPayment;
   $("#guestCount").textContent = t.qty ? `· ${t.qty} шт.` : "";
   $("#guestTotal").textContent = money(t.sum);
   $("#guestSubmit").disabled = (!t.qty && !pendingPayment) || submitting;
   $("#guestSubmit").textContent = pendingPayment
     ? "Показати оплату"
-    : lastCode?.payload === selectionPayload() && lastCode.until > Date.now()
-      ? "Показати код"
-      : "Оформити замовлення";
+    : "Оплатити онлайн";
 }
 function drawMenu() {
   $("#foodList").innerHTML = products
-    .filter((p) => p.route === "instant")
+    .filter((p) => p.available || p.active !== false)
     .map((p) => row(p, selection))
     .join("");
-  $("#drinkChoice").hidden = !products.some((p) => p.route === "bar");
+  $("#drinkChoice").hidden = true;
   drawSummary();
 }
 function showDialog(title, body, actions) {
@@ -278,7 +288,15 @@ $("#dialogActions").onclick = (e) => {
   if (e.target.closest("[data-close]")) $("#guestDialog").close();
 };
 $("#dialogClose").onclick = () => $("#guestDialog").close();
-$("#guestSubmit").onclick = async () => {
+$("#guestCodeSubmit").onclick = () => {
+  guestCheckoutMode = "code";
+  return submitGuestOrder();
+};
+$("#guestSubmit").onclick = () => {
+  guestCheckoutMode = "pay";
+  return submitGuestOrder();
+};
+async function submitGuestOrder() {
   if (pendingPayment) {
     showPayment(pendingPayment);
     return;
@@ -305,12 +323,16 @@ $("#guestSubmit").onclick = async () => {
     if (!paymentRequest || paymentRequest.payload !== payload)
       paymentRequest = {
         payload,
-        token:
-          crypto.randomUUID().replaceAll("-", "") +
-          crypto.randomUUID().replaceAll("-", ""),
+        token: [...crypto.getRandomValues(new Uint8Array(32))]
+          .map((v) => v.toString(16).padStart(2, "0"))
+          .join(""),
       };
     let j;
-    if (lastCode?.payload === payload && lastCode.until > Date.now())
+    if (
+      guestCheckoutMode === "code" &&
+      lastCode?.payload === payload &&
+      lastCode.until > Date.now()
+    )
       j = lastCode.result;
     else {
       const r = await fetch("/api/public/code", {
@@ -319,6 +341,7 @@ $("#guestSubmit").onclick = async () => {
         body: JSON.stringify({
           ...JSON.parse(payload),
           payment_request: paymentRequest.token,
+          mode: guestCheckoutMode,
         }),
       });
       j = await r.json();
@@ -349,13 +372,14 @@ $("#guestSubmit").onclick = async () => {
     submitting = false;
     drawSummary();
   }
-};
+}
 (async () => {
   try {
     const r = await fetch("/api/public/menu");
     const j = await r.json();
     if (!r.ok) throw Error(j.error);
     products = j.products;
+    guestPaymentEnabled = !!j.online_payment;
     if (pendingPayment) {
       showPayment(pendingPayment);
       $("#checkout").hidden = false;
@@ -376,3 +400,14 @@ $("#guestSubmit").onclick = async () => {
       "Не вдалося завантажити меню. Оновіть сторінку.";
   }
 })();
+
+setInterval(async () => {
+  if (document.hidden) return;
+  try {
+    const r = await fetch("/api/public/menu");
+    if (!r.ok) return;
+    const menu = await r.json();
+    guestPaymentEnabled = !!menu.online_payment;
+    drawSummary();
+  } catch {}
+}, 15000);

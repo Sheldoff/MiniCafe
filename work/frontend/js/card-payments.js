@@ -11,7 +11,7 @@ function drawCardPayments(error = "") {
       ? cardPaymentRows
           .map(
             (p) =>
-              `<div class="card-payment-row" data-card-payment="${p.id}"><strong>${money(p.amount)}</strong><button class="card-payment-remove" type="button" aria-label="Видалити зі списку оплату ${money(p.amount)}" onclick="hideCardPayment(${p.id})" ${hidingCardPayments.has(p.id) ? "disabled" : ""}>×</button></div>`,
+              `<div class="card-payment-row" data-card-payment="${p.id}"><span><b>${esc(p.guest || "Гість")}</b><strong>${money(p.amount)}</strong></span><button class="card-payment-remove" type="button" aria-label="Видалити зі списку оплату ${money(p.amount)}" onclick="hideCardPayment(${p.id})" ${hidingCardPayments.has(p.id) ? "disabled" : ""}>×</button></div>`,
           )
           .join("")
       : error

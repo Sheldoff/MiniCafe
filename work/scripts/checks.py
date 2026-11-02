@@ -145,6 +145,7 @@ def main():
                 "editor-calculator",
                 "cashier",
                 "card-payments",
+                "settings-locations",
                 "interaction",
                 "statistics",
                 "optimized",

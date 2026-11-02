@@ -159,6 +159,7 @@ async function send() {
     toast("Перевірте оплату — замовлення залишилося відкритим");
     return;
   }
+  const sentLocation = activeLocation;
   let guest = document.querySelector("#guest").value,
     comment = "";
   busy = true;
@@ -166,6 +167,7 @@ async function send() {
   try {
     let r = await post("order", {
       request: draft,
+      ...(activeLocation ? { location_id: activeLocation } : {}),
       guest,
       comment,
       cash_given: payment.cash,
@@ -178,6 +180,11 @@ async function send() {
         note: p.note || "",
       })),
     });
+    cashLocationDrafts.delete(sentLocation);
+    if (renderedCashLocation !== sentLocation) {
+      toast("Замовлення №" + r.id + " збережено");
+      return;
+    }
     if (view === "cash") {
       if (categoryFilter) {
         categoryFilter = "";

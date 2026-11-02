@@ -244,10 +244,31 @@ function additionalExpenseDialog(session, id) {
   let box = document.createElement("div");
   box.id = "orderDialog";
   box.className = "order-dialog";
-  box.innerHTML = `<section class="order-dialog-card" role="dialog" aria-modal="true" aria-label="Додаткові витрати"><h2>Додаткові витрати</h2><p class="muted">${esc(found ? found.name : "Наступна сесія — після першого замовлення")}</p><label>Сума, грн<input data-money id="extraCost" type="number" inputmode="decimal" enterkeyhint="done" min="0.01" step="0.01" placeholder="0,00" value="${existing ? (existing.cost / 100).toFixed(2) : ""}"></label><label>Опис (необов’язково)<input id="extraNote" maxlength="200" enterkeyhint="done" placeholder="Наприклад, кава" value="${esc(existing?.note || "")}"></label><p id="extraError" class="calc-invalid" role="status"></p><div class="row"><button onclick="closeOrderDialog()">Скасувати</button><button id="extraSave" class="primary">Зберегти</button></div></section>`;
+  box.innerHTML = `<section class="order-dialog-card" role="dialog" aria-modal="true" aria-label="Додаткові витрати"><h2>Додаткові витрати</h2><p class="muted">${esc(found ? found.name : "Наступна сесія — після першого замовлення")}</p><label>Сума, грн<input data-money id="extraCost" type="number" inputmode="decimal" enterkeyhint="done" min="0.01" step="0.01" placeholder="0,00" value="${existing ? (existing.cost / 100).toFixed(2) : ""}"></label><label>Опис (необов’язково)<input id="extraNote" maxlength="200" enterkeyhint="done" placeholder="Наприклад, кава" value="${esc(existing?.note || "")}"></label><p id="extraError" class="calc-invalid" role="status"></p><div class="row"><button onclick="closeOrderDialog()">Скасувати</button>${existing ? '<button id="extraDelete" class="remove">Видалити</button>' : ""}<button id="extraSave" class="primary">Зберегти</button></div></section>`;
   document.body.appendChild(box);
   openOrderDialog(box);
   decorateMoneyFields();
+  if (existing)
+    box.querySelector("#extraDelete").onclick = async () => {
+      if (additionalExpenseBusy || !confirm("Видалити ці додаткові витрати?"))
+        return;
+      additionalExpenseBusy = true;
+      try {
+        await post("expenses/delete", { id: existing.id });
+        calculatorDraft.extraIds = (calculatorDraft.extraIds || []).filter(
+          (id) => id !== existing.id,
+        );
+        saveCalculatorDraft();
+        if (view === "calculator") calculatorExtras();
+        closeOrderDialog();
+        if (view === "history") await statistics();
+        toast("Витрати видалено");
+      } catch (e) {
+        toast(e.message);
+      } finally {
+        additionalExpenseBusy = false;
+      }
+    };
   box.querySelector("#extraSave").onclick = async () => {
     if (additionalExpenseBusy) return;
     let cost = moneyCents(box.querySelector("#extraCost"));
