@@ -56,7 +56,7 @@
     "private_password_file_separate": "work/android/signing.local.json",
     "certificate_fingerprint_file": "work/android/signing-cert.sha256"
   },
-  "validation_limit": "Android 3.43: full checks.py without skips passed (22 Java suites, local API, Chrome/WebKit). Online 0.11.0: 18 Node/SQLite tests, disposable D1 API and Android/D1 backup interoperability, Chrome/WebKit general and new feature scenarios passed. Deployed Worker 1c2d1921-4918-45df-8395-39c36bca4eb4. No real transfer or physical phone testing; Windows frozen.",
+  "validation_limit": "Android 3.44: full checks.py without skips passed (22 Java suites, local API, Chrome/WebKit including location list/edit/delete, shared destinations, source colors and light/dark location themes). Online 0.12.0: 18 Node/SQLite tests, disposable D1 API, Android/D1 backup interoperability, Chrome/WebKit location scenarios passed; GitHub Actions passed. Deployed Worker 9b7564ec-13db-4993-a79e-6ce979c08026. No physical phone or production test orders; Windows frozen.",
   "development_tracks": {
     "policy": "docs/PROJECT-TRACKS-UA.md",
     "local_android": {
