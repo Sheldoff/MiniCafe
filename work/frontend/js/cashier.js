@@ -1,6 +1,8 @@
 function productUnavailable(p) {
   return (
-    !!p.sold_out || (p.stock != null && !p.stock_estimated && p.stock <= 0)
+    !!p.sold_out ||
+    locallyUnavailable(p) ||
+    (p.stock != null && !p.stock_estimated && p.stock <= 0)
   );
 }
 function pageMenu(delta) {
@@ -304,7 +306,10 @@ function cardMarkup(p) {
 function tiles(q) {
   let categories = menuCategories(),
     ps = data.products.filter(
-      (p) => p.active && (!categoryFilter || p.category === categoryFilter),
+      (p) =>
+        p.active &&
+        !locallyUnavailable(p) &&
+        (!categoryFilter || p.category === categoryFilter),
     );
   ps.sort(
     (a, b) =>

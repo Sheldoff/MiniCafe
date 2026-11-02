@@ -36,6 +36,11 @@ export function validateLocation(input, rows = []) {
   const old = rows.find((l) => l.id === id);
   if (!old && rows.length >= 50) throw Error("До 50 додаткових локацій");
   const out = { id, name: name.trim(), kind, color };
+  if (kind !== "cash" && input.linked_cash) {
+    if (locationById(rows, input.linked_cash)?.kind !== "cash")
+      throw Error("Оберіть дійсну касу");
+    out.linked_cash = input.linked_cash;
+  }
   if (kind === "cash") {
     if (input.targets !== undefined) {
       if (
@@ -132,16 +137,24 @@ export function checkLocationChange(id, rows, orders) {
     rows.some(
       (l) =>
         l.id !== id &&
-        l.kind === "cash" &&
-        (l.targets
-          ? l.targets.includes(id)
-          : (l.mode === "single"
-              ? [l.single_target || "delivery"]
-              : [l.bar_target || "bar", l.delivery_target || "delivery"]
-            ).includes(id)),
+        (l.linked_cash === id ||
+          (l.kind === "cash" &&
+            (l.targets
+              ? l.targets.includes(id)
+              : (l.mode === "single"
+                  ? [l.single_target || "delivery"]
+                  : [l.bar_target || "bar", l.delivery_target || "delivery"]
+                ).includes(id)))),
     )
   )
     throw Error(
       "Спочатку змініть напрямки кас, які надсилають сюди замовлення",
     );
+}
+
+export function availabilityCash(rows, id) {
+  if (!id) return "";
+  const l = locationById(rows || [], id);
+  if (!l || l.kind === "cash") throw Error("Локацію видачі не знайдено");
+  return l.linked_cash || "";
 }

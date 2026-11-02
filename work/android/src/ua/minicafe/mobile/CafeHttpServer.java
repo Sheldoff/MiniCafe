@@ -250,6 +250,9 @@ public final class CafeHttpServer extends NanoHTTPD {
           return json(Response.Status.OK, new JSONObject().put("ok", true));
         }
         if (!"admin".equals(role) && !"service".equals(role) && path.equals("/api/availability")) {
+          if (!store.availabilityLocationAllowed(role, input.optString("location_id")))
+            return json(
+                Response.Status.FORBIDDEN, new JSONObject().put("error", "Інша локація видачі"));
           String route = "bar".equals(role) ? "bar" : "instant";
           if (!route.equals(store.productRoute(input.getInt("id"))))
             return json(

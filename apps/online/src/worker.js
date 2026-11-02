@@ -1,3 +1,4 @@
+import { locationById } from "./locations.js";
 import { paymentRoutes, syncMono } from "./mono-payments.js";
 import { mutate, report, selected, undoAvailable, fail } from "./domain.js";
 import { load, commit, mutationQuery, prepareImages } from "./storage.js";
@@ -483,6 +484,12 @@ async function handle(request, env, ctx) {
     );
     if (before.revision !== meta.revision) continue;
     if (path === "availability" && ["bar", "delivery"].includes(user.role)) {
+      if (
+        input.location_id &&
+        locationById(before.locations || [], input.location_id)?.kind !==
+          user.role
+      )
+        return json({ error: "Інша локація видачі" }, 403);
       const product = before.products.find((p) => p.id === input.id);
       if (
         !product ||

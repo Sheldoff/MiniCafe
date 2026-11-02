@@ -541,5 +541,91 @@ test("cashier card history: narrow roles, pagination, card portion only, persist
       .color,
     "#eecc44",
   );
+  const scopedCash = "loc-" + "f".repeat(32);
+  await save({
+    id: scopedCash,
+    name: "Окрема каса",
+    kind: "cash",
+    color: "#4b2e1f",
+    targets: ["delivery"],
+  });
+  await save({
+    id: delivery,
+    name: "Прив’язана видача",
+    kind: "delivery",
+    color: "#aabbcc",
+    linked_cash: scopedCash,
+  });
+  assert.equal(
+    (
+      await call("availability", "5", {
+        id: 9,
+        sold_out: true,
+        location_id: delivery,
+      })
+    ).status,
+    200,
+  );
+  const scopedProduct = JSON.parse(
+    sql.prepare("SELECT data FROM products WHERE id=9").get().data,
+  );
+  assert.equal(scopedProduct.sold_out, false);
+  assert.deepEqual(scopedProduct.unavailable_at, [scopedCash]);
+  assert.equal(
+    (
+      await call("availability", "4", {
+        id: 9,
+        sold_out: false,
+        location_id: delivery,
+      })
+    ).status,
+    403,
+  );
+  assert.equal(
+    (
+      await call("order", "2", {
+        request: "scoped-block",
+        location_id: scopedCash,
+        guest: "Наявність",
+        items: [{ id: 9, qty: 1 }],
+        cash_given: 10000,
+        card_amount: 0,
+      })
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await call("order", "2", {
+        request: "unrelated-allowed",
+        guest: "Наявність",
+        items: [{ id: 9, qty: 1 }],
+        cash_given: 10000,
+        card_amount: 0,
+      })
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await call("location/delete", "1", { id: scopedCash })).status,
+    400,
+  );
+  const scopedBackup = await (await call("backup")).json();
+  assert.equal((await call("restore", "1", scopedBackup)).status, 200);
+  assert.equal(
+    (
+      await call("availability", "5", {
+        id: 9,
+        sold_out: false,
+        location_id: delivery,
+      })
+    ).status,
+    200,
+  );
+  assert.deepEqual(
+    JSON.parse(sql.prepare("SELECT data FROM products WHERE id=9").get().data)
+      .unavailable_at,
+    [],
+  );
   sql.close();
 });

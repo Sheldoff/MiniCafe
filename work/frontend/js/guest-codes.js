@@ -1,5 +1,5 @@
 // Shared cashier guest-code flow for the phone server and Cloudflare.
-let cloudImportedCode = null;
+const cloudImportedCodes = new Map();
 const cloudBaseCategories = drawCategories;
 drawCategories = function () {
   cloudBaseCategories();
@@ -17,14 +17,14 @@ drawCategories = function () {
 const cloudBasePost = post;
 post = async function (path, input) {
   const imported =
-    path === "order" && cloudImportedCode?.draft === input.request
-      ? cloudImportedCode
+    path === "order" && cloudImportedCodes.has(input.request)
+      ? cloudImportedCodes.get(input.request)
       : null;
   const result = await cloudBasePost(
     path,
     imported ? { ...input, public_code: imported.code } : input,
   );
-  if (imported && cloudImportedCode === imported) cloudImportedCode = null;
+  if (imported) cloudImportedCodes.delete(input.request);
   return result;
 };
 function cloudEnterGuestCode() {
@@ -42,6 +42,7 @@ function cloudEnterGuestCode() {
     e.preventDefault();
     const code = box.querySelector("input").value.trim();
     if (!/^\d{3}$/.test(code)) return;
+    const currentLocation = activeLocation;
     const currentDraft = draft,
       submit = box.querySelector("[type=submit]");
     if (submit.disabled) return;
@@ -54,14 +55,26 @@ function cloudEnterGuestCode() {
         }),
         j = await r.json();
       if (!r.ok) throw Error(j.error);
-      if (view !== "cash" || !box.isConnected || draft !== currentDraft) return;
+      if (
+        view !== "cash" ||
+        activeLocation !== currentLocation ||
+        !box.isConnected ||
+        draft !== currentDraft
+      )
+        return;
       if (
         cart.length &&
         !confirm("Замінити поточне замовлення вибраним гостем?")
       )
         return;
       await refresh(true);
-      if (view !== "cash" || !box.isConnected || draft !== currentDraft) return;
+      if (
+        view !== "cash" ||
+        activeLocation !== currentLocation ||
+        !box.isConnected ||
+        draft !== currentDraft
+      )
+        return;
       cart = j.items.map((item) => {
         const p = data.products.find((p) => p.id === item.id);
         if (
@@ -76,7 +89,7 @@ function cloudEnterGuestCode() {
       draft = window.crypto?.randomUUID
         ? window.crypto.randomUUID()
         : String(Date.now()) + "-" + Math.random().toString(36).slice(2);
-      cloudImportedCode = { code, draft };
+      cloudImportedCodes.set(draft, { code, draft });
       chosenProducts.clear();
       closeOrderDialog();
       drawCart();

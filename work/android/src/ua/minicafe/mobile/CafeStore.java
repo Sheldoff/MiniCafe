@@ -412,6 +412,15 @@ public final class CafeStore {
         || p.getLong("price") > 100000000)
       throw new IllegalArgumentException("Перевірте назву, категорію та ціну");
     checkRoute(p.getString("route"));
+    if (p.has("unavailable_at")) {
+      JSONArray ids = p.getJSONArray("unavailable_at");
+      Set<String> unique = new HashSet<>();
+      if (ids.length() > 50) throw new IllegalArgumentException("Некоректна наявність каси");
+      for (int n = 0; n < ids.length(); n++)
+        if (!ids.getString(n).matches("cash|loc-[a-f0-9]{32}") || !unique.add(ids.getString(n)))
+          throw new IllegalArgumentException("Некоректна наявність каси");
+    }
+
     if (p.has("image") && !p.isNull("image")) checkImage(p.getString("image"));
   }
 
@@ -851,6 +860,12 @@ public final class CafeStore {
     if (!found && rows.length() >= 50) throw new IllegalArgumentException("До 50 локацій");
     JSONObject row =
         new JSONObject().put("id", id).put("name", name).put("kind", kind).put("color", color);
+    if (!"cash".equals(kind) && !input.optString("linked_cash").isEmpty()) {
+      String linked = input.getString("linked_cash");
+      if (!"cash".equals(location(rows, linked).getString("kind")))
+        throw new IllegalArgumentException("Оберіть дійсну касу");
+      row.put("linked_cash", linked);
+    }
     if ("cash".equals(kind)) {
       if (input.has("targets")) {
         JSONArray targets = input.getJSONArray("targets");
@@ -921,7 +936,10 @@ public final class CafeStore {
     }
     for (int i = 0; i < rows.length(); i++) {
       JSONObject l = rows.getJSONObject(i);
-      if (id.equals(l.getString("id")) || !"cash".equals(l.getString("kind"))) continue;
+      if (id.equals(l.getString("id"))) continue;
+      if (id.equals(l.optString("linked_cash")))
+        throw new IllegalArgumentException("Спочатку змініть прив’язану касу видачі");
+      if (!"cash".equals(l.getString("kind"))) continue;
       JSONArray targets = l.optJSONArray("targets");
       if (targets == null)
         targets =
@@ -1157,6 +1175,13 @@ public final class CafeStore {
                 .put("guest", row.getString("guest")));
     }
     return new JSONObject().put("codes", rows);
+  }
+
+  public synchronized boolean availabilityLocationAllowed(String role, String id) throws Exception {
+    return id == null
+        || id.isEmpty()
+        || Arrays.asList("admin", "service").contains(role)
+        || role.equals(location(data.optJSONArray("locations"), id).getString("kind"));
   }
 
   public synchronized JSONObject mutate(String path, JSONObject d) throws Exception {
@@ -1433,7 +1458,26 @@ public final class CafeStore {
       }
     } else if (path.equals("/api/availability")) {
       JSONObject product = find(ps, d.getInt("id"));
-      product.put("sold_out", d.getBoolean("sold_out"));
+      String linked = "";
+      {
+        JSONObject source =
+            location(
+                work.optJSONArray("locations"),
+                d.optString(
+                    "location_id", "bar".equals(product.getString("route")) ? "bar" : "delivery"));
+        if ("cash".equals(source.getString("kind")))
+          throw new IllegalArgumentException("Це не видача");
+        linked = source.optString("linked_cash");
+      }
+      if (linked.isEmpty()) product.put("sold_out", d.getBoolean("sold_out"));
+      else {
+        JSONArray old = product.optJSONArray("unavailable_at"), next = new JSONArray();
+        if (old != null)
+          for (int i = 0; i < old.length(); i++)
+            if (!linked.equals(old.getString(i))) next.put(old.getString(i));
+        if (d.getBoolean("sold_out")) next.put(linked);
+        product.put("unavailable_at", next);
+      }
     } else if (path.equals("/api/delete-product")) {
       int id = d.getInt("id");
       JSONArray keep = new JSONArray();
@@ -1464,6 +1508,11 @@ public final class CafeStore {
       int oid = next(work, "nextOrder");
       for (int i = 0; i < inputs.length(); i++) {
         JSONObject input = inputs.getJSONObject(i), p = find(ps, input.getInt("id"));
+        JSONArray unavailable = p.optJSONArray("unavailable_at");
+        if (unavailable != null)
+          for (int n = 0; n < unavailable.length(); n++)
+            if (unavailable.getString(n).equals(d.optString("location_id", "cash")))
+              throw new IllegalArgumentException("Позиція недоступна на цій касі");
         int qty = input.getInt("qty");
         long requested = p.getLong("price");
         if (input.has("unit_price")) {

@@ -259,7 +259,6 @@ public class HostActivity extends Activity {
     if (fresh) {
       root = CafeUi.screen(this, 840);
       if (!page.isEmpty()) {
-        button("← Назад до сервера", () -> navigate(""));
         CafeUi.label(root, page, 24, false);
       }
       if (page.isEmpty()) {
