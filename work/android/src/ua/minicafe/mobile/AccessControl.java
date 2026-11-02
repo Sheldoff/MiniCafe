@@ -135,7 +135,11 @@ public final class AccessControl {
       JSONObject o = orders.getJSONObject(i);
       JSONArray items = o.getJSONArray("items"), keep = new JSONArray();
       for (int j = 0; j < items.length(); j++)
-        if (route.equals(items.getJSONObject(j).getString("route"))) keep.put(items.get(j));
+        if (route.equals(
+            items
+                .getJSONObject(j)
+                .optString("fulfillment_route", items.getJSONObject(j).getString("route"))))
+          keep.put(items.get(j));
       if (keep.length() > 0) {
         o.put("items", keep);
         o.remove("payment");

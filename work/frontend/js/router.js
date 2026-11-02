@@ -6,6 +6,8 @@ function roleView() {
       : "cash";
 }
 function allowedView(v) {
+  if (["locations", "transactions"].includes(v))
+    return !data.access_role || data.access_role === "admin";
   if (["developer", "server"].includes(v)) return true;
   if (data.access_role === "service")
     return ["cash", "bar", "delivery"].includes(v);
@@ -19,13 +21,26 @@ function availableViews() {
     ["history", "Статистика"],
     ["menu", "Меню й ціни"],
     ["calculator", "Калькулятор"],
-  ].filter(([v]) => allowedView(v));
+  ]
+    .filter(([v]) => allowedView(v))
+    .flatMap(([v, t]) => [
+      [v, t, ""],
+      ...(data.locations || [])
+        .filter((l) => l.kind === v && l.id !== v)
+        .map((l) => [v, l.name, l.id]),
+    ]);
 }
-function change(v) {
+function change(v, locationId = "") {
   if (!allowedView(v)) return;
+  captureLocationDraft();
+  activeLocation = locationId;
   if (view === "menu") captureEditorDraft();
   view = v;
-  history.pushState({ cafeCart: false, cafeEditor: false }, "", "#" + v);
+  history.pushState(
+    { cafeCart: false, cafeEditor: false },
+    "",
+    "#" + v + (activeLocation ? "@" + activeLocation : ""),
+  );
   render();
   if (
     v === "menu" &&
@@ -130,6 +145,10 @@ function handleAppBack() {
     toggleDrawer(false);
     return true;
   }
+  if (["locations", "transactions"].includes(view)) {
+    change("server");
+    return true;
+  }
   if (["developer", "server"].includes(view)) {
     change(roleView());
     return true;
@@ -151,12 +170,12 @@ function handleAppBack() {
 function drawerMarkup() {
   return `<div id="drawerOverlay" hidden onclick="closeDrawerOverlay()"></div><aside id="appDrawer" role="dialog" aria-modal="true" aria-label="Навігація" hidden><div class="drawer-heading"><button id="drawerRefresh" type="button" onclick="refreshInPlace()" aria-label="МініКафе — оновити"><span>МініКафе</span><span class="refresh-spinner" aria-hidden="true"></span></button><button id="themeToggle" type="button" role="switch" aria-checked="false" onclick="toggleCafeTheme()">${themeIcon()}</button><button aria-label="Закрити меню" onclick="toggleDrawer(false)">×</button></div><div class="drawer-links">${availableViews()
     .map(
-      ([v, t]) =>
-        `<button data-view="${v}" class="${view === v ? "selected" : ""}" onclick="change('${v}');toggleDrawer(false)">${t}</button>`,
+      ([v, t, id]) =>
+        `<button data-view="${v}" data-location="${id || ""}" class="${view === v && activeLocation === (id || "") ? "selected" : ""}" onclick="change('${v}','${id || ""}');toggleDrawer(false)">${esc(t)}</button>`,
     )
     .join(
       "",
-    )}</div><div class="drawer-tools"><button data-view="developer" onclick="change('developer');toggleDrawer(false)">Розробник</button><button data-native="settings" data-view="server" onclick="openServerSettings()">Сервер</button></div></aside>`;
+    )}</div><div class="drawer-tools"><button data-view="developer" onclick="change('developer');toggleDrawer(false)">Розробник</button><button data-native="settings" data-view="server" onclick="openServerSettings()">Налаштування</button></div></aside>`;
 }
 
 function updateDrawer() {
@@ -166,9 +185,7 @@ function updateDrawer() {
     old.id = "drawerRoot";
     document.body.appendChild(old);
   }
-  let signature = availableViews()
-    .map(([v]) => v)
-    .join("|");
+  let signature = JSON.stringify([availableViews(), data.locations]);
   if (!old.innerHTML || old.dataset.signature !== signature) {
     let wasOpen = document.body.classList.contains("drawer-open");
     old.innerHTML = drawerMarkup();
@@ -177,20 +194,28 @@ function updateDrawer() {
   }
   old
     .querySelectorAll("[data-view]")
-    .forEach((b) => b.classList.toggle("selected", b.dataset.view === view));
+    .forEach((b) =>
+      b.classList.toggle(
+        "selected",
+        b.dataset.view === view &&
+          (b.dataset.location || "") === activeLocation,
+      ),
+    );
   syncThemeControl();
   syncRefreshIndicator();
-  for (const [target, route] of [
-    ["bar", "bar"],
-    ["delivery", "instant"],
-  ]) {
-    const button = old.querySelector(`[data-view="${target}"]`);
-    if (!button) continue;
+  for (const button of old.querySelectorAll(
+    '[data-view="bar"],[data-view="delivery"]',
+  )) {
+    const route = button.dataset.view === "bar" ? "bar" : "instant";
+    const destination =
+      button.dataset.location || (route === "bar" ? "bar" : "delivery");
     let count = 0;
     for (const order of data.orders || [])
       for (const item of order.items || []) {
         if (
-          item.route !== route ||
+          fulfillmentRoute(item) !== route ||
+          (item.location_id || (route === "bar" ? "bar" : "delivery")) !==
+            destination ||
           ["delivered", "cancelled"].includes(item.status)
         )
           continue;
@@ -300,7 +325,11 @@ function render() {
   else if (view === "menu") menu();
   else if (view === "calculator") calculator();
   else if (view === "developer") developerPage();
-  else if (view === "server") serverPage();
+  else if (view === "server") {
+    serverPage();
+    settingsExtras();
+  } else if (view === "locations") locationsPage();
+  else if (view === "transactions") transactionsPage();
   else orders();
   revealPage();
 }
@@ -311,8 +340,7 @@ async function openServerSettings() {
   serverOpening = true;
   try {
     await toggleDrawer(false);
-    if (window.CafeNative) location.href = "minicafe://settings";
-    else change("server");
+    change("server");
   } finally {
     serverOpening = false;
   }
@@ -329,7 +357,7 @@ function nativeExternal(event, url) {
 }
 function serverPage() {
   document.querySelector("#main").innerHTML =
-    `<section class="panel developer-panel"><h2>Сервер</h2><p>${esc(location.origin)}</p><p class="muted">Для зміни сервера відкрийте нове посилання або QR-код.</p><button onclick="refreshInPlace()">Перевірити з’єднання</button></section>`;
+    `<section class="panel developer-panel"><h2>Підключення</h2><p>${esc(location.origin)}</p><p class="muted">Для зміни сервера відкрийте нове посилання або QR-код.</p><button onclick="refreshInPlace()">Перевірити з’єднання</button></section>`;
 }
 
 async function copySupportCard() {

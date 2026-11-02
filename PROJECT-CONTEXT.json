@@ -1,7 +1,7 @@
 {
   "application": "МініКафе",
-  "version": "3.42",
-  "android_version_code": 54,
+  "version": "3.43",
+  "android_version_code": 55,
   "purpose": "Каса, окремі черги напоїв і їжі, гнучке меню, статистика/PDF, калькулятор, резервні копії",
   "entry_document": "START-HERE-UA.md",
   "human_prompt": "NEXT-CHAT-PROMPT-UA.txt",
@@ -26,6 +26,7 @@
     "delivery": "Тільки видача їжі"
   },
   "latest_requested_changes": [
+    "Settings, configurable locations and isolated routing/undo; named card history and transactions; full-screen editor; photo guest cards, cashier codes and payment toggle; delete additional expenses",
     "Simplified jar checkout: single copy-and-open button, prefilled amount, persistent payment status, explicit paste requirement and clipboard failure fallback",
     "Shared online + APK cashier card payment history: show card portion only, persistent server-side hide without changing orders/statistics",
     "Online monobank jar payment verification; exact reference and amount; paid orders atomically enter queue; docs/MONO-PAYMENTS-UA.md",
@@ -61,7 +62,7 @@
       "status": "active",
       "entry": "apps/local-android/README.md",
       "sources": "work/android",
-      "version": "3.42"
+      "version": "3.43"
     },
     "online": {
       "status": "telegram_auth_deployed",
@@ -72,7 +73,7 @@
       "sources": "apps/online/src",
       "database": "D1 minicafe-db",
       "deploy_docs": "apps/online/DEPLOY-UA.md",
-      "version": "0.10.1"
+      "version": "0.11.0"
     },
     "windows": {
       "status": "frozen",

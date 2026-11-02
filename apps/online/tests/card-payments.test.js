@@ -109,7 +109,7 @@ test("cashier card history: narrow roles, pagination, card portion only, persist
   assert.equal(first.payments.length, 50);
   assert.equal(first.next_before, first.payments.at(-1).id);
   for (const row of first.payments) {
-    assert.deepEqual(Object.keys(row).sort(), ["amount", "id"]);
+    assert.deepEqual(Object.keys(row).sort(), ["amount", "guest", "id"]);
     assert.equal(row.amount, 2000);
     assert.notEqual(row.id, cashId);
     assert.notEqual(row.id, giftId);
@@ -184,5 +184,219 @@ test("cashier card history: narrow roles, pagination, card portion only, persist
       (r) => r.id !== hideId,
     ),
   );
+
+  const delivery = "loc-" + "a".repeat(32),
+    bar = "loc-" + "b".repeat(32),
+    cashLocation = "loc-" + "c".repeat(32);
+  const save = async (body) => {
+    const r = await call("location/save", "1", body);
+    assert.equal(r.status, 200, JSON.stringify(await r.clone().json()));
+  };
+  await save({
+    id: delivery,
+    name: "Видача низ",
+    kind: "delivery",
+    color: "#228833",
+  });
+  await save({ id: bar, name: "Бариста низ", kind: "bar", color: "#334455" });
+  await save({
+    id: cashLocation,
+    name: "Каса низ",
+    kind: "cash",
+    color: "#aabbcc",
+    mode: "single",
+    single_target: delivery,
+  });
+  assert.equal(
+    (
+      await call("location/save", "2", {
+        id: "cash",
+        name: "X",
+        kind: "cash",
+        color: "#000000",
+      })
+    ).status,
+    403,
+  );
+  let r = await call("order", "2", {
+    request: "location-order",
+    location_id: cashLocation,
+    guest: "Гість Локації",
+    items: [
+      { id: 1, qty: 1 },
+      { id: 9, qty: 1 },
+    ],
+    card_amount: 1000,
+    cash_given: 9000,
+  });
+  assert.equal(r.status, 200, JSON.stringify(await r.clone().json()));
+  const located = (await r.json()).id;
+  let locatedOrder = JSON.parse(
+    sql.prepare("SELECT data FROM orders WHERE id=?").get(located).data,
+  );
+  assert.ok(
+    locatedOrder.items.every(
+      (i) => i.location_id === delivery && i.fulfillment_route === "instant",
+    ),
+  );
+  assert.equal(locatedOrder.items[0].route, "bar");
+  const barState = await (await call("state", "4")).json();
+  assert.ok(!barState.orders.some((o) => o.id === located));
+  assert.equal(
+    (
+      await call("issue-unit", "5", {
+        order: located,
+        id: locatedOrder.items[0].id,
+        route: "instant",
+        unit: 0,
+        delivered: true,
+      })
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await call("issue", "5", {
+        id: located,
+        route: "instant",
+        location_id: delivery,
+      })
+    ).status,
+    200,
+  );
+  locatedOrder = JSON.parse(
+    sql.prepare("SELECT data FROM orders WHERE id=?").get(located).data,
+  );
+  assert.ok(locatedOrder.items.every((i) => i.status === "delivered"));
+  assert.equal(
+    (await call("undo-issue", "5", { route: "instant", location_id: delivery }))
+      .status,
+    200,
+  );
+  locatedOrder = JSON.parse(
+    sql.prepare("SELECT data FROM orders WHERE id=?").get(located).data,
+  );
+  assert.ok(locatedOrder.items.every((i) => i.status === "new"));
+  const ledger = await (await call("transactions")).json();
+  assert.equal(ledger.payments[0].guest, "Гість Локації");
+  assert.equal(ledger.payments[0].amount, 1000);
+  const orderBeforeHide = JSON.parse(JSON.stringify(locatedOrder));
+  assert.equal(
+    (await call("transaction/hide", "1", { id: located })).status,
+    200,
+  );
+  assert.ok(
+    !(await (await call("transactions")).json()).payments.some(
+      (p) => p.id === located,
+    ),
+  );
+  const hiddenOrder = JSON.parse(
+    sql.prepare("SELECT data FROM orders WHERE id=?").get(located).data,
+  );
+  delete hiddenOrder.transaction_history_hidden;
+  assert.deepEqual(hiddenOrder, orderBeforeHide);
+  assert.ok(
+    (await (await call("card-payments", "2")).json()).payments.some(
+      (p) => p.id === located,
+    ),
+  );
+  assert.equal(
+    (
+      await call("expenses", "1", {
+        request: "extra-delete",
+        cost: 1234,
+        note: "Помилка",
+      })
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await call("expenses/delete", "2", { id: "extra-delete" })).status,
+    403,
+  );
+  assert.equal(
+    (await call("expenses/delete", "1", { id: "extra-delete" })).status,
+    200,
+  );
+  assert.equal(
+    sql
+      .prepare("SELECT count(*) AS n FROM expenses WHERE id='extra-delete'")
+      .get().n,
+    0,
+  );
+  env.MONO_TOKEN = "fixture";
+  env.MONO_JAR_ID = "fixture";
+  env.MONO_JAR_URL = "https://send.monobank.ua/jar/test";
+  assert.equal(
+    (await call("settings/update", "1", { online_payment_enabled: false }))
+      .status,
+    200,
+  );
+  assert.equal(
+    (await (await call("public/menu")).json()).online_payment,
+    false,
+  );
+  assert.equal(
+    (
+      await call("public/code", "1", {
+        guest: "Гість Коду",
+        items: [{ id: 1, qty: 1 }],
+        mode: "pay",
+        payment_request: "f".repeat(64),
+      })
+    ).status,
+    403,
+  );
+  const code = await (
+    await call("public/code", "1", {
+      guest: "Гість Коду",
+      items: [{ id: 1, qty: 1 }],
+      mode: "code",
+    })
+  ).json();
+  assert.match(code.code, /^\d{3}$/);
+  assert.equal(
+    (await call("settings/update", "1", { online_payment_enabled: true }))
+      .status,
+    200,
+  );
+  assert.equal((await (await call("public/menu")).json()).online_payment, true);
+  const fast = await (
+    await call("public/code", "1", {
+      guest: "Гість Коду",
+      items: [{ id: 1, qty: 1 }],
+      mode: "code",
+    })
+  ).json();
+  assert.match(fast.code, /^\d{3}$/);
+  const pending = await (
+    await call("public/code", "1", {
+      guest: "Гість Оплати",
+      items: [{ id: 1, qty: 1 }],
+      mode: "pay",
+      payment_request: "f".repeat(64),
+    })
+  ).json();
+  assert.equal(pending.payment, true);
+  sql
+    .prepare("INSERT INTO images VALUES(?,?,?)")
+    .run(1, "test", btoa("test-photo"));
+  const photo = await worker.fetch(
+    new Request(origin + "/api/public/image/1"),
+    env,
+    {},
+  );
+  assert.equal(photo.status, 200);
+  assert.equal(await photo.text(), "test-photo");
+  sql.exec("UPDATE products SET data=json_set(data,'$.active',0) WHERE id=1");
+  assert.equal(
+    (await worker.fetch(new Request(origin + "/api/public/image/1"), env, {}))
+      .status,
+    404,
+  );
+  sql.exec("DELETE FROM images");
+  const settingsBackup = await (await call("backup")).json();
+  assert.equal((await call("restore", "1", settingsBackup)).status, 200);
+  assert.equal((await (await call("state")).json()).locations.length, 3);
   sql.close();
 });

@@ -19,6 +19,11 @@ const {
         created = 0;
       const errors = [];
       p.on("pageerror", (e) => errors.push(e.message));
+      await p.route("**/api/public/menu", async (route) => {
+        const r = await route.fetch();
+        const j = await r.json();
+        await route.fulfill({ json: { ...j, online_payment: true } });
+      });
       await p.route("**/api/public/code", async (route) => {
         created++;
         const input = route.request().postDataJSON();

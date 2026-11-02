@@ -157,8 +157,9 @@ export function filterState(state, user) {
         id: o.id,
         created: o.created,
         guest: o.guest,
+        cash_location: o.cash_location,
         items: o.items
-          .filter((i) => i.route === route)
+          .filter((i) => (i.fulfillment_route || i.route) === route)
           .map((i) => {
             const { price, catalog_price, requested_price, ...safe } = i;
             return safe;
@@ -166,13 +167,21 @@ export function filterState(state, user) {
       }))
       .filter((o) => o.items.length);
     const value = state.can_undo_issue[route];
-    state.can_undo_issue = { [route]: value };
+    state.can_undo_issue = {
+      [route]: value,
+      ...Object.fromEntries(
+        Object.entries(state.can_undo_issue).filter(([key]) =>
+          key.startsWith(route + "@"),
+        ),
+      ),
+    };
   } else {
-    // Cash/combined service do not receive finances, history or prior order payments.
+    // Cash/combined service receive only the separately authorized card-payment projection.
     state.orders = state.orders.map((o) => ({
       id: o.id,
       created: o.created,
       guest: o.guest,
+      cash_location: o.cash_location,
       items: o.items.map((i) => {
         const { catalog_price, requested_price, ...safe } = i;
         return safe;

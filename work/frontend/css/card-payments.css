@@ -40,3 +40,28 @@
   margin-top: 10px;
   width: 100%;
 }
+
+.card-payment-row > span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.card-payment-row > span > b {
+  overflow-wrap: anywhere;
+  font-weight: 500;
+  color: var(--muted);
+}
+html .menu-editor-grid.editing .product-list-panel {
+  display: none !important;
+}
+html .menu-editor-grid.editing {
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+}
+html .menu-editor-grid.editing .product-form-panel {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  height: 100%;
+  max-height: none;
+}

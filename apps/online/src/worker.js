@@ -39,6 +39,10 @@ const writes = new Set([
   "availability",
   "order",
   "card-payment/hide",
+  "transaction/hide",
+  "settings/update",
+  "location/save",
+  "expenses/delete",
   "issue",
   "issue-unit",
   "issue-item",
@@ -209,6 +213,24 @@ async function handle(request, env, ctx) {
     return json({ ok: true });
   }
   if (request.method === "GET") {
+    if (path === "transactions") {
+      const before = url.searchParams.has("before")
+        ? Number(url.searchParams.get("before"))
+        : Number.MAX_SAFE_INTEGER;
+      if (!Number.isSafeInteger(before) || before < 1)
+        fail("Некоректна сторінка");
+      const rows = (
+        await env.DB.prepare(
+          "SELECT id,json_extract(data,'$.guest') AS guest,created,json_extract(data,'$.payment.card_amount') AS amount FROM orders WHERE id<? AND coalesce(json_extract(data,'$.transaction_history_hidden'),0)=0 AND coalesce(json_extract(data,'$.stats_cleared'),0)=0 AND json_extract(data,'$.payment.card_amount')>0 ORDER BY id DESC LIMIT 51",
+        )
+          .bind(before)
+          .all()
+      ).results;
+      return json({
+        payments: rows.slice(0, 50),
+        next_before: rows.length > 50 ? rows[49].id : null,
+      });
+    }
     if (path === "card-payments") {
       const before = url.searchParams.has("before")
         ? Number(url.searchParams.get("before"))
@@ -217,7 +239,7 @@ async function handle(request, env, ctx) {
         fail("Некоректна сторінка");
       const rows = (
         await env.DB.prepare(
-          "SELECT id,json_extract(data,'$.payment.card_amount') AS amount FROM orders WHERE id<? AND coalesce(json_extract(data,'$.card_history_hidden'),0)=0 AND coalesce(json_extract(data,'$.stats_cleared'),0)=0 AND coalesce(json_extract(data,'$.gift'),0)=0 AND json_extract(data,'$.payment.card_amount')>0 ORDER BY id DESC LIMIT 51",
+          "SELECT id,json_extract(data,'$.guest') AS guest,json_extract(data,'$.payment.card_amount') AS amount FROM orders WHERE id<? AND coalesce(json_extract(data,'$.card_history_hidden'),0)=0 AND coalesce(json_extract(data,'$.stats_cleared'),0)=0 AND coalesce(json_extract(data,'$.gift'),0)=0 AND json_extract(data,'$.payment.card_amount')>0 ORDER BY id DESC LIMIT 51",
         )
           .bind(before)
           .all()
@@ -240,6 +262,8 @@ async function handle(request, env, ctx) {
       return json(
         filterState(
           {
+            locations: d.locations || [],
+            online_payment_enabled: d.online_payment_enabled !== false,
             versions: d.versions,
             products: d.products,
             orders: d.orders
@@ -255,6 +279,15 @@ async function handle(request, env, ctx) {
             can_undo_issue: {
               bar: undoAvailable(d, "bar"),
               instant: undoAvailable(d, "instant"),
+              ...Object.fromEntries(
+                (d.locations || [])
+                  .filter((l) => l.kind !== "cash")
+                  .map((l) => {
+                    const key =
+                      (l.kind === "bar" ? "bar" : "instant") + "@" + l.id;
+                    return [key, undoAvailable(d, key)];
+                  }),
+              ),
             },
           },
           user,

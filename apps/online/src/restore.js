@@ -1,3 +1,4 @@
+import { validateLocation } from "./locations.js";
 import { fail, integer, validateProduct } from "./domain.js";
 
 export function restoreData(before, input) {
@@ -147,6 +148,19 @@ export function restoreData(before, input) {
     integer(d.nextSession, 1, 2147483647),
     ...d.sessions.map((s) => s.id + 1),
   );
+  d.locations = Array.isArray(input.locations)
+    ? input.locations
+    : before.locations || [];
+  if (
+    d.locations.length > 50 ||
+    new Set(d.locations.map((l) => l.id)).size !== d.locations.length
+  )
+    fail("Некоректні локації");
+  d.locations = d.locations.map((l) => validateLocation(l, d.locations));
+  d.online_payment_enabled =
+    typeof input.online_payment_enabled === "boolean"
+      ? input.online_payment_enabled
+      : before.online_payment_enabled !== false;
   d.active_session ||= 0;
   d.issue_undo = {}; // Old undo entries are intentionally invalidated by full database replacement.
   d.versions = Object.fromEntries(
@@ -157,6 +171,8 @@ export function restoreData(before, input) {
   // Keep only documented metadata; imported keys must not change server settings.
   return Object.fromEntries(
     [
+      "locations",
+      "online_payment_enabled",
       "nextProduct",
       "nextOrder",
       "nextItem",

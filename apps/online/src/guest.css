@@ -317,3 +317,51 @@ dialog::backdrop {
   padding-block: 12px;
   color: var(--accent);
 }
+
+#foodList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+#foodList .menu-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.guest-product-photo,
+.guest-product-placeholder {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.guest-product-placeholder {
+  display: grid;
+  place-items: center;
+  background: var(--raised);
+  font-size: 42px;
+}
+#foodList .item-name {
+  flex: 1;
+}
+#foodList .qty-controls {
+  justify-content: space-between;
+}
+@media (min-width: 700px) {
+  #foodList {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+#dialogBody .menu-row {
+  flex-direction: column;
+  align-items: stretch;
+}
+#dialogBody .qty-controls {
+  justify-content: space-between;
+}

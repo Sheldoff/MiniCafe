@@ -64,6 +64,12 @@ export function publicProducts(rows) {
       name: p.name,
       category: p.category,
       route: p.route,
+      image_url: p.image_version
+        ? "/api/public/image/" +
+          p.id +
+          "?v=" +
+          encodeURIComponent(p.image_version)
+        : "",
       price: p.price,
       available: available(p),
       limit:
@@ -124,8 +130,40 @@ export async function guestOrders(request, env) {
       "/api/guest-codes",
       "/api/public-settings",
     ].includes(path)
-  )
+  ) {
+    if (request.method === "GET" && /^\/api\/public\/image\/\d+$/.test(path)) {
+      const visible = await env.DB.prepare(
+        "SELECT (published AND accepting) AS enabled FROM public_settings WHERE id=1",
+      ).first();
+      if (!visible?.enabled) return new Response("Not found", { status: 404 });
+      const id = Number(path.split("/").pop()),
+        row = await env.DB.prepare("SELECT data FROM products WHERE id=?")
+          .bind(id)
+          .first();
+      const product = row ? JSON.parse(row.data) : null;
+      if (!product?.active) return new Response("Not found", { status: 404 });
+      const image = await env.DB.prepare(
+        "SELECT content FROM images WHERE id=?",
+      )
+        .bind(id)
+        .first();
+      if (image)
+        return new Response(
+          Uint8Array.from(atob(image.content), (c) => c.charCodeAt(0)),
+          {
+            headers: {
+              "Content-Type": "image/jpeg",
+              "Cache-Control": "public,max-age=60",
+              "X-Content-Type-Options": "nosniff",
+            },
+          },
+        );
+      if (product.image_asset)
+        return env.ASSETS.fetch(new Request(new URL(product.image_asset, url)));
+      return new Response("Not found", { status: 404 });
+    }
     return null;
+  }
   const publicRoute = path.startsWith("/api/public/");
   let user;
   if (!publicRoute) {
@@ -146,11 +184,16 @@ export async function guestOrders(request, env) {
       env.DB.prepare("SELECT data FROM products ORDER BY id"),
     ]);
     const enabled = !!result[0].results[0]?.enabled;
+    const meta = await env.DB.prepare(
+      "SELECT data FROM metadata WHERE id=1",
+    ).first();
+    const paymentEnabled =
+      JSON.parse(meta.data).online_payment_enabled !== false;
     return json(
       {
         published: enabled,
         accepting: enabled,
-        online_payment: monoEnabled(env),
+        online_payment: monoEnabled(env) && paymentEnabled,
         products: enabled ? publicProducts(result[1].results) : [],
       },
       200,
@@ -236,7 +279,19 @@ export async function guestOrders(request, env) {
   const guest = validateGuestName(input?.guest);
   const items = validateSelection(input?.items, products),
     now = timestamp();
-  if (monoEnabled(env)) return createPayment(env, input, guest, items);
+  if (input.mode !== undefined && !["code", "pay"].includes(input.mode))
+    fail("Некоректний спосіб оформлення");
+  const meta = await env.DB.prepare(
+    "SELECT data FROM metadata WHERE id=1",
+  ).first();
+  const paymentEnabled = JSON.parse(meta.data).online_payment_enabled !== false;
+  if (input.mode === "pay" && (!paymentEnabled || !monoEnabled(env)))
+    return json(
+      { error: "Онлайн-оплату вимкнено. Створіть код для каси." },
+      403,
+    );
+  if (input.mode !== "code" && paymentEnabled && monoEnabled(env))
+    return createPayment(env, input, guest, items);
   await env.DB.batch([
     env.DB.prepare("DELETE FROM guest_codes WHERE expires<=?").bind(now),
     env.DB.prepare("DELETE FROM rate_limits WHERE expires<=?").bind(now),

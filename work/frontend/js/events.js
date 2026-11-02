@@ -1,5 +1,6 @@
 window.addEventListener("popstate", () => {
-  let target = location.hash.slice(1) || "cash";
+  const nextLocation = location.hash.slice(1).split("@")[1] || "";
+  let target = location.hash.slice(1).split("@")[0] || "cash";
   if (
     [
       "cash",
@@ -10,9 +11,14 @@ window.addEventListener("popstate", () => {
       "calculator",
       "developer",
       "server",
+      "locations",
+      "transactions",
     ].includes(target) &&
-    target !== view
+    (target !== view || nextLocation !== activeLocation)
   ) {
+    captureLocationDraft();
+    activeLocation = nextLocation;
+    if (!allowedView(target)) return;
     view = target;
     render();
   }

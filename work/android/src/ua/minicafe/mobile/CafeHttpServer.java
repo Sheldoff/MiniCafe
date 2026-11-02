@@ -177,6 +177,12 @@ public final class CafeHttpServer extends NanoHTTPD {
           response.addHeader("Cache-Control", "no-store");
           return response;
         }
+        if (path.equals("/api/transactions")) {
+          String before = s.getParms().get("before");
+          return json(
+              Response.Status.OK,
+              store.cardPayments(before == null ? Long.MAX_VALUE : Long.parseLong(before), true));
+        }
         if (path.equals("/api/card-payments")) {
           String before = s.getParms().get("before");
           return json(
@@ -290,6 +296,14 @@ public final class CafeHttpServer extends NanoHTTPD {
   }
 
   private Response guestApi(IHTTPSession s, String path, String role) throws Exception {
+    if (s.getMethod() == Method.GET && path.matches("/api/public/image/[0-9]+")) {
+      byte[] image = store.publicImage(Integer.parseInt(path.substring(path.lastIndexOf('/') + 1)));
+      if (image == null)
+        return newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "Not found");
+      return newFixedLengthResponse(
+          Response.Status.OK, "image/jpeg", new ByteArrayInputStream(image), image.length);
+    }
+
     boolean pub = path.equals("/api/public/menu") || path.equals("/api/public/code");
     boolean settings = path.equals("/api/public-settings");
     if (!pub && !settings && !path.equals("/api/guest-code") && !path.equals("/api/guest-codes"))

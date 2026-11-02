@@ -37,7 +37,7 @@ export async function createPayment(env, input, guest, items) {
       "MC-" +
       crypto.randomUUID().replaceAll("-", "").slice(0, 16).toUpperCase();
     await env.DB.prepare(
-      "INSERT OR IGNORE INTO mono_payments(id,reference,data,total,created,expires) VALUES(?,?,?,?,?,?)",
+      "INSERT OR IGNORE INTO mono_payments(id,reference,data,total,created,expires) SELECT ?,?,?,?,?,? WHERE coalesce((SELECT json_extract(data,'$.online_payment_enabled') FROM metadata WHERE id=1),1)!=0",
     )
       .bind(id, reference, data, total, timestamp(), timestamp() + 1800)
       .run();
@@ -45,6 +45,7 @@ export async function createPayment(env, input, guest, items) {
   const row = await env.DB.prepare("SELECT * FROM mono_payments WHERE id=?")
     .bind(id)
     .first();
+  if (!row) fail("Онлайн-оплату вимкнено. Створіть код для каси.");
   if (row.data !== data) fail("Запит уже використано");
   return json({
     payment: true,

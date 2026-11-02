@@ -14,6 +14,7 @@ const token =
       : {}),
   };
 
+let activeLocation = location.hash.slice(1).split("@")[1] || "";
 let menuPage = 0,
   mobileCart = false;
 
@@ -27,7 +28,7 @@ let categoryFilter = "",
     orders: [],
     ...(window.CafeCloud?.role ? { access_role: window.CafeCloud.role } : {}),
   },
-  view = location.hash.slice(1) || "cash",
+  view = location.hash.slice(1).split("@")[0] || "cash",
   cart = [],
   draft =
     window.crypto && typeof window.crypto.randomUUID === "function"

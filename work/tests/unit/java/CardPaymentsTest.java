@@ -48,7 +48,7 @@ public class CardPaymentsTest {
     check(rows.length() == 50, "First page size");
     for (int i = 0; i < rows.length(); i++) {
       JSONObject row = rows.getJSONObject(i);
-      check(row.length() == 2, "Extra financial fields exposed");
+      check(row.length() == 3, "Extra financial fields exposed");
       check(row.getLong("amount") == 2000, "Included cash portion");
       check(row.getInt("id") != cash, "Included cash-only order");
     }

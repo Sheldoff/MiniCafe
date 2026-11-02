@@ -76,7 +76,10 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(target))
         await row.locator("strong").innerText(),
         money(result.partial),
       );
-      assert.equal(await row.innerText(), money(result.partial) + "\n×");
+      assert.equal(
+        await row.locator("span > b").innerText(),
+        "Тест карткової історії",
+      );
       assert.equal(
         await p
           .locator(`[data-card-payment="${result.card}"] strong`)

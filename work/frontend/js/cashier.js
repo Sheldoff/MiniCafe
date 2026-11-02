@@ -166,6 +166,7 @@ async function send() {
   try {
     let r = await post("order", {
       request: draft,
+      ...(activeLocation ? { location_id: activeLocation } : {}),
       guest,
       comment,
       cash_given: payment.cash,
