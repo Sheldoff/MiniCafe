@@ -110,6 +110,15 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
             .unavailable_at?.includes(cashId),
         { foodId, cashId },
       );
+      await p.waitForFunction(
+        (id) =>
+          document
+            .querySelector(
+              `.availability-toggle[onclick="availability(${id})"]`,
+            )
+            ?.textContent.includes("Закінчилось · повернути"),
+        foodId,
+      );
       await p.evaluate((id) => change("cash", id), cashId);
       assert.equal(await p.locator(`[data-product="${foodId}"]`).count(), 0);
       await p.evaluate(() => change("cash"));

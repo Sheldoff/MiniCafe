@@ -1,7 +1,7 @@
 {
   "application": "МініКафе",
-  "version": "3.45",
-  "android_version_code": 57,
+  "version": "3.46",
+  "android_version_code": 58,
   "purpose": "Каса, окремі черги напоїв і їжі, гнучке меню, статистика/PDF, калькулятор, резервні копії",
   "entry_document": "START-HERE-UA.md",
   "human_prompt": "NEXT-CHAT-PROMPT-UA.txt",
@@ -64,7 +64,7 @@
       "status": "active",
       "entry": "apps/local-android/README.md",
       "sources": "work/android",
-      "version": "3.45"
+      "version": "3.46"
     },
     "online": {
       "status": "telegram_auth_deployed",
@@ -75,7 +75,7 @@
       "sources": "apps/online/src",
       "database": "D1 minicafe-db",
       "deploy_docs": "apps/online/DEPLOY-UA.md",
-      "version": "0.13.0"
+      "version": "0.13.1"
     },
     "windows": {
       "status": "frozen",
