@@ -27,7 +27,9 @@ const {
       await p.route("**/api/public/code", async (route) => {
         created++;
         const input = route.request().postDataJSON();
-        assert.match(input.payment_request, /^[a-f0-9]{64}$/);
+        if (input.mode === "code")
+          assert.equal(input.payment_request, undefined);
+        else assert.match(input.payment_request, /^[a-f0-9]{64}$/);
         if (input.mode === "code") {
           await route.fulfill({
             json: { code: "123", expires_in: 1800, total: 5000 },
