@@ -24,7 +24,7 @@ function availableViews() {
   ]
     .filter(([v]) => allowedView(v))
     .flatMap(([v, t]) => [
-      [v, t, ""],
+      [v, locationInfo(v)?.name || t, ""],
       ...(data.locations || [])
         .filter((l) => l.kind === v && l.id !== v)
         .map((l) => [v, l.name, l.id]),
@@ -179,6 +179,7 @@ function drawerMarkup() {
 }
 
 function updateDrawer() {
+  applyLocationTheme();
   let old = document.querySelector("#drawerRoot");
   if (!old) {
     old = document.createElement("div");
@@ -213,9 +214,7 @@ function updateDrawer() {
     for (const order of data.orders || [])
       for (const item of order.items || []) {
         if (
-          fulfillmentRoute(item) !== route ||
-          (item.location_id || (route === "bar" ? "bar" : "delivery")) !==
-            destination ||
+          !itemAtDestination(item, route, destination) ||
           ["delivered", "cancelled"].includes(item.status)
         )
           continue;

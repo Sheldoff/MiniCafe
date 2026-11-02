@@ -306,6 +306,21 @@ public final class CafeStore {
             || it.getInt("qty") > 99
             || it.getLong("price") < 0) throw new IllegalArgumentException("Некоректна позиція");
         checkRoute(it.getString("route"));
+        if (it.has("destinations")) {
+          JSONArray destinations = it.getJSONArray("destinations");
+          Set<String> uniqueDestinations = new HashSet<>();
+          if (destinations.length() == 0 || destinations.length() > 50)
+            throw new IllegalArgumentException("Некоректні напрямки позиції");
+          for (int n = 0; n < destinations.length(); n++) {
+            JSONObject destination = destinations.getJSONObject(n);
+            String destinationId = destination.getString("id");
+            if (!destinationId.matches("bar|delivery|loc-[a-f0-9]{32}")
+                || !uniqueDestinations.add(destinationId))
+              throw new IllegalArgumentException("Некоректні напрямки позиції");
+            checkRoute(destination.getString("route"));
+          }
+        }
+
         checkStatus(it.getString("status"));
         if (it.has("unit_issued")) {
           JSONArray flags = it.getJSONArray("unit_issued");
@@ -518,7 +533,7 @@ public final class CafeStore {
             continue;
           }
           if (!"cancelled".equals(it.getString("status"))
-              && route.split("@", 2)[0].equals(fulfillment(it))
+              && hasFulfillment(it, route.split("@", 2)[0])
               && unitFlags(it).optBoolean(u.getInt("unit"), false)) return true;
         }
       } else {
@@ -527,7 +542,7 @@ public final class CafeStore {
           JSONObject it = items.getJSONObject(i);
           for (int j = 0; j < ids.length(); j++)
             if (it.getInt("id") == ids.getInt(j)
-                && route.split("@", 2)[0].equals(fulfillment(it))
+                && hasFulfillment(it, route.split("@", 2)[0])
                 && "delivered".equals(it.getString("status"))) return true;
         }
       }
@@ -807,7 +822,10 @@ public final class CafeStore {
       for (int i = 0; i < rows.length(); i++)
         if (id.equals(rows.getJSONObject(i).optString("id"))) return rows.getJSONObject(i);
     if (Arrays.asList("cash", "bar", "delivery").contains(id))
-      return new JSONObject().put("id", id).put("kind", id).put("name", id);
+      return new JSONObject()
+          .put("id", id)
+          .put("kind", id)
+          .put("name", "cash".equals(id) ? "Каса" : "bar".equals(id) ? "Бариста" : "Видача");
     throw new IllegalArgumentException("Локацію не знайдено");
   }
 
@@ -816,26 +834,38 @@ public final class CafeStore {
         name = input.getString("name").trim(),
         kind = input.getString("kind"),
         color = input.getString("color");
-    if (!id.matches("loc-[a-f0-9]{32}|cash")
+    if (!id.matches("loc-[a-f0-9]{32}|cash|bar|delivery")
         || name.isEmpty()
         || name.length() > 80
         || !Arrays.asList("cash", "bar", "delivery").contains(kind)
         || !color.matches("#[a-fA-F0-9]{6}")
-        || ("cash".equals(id) && !"cash".equals(kind)))
+        || (Arrays.asList("cash", "bar", "delivery").contains(id) && !id.equals(kind)))
       throw new IllegalArgumentException("Перевірте поля локації");
     boolean found = false;
     for (int i = 0; i < rows.length(); i++) {
       JSONObject old = rows.getJSONObject(i);
       if (id.equals(old.getString("id"))) {
         found = true;
-        if (!kind.equals(old.getString("kind")))
-          throw new IllegalArgumentException("Тип локації незмінний");
       }
     }
     if (!found && rows.length() >= 50) throw new IllegalArgumentException("До 50 локацій");
     JSONObject row =
         new JSONObject().put("id", id).put("name", name).put("kind", kind).put("color", color);
     if ("cash".equals(kind)) {
+      if (input.has("targets")) {
+        JSONArray targets = input.getJSONArray("targets");
+        if (targets.length() == 0 || targets.length() > 50)
+          throw new IllegalArgumentException("Оберіть хоча б одну видачу");
+        Set<String> unique = new HashSet<>();
+        for (int i = 0; i < targets.length(); i++) {
+          String target = targets.getString(i);
+          if (!unique.add(target)
+              || target.equals(id)
+              || "cash".equals(location(rows, target).getString("kind")))
+            throw new IllegalArgumentException("Оберіть дійсну видачу");
+        }
+        return row.put("targets", new JSONArray(targets.toString()));
+      }
       String mode = "single".equals(input.optString("mode")) ? "single" : "split";
       row.put("mode", mode);
       String[] keys = {"bar_target", "delivery_target", "single_target"},
@@ -852,14 +882,59 @@ public final class CafeStore {
     return row;
   }
 
-  private static String fulfillment(JSONObject item) throws Exception {
-    return item.optString("fulfillment_route", item.getString("route"));
+  public static boolean hasFulfillment(JSONObject item, String route) throws Exception {
+    JSONArray targets = item.optJSONArray("destinations");
+    if (targets == null)
+      return route.equals(item.optString("fulfillment_route", item.getString("route")));
+    for (int i = 0; i < targets.length(); i++)
+      if (route.equals(targets.getJSONObject(i).getString("route"))) return true;
+    return false;
   }
 
   private static boolean atLocation(JSONObject item, String route, String id) throws Exception {
-    return route.equals(fulfillment(item))
-        && item.optString("location_id", "bar".equals(route) ? "bar" : "delivery")
-            .equals(id == null || id.isEmpty() ? ("bar".equals(route) ? "bar" : "delivery") : id);
+    String target = id == null || id.isEmpty() ? ("bar".equals(route) ? "bar" : "delivery") : id;
+    JSONArray targets = item.optJSONArray("destinations");
+    if (targets != null) {
+      for (int i = 0; i < targets.length(); i++) {
+        JSONObject d = targets.getJSONObject(i);
+        if (route.equals(d.getString("route")) && target.equals(d.getString("id"))) return true;
+      }
+      return false;
+    }
+    return hasFulfillment(item, route)
+        && target.equals(item.optString("location_id", "bar".equals(route) ? "bar" : "delivery"));
+  }
+
+  private static void checkLocationChange(String id, JSONArray rows, JSONArray orders)
+      throws Exception {
+    for (int n = 0; n < orders.length(); n++) {
+      JSONObject o = orders.getJSONObject(n);
+      JSONArray items = o.getJSONArray("items");
+      for (int j = 0; j < items.length(); j++) {
+        JSONObject item = items.getJSONObject(j);
+        if (!Arrays.asList("delivered", "cancelled").contains(item.getString("status"))
+            && (id.equals(o.optString("cash_location"))
+                || atLocation(item, "bar", id)
+                || atLocation(item, "instant", id)))
+          throw new IllegalArgumentException("Спочатку завершіть активні замовлення цієї локації");
+      }
+    }
+    for (int i = 0; i < rows.length(); i++) {
+      JSONObject l = rows.getJSONObject(i);
+      if (id.equals(l.getString("id")) || !"cash".equals(l.getString("kind"))) continue;
+      JSONArray targets = l.optJSONArray("targets");
+      if (targets == null)
+        targets =
+            "single".equals(l.optString("mode"))
+                ? new JSONArray().put(l.optString("single_target", "delivery"))
+                : new JSONArray()
+                    .put(l.optString("bar_target", "bar"))
+                    .put(l.optString("delivery_target", "delivery"));
+      for (int j = 0; j < targets.length(); j++)
+        if (id.equals(targets.getString(j)))
+          throw new IllegalArgumentException(
+              "Спочатку змініть напрямки кас, які надсилають сюди замовлення");
+    }
   }
 
   private static String undoKey(String route, String id) {
@@ -875,10 +950,31 @@ public final class CafeStore {
     if (!"cash".equals(cash.getString("kind")))
       throw new IllegalArgumentException("Касу не знайдено");
     if ((locations == null || locations.length() == 0) && !input.has("location_id")) return;
-    order.put("cash_location", id);
+    order
+        .put("cash_location", id)
+        .put("cash_location_name", cash.optString("name"))
+        .put("cash_location_color", cash.optString("color", "#27634f"));
     JSONArray items = order.getJSONArray("items");
     for (int i = 0; i < items.length(); i++) {
       JSONObject item = items.getJSONObject(i);
+      JSONArray chosen = cash.optJSONArray("targets");
+      if (chosen != null) {
+        JSONArray destinations = new JSONArray();
+        for (int j = 0; j < chosen.length(); j++) {
+          String target = chosen.getString(j);
+          JSONObject to = location(locations, target);
+          if ("cash".equals(to.getString("kind")))
+            throw new IllegalArgumentException("Це не видача");
+          destinations.put(
+              new JSONObject()
+                  .put("id", target)
+                  .put("route", "bar".equals(to.getString("kind")) ? "bar" : "instant"));
+        }
+        item.put("destinations", destinations)
+            .put("location_id", destinations.getJSONObject(0).getString("id"))
+            .put("fulfillment_route", destinations.getJSONObject(0).getString("route"));
+        continue;
+      }
       String target =
           "single".equals(cash.optString("mode"))
               ? cash.optString("single_target", "delivery")
@@ -1075,11 +1171,29 @@ public final class CafeStore {
       for (int i = 0; i < locations.length(); i++) {
         JSONObject old = locations.getJSONObject(i);
         if (row.getString("id").equals(old.getString("id"))) {
+          if (!row.getString("kind").equals(old.getString("kind")))
+            checkLocationChange(row.getString("id"), locations, orders);
           next.put(row);
           found = true;
         } else next.put(old);
       }
       if (!found) next.put(row);
+      work.put("locations", next);
+    } else if (path.equals("/api/location/delete")) {
+      String id = d.getString("id");
+      if (Arrays.asList("cash", "bar", "delivery").contains(id))
+        throw new IllegalArgumentException("Основні локації видаляти не можна");
+      JSONArray locations = work.optJSONArray("locations"), next = new JSONArray();
+      boolean found = false;
+      if (locations != null) {
+        checkLocationChange(id, locations, orders);
+        for (int i = 0; i < locations.length(); i++) {
+          JSONObject l = locations.getJSONObject(i);
+          if (id.equals(l.getString("id"))) found = true;
+          else next.put(l);
+        }
+      }
+      if (!found) throw new IllegalArgumentException("Локацію не знайдено");
       work.put("locations", next);
     } else if (path.equals("/api/settings/update")) {
       if (!(d.get("online_payment_enabled") instanceof Boolean))
@@ -1591,7 +1705,7 @@ public final class CafeStore {
     if (path.contains("expenses")
         || path.equals("/api/calculate-menu")
         || path.equals("/api/stats/clear")) domains.add("expenses");
-    if (path.equals("/api/location/save") || path.equals("/api/settings/update"))
+    if (path.startsWith("/api/location/") || path.equals("/api/settings/update"))
       domains.add("locations");
     persist(work, domains.toArray(new String[0]));
     data = work;

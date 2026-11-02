@@ -179,6 +179,98 @@ public class LocationSettingsTest {
     check(
         menu.getJSONArray("products").getJSONObject(0).has("image_url"),
         "Public image field missing");
+
+    s.mutate("/api/location/save", loc("bar", "Бариста головний", "bar").put("color", "#eecc44"));
+    s.mutate(
+        "/api/location/save",
+        loc(cash, "Спільна каса", "cash")
+            .put("targets", new JSONArray().put(bar).put(destination)));
+    int joint =
+        s.mutate(
+                "/api/order",
+                new JSONObject()
+                    .put("request", "joint")
+                    .put("card_amount", 0)
+                    .put("location_id", cash)
+                    .put("cash_given", 100000)
+                    .put("items", new JSONArray().put(new JSONObject().put("id", 1).put("qty", 2))))
+            .getInt("id");
+    JSONObject shared = order(s, joint),
+        originalPayment = new JSONObject(shared.getJSONObject("payment").toString());
+    JSONObject sharedItem = shared.getJSONArray("items").getJSONObject(0);
+    check(
+        shared.getJSONArray("items").length() == 1
+            && sharedItem.getJSONArray("destinations").length() == 2,
+        "Duplicated shared order");
+    check(shared.getString("cash_location_name").equals("Спільна каса"), "Source snapshot missing");
+    for (String role : new String[] {"bar", "delivery"}) {
+      JSONObject projection = acl.state(s.state(), role);
+      boolean present = false;
+      JSONArray rows = projection.getJSONArray("orders");
+      for (int n = 0; n < rows.length(); n++)
+        if (rows.getJSONObject(n).getInt("id") == joint) present = true;
+      check(present, "Shared order absent for role " + role);
+    }
+    s.mutate(
+        "/api/issue-unit",
+        new JSONObject()
+            .put("order", joint)
+            .put("id", sharedItem.getInt("id"))
+            .put("route", "bar")
+            .put("location_id", bar)
+            .put("unit", 0)
+            .put("delivered", true));
+    check(
+        order(s, joint)
+            .getJSONArray("items")
+            .getJSONObject(0)
+            .getJSONArray("unit_issued")
+            .getBoolean(0),
+        "Shared unit not issued");
+    s.mutate(
+        "/api/issue",
+        new JSONObject().put("id", joint).put("route", "instant").put("location_id", destination));
+    check(
+        order(s, joint)
+            .getJSONArray("items")
+            .getJSONObject(0)
+            .getString("status")
+            .equals("delivered"),
+        "Shared completion missing");
+    check(
+        order(s, joint).getJSONObject("payment").toString().equals(originalPayment.toString()),
+        "Shared issue changed finances");
+    s.mutate(
+        "/api/undo-issue",
+        new JSONObject().put("route", "instant").put("location_id", destination));
+    JSONArray issued =
+        order(s, joint).getJSONArray("items").getJSONObject(0).getJSONArray("unit_issued");
+    check(issued.getBoolean(0) && !issued.getBoolean(1), "Shared undo restored wrong units");
+    String temporary = "loc-dddddddddddddddddddddddddddddddd";
+    s.mutate("/api/location/save", loc(temporary, "Тимчасова", "delivery"));
+    s.mutate("/api/location/save", loc(temporary, "Тимчасова", "bar"));
+    s.mutate("/api/location/delete", new JSONObject().put("id", temporary));
+    for (String protectedId : new String[] {"cash", "bar", "delivery", cash, destination}) {
+      try {
+        s.mutate("/api/location/delete", new JSONObject().put("id", protectedId));
+        throw new AssertionError("Deleted protected/busy/referenced location");
+      } catch (IllegalArgumentException expected) {
+      }
+    }
+    try {
+      s.mutate("/api/location/save", loc(cash, "X", "cash").put("targets", new JSONArray()));
+      throw new AssertionError("Empty destinations accepted");
+    } catch (IllegalArgumentException expected) {
+    }
+    restored.restore(s.backup());
+    check(
+        order(restored, joint)
+                .getJSONArray("items")
+                .getJSONObject(0)
+                .getJSONArray("destinations")
+                .length()
+            == 2,
+        "Destinations lost on restore");
     System.out.println(
         "PASS locations/settings: whole-order routing, catalog preservation, scoped issue/undo,"
             + " names, transaction hiding, expense deletion, permissions and persistence");

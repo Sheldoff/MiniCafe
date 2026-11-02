@@ -3,7 +3,7 @@ import {
   applyRouting,
   inLocation,
   undoKey,
-  fulfillmentRoute,
+  checkLocationChange,
 } from "./locations.js";
 // Money is integer kopiykas. Reducer works on a private snapshot; DB commit is atomic.
 export const now = () =>
@@ -146,8 +146,18 @@ export function mutate(d, path, input) {
     d.locations ||= [];
     const row = validateLocation(input, d.locations),
       index = d.locations.findIndex((l) => l.id === row.id);
+    if (index >= 0 && d.locations[index].kind !== row.kind)
+      checkLocationChange(row.id, d.locations, orders);
     if (index < 0) d.locations.push(row);
     else d.locations[index] = row;
+    changed.add("locations");
+  } else if (path === "location/delete") {
+    if (["cash", "bar", "delivery"].includes(input.id))
+      fail("Основні локації видаляти не можна");
+    if (!(d.locations || []).some((l) => l.id === input.id))
+      fail("Локацію не знайдено");
+    checkLocationChange(input.id, d.locations, orders);
+    d.locations = d.locations.filter((l) => l.id !== input.id);
     changed.add("locations");
   } else if (path === "settings/update") {
     if (typeof input.online_payment_enabled !== "boolean")

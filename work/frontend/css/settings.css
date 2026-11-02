@@ -47,3 +47,117 @@
 #appDrawer [data-location]:not([data-location=""]) {
   padding-left: 28px;
 }
+
+.location-list {
+  margin-top: 20px;
+}
+.location-list-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border, #ddd);
+}
+.location-list-row .grow {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.location-list-row small {
+  display: block;
+  color: var(--muted, #54695b);
+}
+.location-list-row button {
+  min-height: 44px;
+}
+.location-list-row > .location-color {
+  flex-shrink: 0;
+}
+.location-target {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+}
+.location-target input {
+  width: 24px !important;
+  min-height: 24px !important;
+  height: 24px;
+  flex-shrink: 0;
+}
+.location-presets {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.location-presets button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+.settings-page fieldset {
+  border: 1px solid var(--border, #ccd4cb);
+  border-radius: 12px;
+  padding: 12px;
+  min-width: 0;
+}
+:root[data-location-theme] body {
+  background: var(--page);
+  color: var(--text, #26372f);
+}
+:root[data-location-theme] header,
+:root[data-location-theme][data-theme="dark"] header {
+  background: var(--location-color);
+  color: var(--location-text);
+}
+:root[data-location-theme]
+  :is(.panel, .card, .menu-panel, .cart-panel, #appDrawer) {
+  background: var(--surface);
+  border-color: var(--border);
+}
+:root[data-location-theme] :is(button, input, select, textarea) {
+  border-color: var(--border);
+}
+:root[data-location-theme]
+  button:not(.primary):not(.selected):not(.danger):not(.queue-item):not(
+    .tile
+  ):not(#drawerToggle):not(#themeToggle) {
+  color: var(--text, #26372f);
+}
+:root[data-location-theme]
+  :is(
+    button.primary,
+    .selected,
+    .cash-indicator,
+    .drawer-links button.selected
+  ) {
+  background: var(--accent) !important;
+  color: var(--on-accent) !important;
+}
+:root[data-location-theme] .guest-name-field {
+  border-color: var(--accent);
+}
+.order-source {
+  display: inline-block;
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-bottom: 10px;
+  background: var(--source-color);
+  color: var(--source-text);
+  overflow-wrap: anywhere;
+}
+:root .queue-grid .card button.primary,
+:root[data-location-theme] .queue-grid .card button.primary {
+  background: var(--source-color) !important;
+  color: var(--source-text) !important;
+  border-color: var(--source-color);
+}
+@media (max-width: 480px) {
+  .location-list-row {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .location-list-row > small {
+    width: 100%;
+    text-align: right;
+  }
+}

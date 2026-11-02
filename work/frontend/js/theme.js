@@ -34,6 +34,7 @@ function setCafeTheme(mode, animate = true, notifyNative = true) {
   let meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = mode === "dark" ? "#142d25" : "#173f35";
   syncThemeControl();
+  applyLocationTheme();
   themeChangeTimer = setTimeout(
     () => root.classList.remove("theme-changing"),
     150,
