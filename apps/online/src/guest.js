@@ -203,7 +203,7 @@ function drawSummary() {
     lastCode?.payload === selectionPayload() && lastCode.until > Date.now()
       ? "Показати код"
       : "Створити код для каси";
-  $("#guestCodeSubmit").disabled = !t.qty || submitting || !!pendingPayment;
+  $("#guestCodeSubmit").disabled = submitting;
   $("#guestCount").textContent = t.qty ? `· ${t.qty} шт.` : "";
   $("#guestTotal").textContent = money(t.sum);
   $("#guestSubmit").disabled = (!t.qty && !pendingPayment) || submitting;
@@ -302,6 +302,14 @@ async function submitGuestOrder() {
     return;
   }
   if (submitting) return;
+  if (!totals(selection).qty) {
+    showDialog(
+      "Оберіть позиції",
+      "<p>Додайте хоча б одну позицію кнопкою ＋, тоді створіть код для каси.</p>",
+      "<button data-close>Зрозуміло</button>",
+    );
+    return;
+  }
   if (!validName(guestName())) {
     const field = $("#guestFullName");
     field.setAttribute("aria-invalid", "true");
@@ -320,7 +328,10 @@ async function submitGuestOrder() {
   drawSummary();
   try {
     const payload = selectionPayload();
-    if (!paymentRequest || paymentRequest.payload !== payload)
+    if (
+      guestCheckoutMode === "pay" &&
+      (!paymentRequest || paymentRequest.payload !== payload)
+    )
       paymentRequest = {
         payload,
         token: [...crypto.getRandomValues(new Uint8Array(32))]
@@ -340,7 +351,9 @@ async function submitGuestOrder() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...JSON.parse(payload),
-          payment_request: paymentRequest.token,
+          ...(guestCheckoutMode === "pay"
+            ? { payment_request: paymentRequest.token }
+            : {}),
           mode: guestCheckoutMode,
         }),
       });

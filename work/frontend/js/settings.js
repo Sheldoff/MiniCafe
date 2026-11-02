@@ -118,8 +118,8 @@ function settingsExtras() {
   root.innerHTML =
     "<h2>Налаштування</h2>" +
     (admin
-      ? '<div class="settings-actions"><button onclick="change(\'locations\')">Локації</button><button onclick="change(\'transactions\')">Історія транзакцій</button><button id="onlinePayToggle" onclick="toggleOnlinePayment()"></button></div>'
-      : "") +
+      ? '<div class="settings-actions"><button onclick="change(\'locations\')">Локації</button><button onclick="change(\'transactions\')">Історія транзакцій</button><button onclick="change(\'themes\')">Вибір теми</button><button id="onlinePayToggle" onclick="toggleOnlinePayment()"></button></div>'
+      : "<button onclick=\"change('themes')\">Вибір теми</button>") +
     (window.CafeNative
       ? "<button onclick=\"location.href='minicafe://settings'\">Керування сервером телефона</button>"
       : "");
@@ -148,11 +148,17 @@ async function toggleOnlinePayment() {
     b.disabled = false;
   }
 }
-function locationsPage(id = "") {
+function locationsPage(id = "", fromHistory = false) {
+  if (id && !fromHistory)
+    history.pushState(
+      { ...history.state, cafeLocationEditor: id },
+      "",
+      location.href,
+    );
   const host = document.querySelector("#main"),
     rows = allLocations();
   if (!id) {
-    host.innerHTML = `<section class="panel settings-page"><button onclick="change('server')">← Налаштування</button><h2>Локації</h2><button class="primary" onclick="locationsPage('new')">Створити локацію</button><div class="location-list">${rows.map((l) => `<div class="location-list-row"><span class="location-color" style="background:${l.color}"></span><span class="grow"><b>${esc(l.name)}</b><small>${{ cash: "Каса", bar: "Бариста", delivery: "Видача" }[l.kind]}</small></span><button aria-label="Редагувати ${esc(l.name)}" onclick="locationsPage('${l.id}')">Редагувати</button>${["cash", "bar", "delivery"].includes(l.id) ? "<small>Основна</small>" : `<button class="danger" aria-label="Видалити ${esc(l.name)}" onclick="deleteLocation('${l.id}',this)">×</button>`}</div>`).join("")}</div><p id="locationError" role="status"></p></section>`;
+    host.innerHTML = `<section class="panel settings-page"><h2>Локації</h2><button class="primary" onclick="locationsPage('new')">Створити локацію</button><div class="location-list">${rows.map((l) => `<div class="location-list-row"><span class="location-color" style="background:${l.color}"></span><span class="grow"><b>${esc(l.name)}</b><small>${{ cash: "Каса", bar: "Бариста", delivery: "Видача" }[l.kind]}</small></span><button aria-label="Редагувати ${esc(l.name)}" onclick="locationsPage('${l.id}')">Редагувати</button>${["cash", "bar", "delivery"].includes(l.id) ? "<small>Основна</small>" : `<button class="danger" aria-label="Видалити ${esc(l.name)}" onclick="deleteLocation('${l.id}',this)">×</button>`}</div>`).join("")}</div><p id="locationError" role="status"></p></section>`;
     return;
   }
   const saved = rows.find((l) => l.id === id),
@@ -164,7 +170,7 @@ function locationsPage(id = "") {
         : [editing.bar_target || "bar", editing.delivery_target || "delivery"]),
     basic = ["cash", "bar", "delivery"].includes(id),
     colors = [...new Set(rows.map((l) => l.color))];
-  host.innerHTML = `<section class="panel settings-page"><button onclick="locationsPage()">← Локації</button><h2>${saved ? "Редагувати локацію" : "Створити локацію"}</h2><form id="locationForm"><label>Функціонал і група в меню<select id="locationKind" ${basic ? "disabled" : ""}><option value="cash">Каса</option><option value="bar">Бариста</option><option value="delivery">Видача</option></select></label><label>Назва в бічному меню<input id="locationName" maxlength="80" required value="${esc(editing.name)}"></label><div id="locationCashRules"><fieldset><legend>Куди відправляти замовлення</legend><p class="muted">Оберіть потрібних бариста та видачі. Це спільне замовлення: відмітки виконання синхронні.</p><div id="locationTargets">${rows
+  host.innerHTML = `<section class="panel settings-page"><h2>${saved ? "Редагувати локацію" : "Створити локацію"}</h2><form id="locationForm"><label>Функціонал і група в меню<select id="locationKind" ${basic ? "disabled" : ""}><option value="cash">Каса</option><option value="bar">Бариста</option><option value="delivery">Видача</option></select></label><label>Назва в бічному меню<input id="locationName" maxlength="80" required value="${esc(editing.name)}"></label><div id="locationCashRules"><fieldset><legend>Куди відправляти замовлення</legend><p class="muted">Оберіть потрібних бариста та видачі. Це спільне замовлення: відмітки виконання синхронні.</p><div id="locationTargets">${rows
     .filter((l) => l.kind !== "cash" && l.id !== id)
     .map(
       (l) =>
@@ -172,9 +178,19 @@ function locationsPage(id = "") {
     )
     .join(
       "",
-    )}</div></fieldset></div><label>Колір інтерфейсу<input id="locationColor" type="color" value="${editing.color}"></label><div class="location-presets" aria-label="Кольори наявних локацій">${colors.map((color) => `<button type="button" aria-label="Обрати колір ${color}" style="background:${color};color:${locationTextColor(color)}" onclick="document.querySelector('#locationColor').value='${color}'">✓</button>`).join("")}</div><p id="locationError" role="status"></p><button class="primary" type="submit">Зберегти локацію</button></form></section>`;
+    )}</div></fieldset></div><label id="linkedCashField">Прив’язана каса<select id="linkedCash"><option value="">Усі каси — загальна наявність</option>${rows
+    .filter((l) => l.kind === "cash")
+    .map(
+      (l) =>
+        `<option value="${l.id}" ${editing.linked_cash === l.id ? "selected" : ""}>${esc(l.name)}</option>`,
+    )
+    .join(
+      "",
+    )}</select></label><label>Колір інтерфейсу<input id="locationColor" type="color" value="${editing.color}"></label><div class="location-presets" aria-label="Кольори наявних локацій">${colors.map((color) => `<button type="button" aria-label="Обрати колір ${color}" style="background:${color};color:${locationTextColor(color)}" onclick="document.querySelector('#locationColor').value='${color}'">✓</button>`).join("")}</div><p id="locationError" role="status"></p><button class="primary" type="submit">Зберегти локацію</button></form></section>`;
   document.querySelector("#locationKind").value = editing.kind;
   const update = () => {
+    document.querySelector("#linkedCashField").hidden =
+      document.querySelector("#locationKind").value === "cash";
     document.querySelector("#locationCashRules").hidden =
       document.querySelector("#locationKind").value !== "cash";
   };
@@ -195,6 +211,7 @@ function locationsPage(id = "") {
         name: document.querySelector("#locationName").value,
         kind: document.querySelector("#locationKind").value,
         color: document.querySelector("#locationColor").value,
+        linked_cash: document.querySelector("#linkedCash").value,
         ...(document.querySelector("#locationKind").value === "cash"
           ? {
               targets: [
@@ -204,7 +221,7 @@ function locationsPage(id = "") {
           : {}),
       });
       toast("Локацію збережено");
-      locationsPage();
+      history.back();
     } catch (e) {
       document.querySelector("#locationError").textContent = e.message;
       b.disabled = false;
@@ -230,7 +247,7 @@ async function transactionsPage(append = false) {
   if (!append) {
     transactionCursor = null;
     document.querySelector("#main").innerHTML =
-      '<section class="panel settings-page"><button onclick="change(\'server\')">← Налаштування</button><h2>Історія транзакцій</h2><p class="muted">Карткові оплати замовлень. Видалення прибирає запис зі списку та не змінює оплату чи звіти.</p><div id="transactionRows"></div><button id="transactionMore" hidden onclick="transactionsPage(true)">Показати ще</button></section>';
+      '<section class="panel settings-page"><h2>Історія транзакцій</h2><p class="muted">Карткові оплати замовлень. Видалення прибирає запис зі списку та не змінює оплату чи звіти.</p><div id="transactionRows"></div><button id="transactionMore" hidden onclick="transactionsPage(true)">Показати ще</button></section>';
   }
   const host = document.querySelector("#transactionRows");
   if (!host) return;
@@ -309,3 +326,28 @@ cash = function () {
     changeDue();
   }
 };
+
+function themesPage() {
+  document.querySelector("#main").innerHTML =
+    `<section class="panel settings-page"><h2>Вибір теми</h2><div class="theme-options"><button data-palette-choice="standard" onclick="setCafePalette('standard');themesPage()">Стандартна</button><button data-palette-choice="cafe" onclick="setCafePalette('cafe');themesPage()">Кафе <span class="palette-swatches"><i style="background:#F6F3EE"></i><i style="background:#4B2E1F"></i><i style="background:#F4E6A6"></i><i style="background:#DCECEF"></i></span></button></div><h3>Режим</h3><button onclick="toggleCafeTheme();themesPage()">${document.documentElement.dataset.theme === "dark" ? "Темний" : "Світлий"}</button><p>Вибір зберігається на цьому пристрої. Кольори локацій доповнюють обрану тему.</p></section>`;
+  document
+    .querySelector(
+      `[data-palette-choice="${document.documentElement.dataset.palette || "standard"}"]`,
+    )
+    .classList.add("selected");
+}
+function availabilityContextCash() {
+  return view === "cash"
+    ? activeLocation || "cash"
+    : locationInfo()?.linked_cash || "";
+}
+function locallyUnavailable(product) {
+  return (product.unavailable_at || []).includes(availabilityContextCash());
+}
+
+function drawerLocationColor(id) {
+  const saved = (data.locations || []).find((l) => l.id === id);
+  return /^#[a-fA-F0-9]{6}$/.test(saved?.color || "")
+    ? `data-nav-color="${saved.color}" style="--nav-color:${saved.color}"`
+    : "";
+}

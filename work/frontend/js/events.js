@@ -13,6 +13,9 @@ window.addEventListener("popstate", () => {
       "server",
       "locations",
       "transactions",
+      "themes",
+      "staff",
+      "menu-transfer",
     ].includes(target) &&
     (target !== view || nextLocation !== activeLocation)
   ) {
@@ -22,6 +25,8 @@ window.addEventListener("popstate", () => {
     view = target;
     render();
   }
+  if (target === "locations" && view === "locations")
+    locationsPage(history.state?.cafeLocationEditor || "", true);
   if (view === "cash") showCashPanel(!!history.state?.cafeCart, true);
   if (view === "menu") {
     if (history.state?.cafeEditor) openProductEditor(true);

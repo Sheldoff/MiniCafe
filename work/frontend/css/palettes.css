@@ -1,0 +1,88 @@
+/* Cafe palette keeps the existing light/dark preference and location accents. */
+:root[data-palette="cafe"] {
+  --page: #f6f3ee;
+  --surface: #f6f3ee;
+  --raised: #f4e6a6;
+  --input-bg: #fffdf8;
+  --text: #4b2e1f;
+  --muted: #735947;
+  --border: #b9a795;
+  --accent: #4b2e1f;
+  --on-accent: #f6f3ee;
+  --theme-control-bg: #dcecef;
+  --theme-control-text: #4b2e1f;
+  --theme-control-border: #a0b3b8;
+  --palette-header: #4b2e1f;
+  --palette-header-text: #f6f3ee;
+  --palette-secondary: #dcecef;
+}
+:root[data-palette="cafe"][data-theme="dark"] {
+  --page: #201912;
+  --surface: #2e2119;
+  --raised: #473626;
+  --input-bg: #201912;
+  --text: #f6f3ee;
+  --muted: #d3c4b5;
+  --border: #9d8775;
+  --accent: #f4e6a6;
+  --on-accent: #4b2e1f;
+  --theme-control-bg: #473626;
+  --theme-control-text: #f6f3ee;
+  --theme-control-border: #9d8775;
+  --palette-secondary: #35484e;
+}
+:root[data-palette="cafe"] body {
+  background: var(--page);
+  color: var(--text);
+}
+:root[data-palette="cafe"]
+  :is(
+    .panel,
+    .card,
+    .menu-panel,
+    .cart-panel,
+    #appDrawer,
+    input,
+    select,
+    textarea
+  ) {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+:root[data-palette="cafe"]:not([data-location-theme]) header {
+  background: var(--palette-header);
+  color: var(--palette-header-text);
+}
+:root[data-palette="cafe"] button {
+  color: var(--text);
+  border-color: var(--border);
+}
+:root[data-palette="cafe"]
+  :is(button.primary, button.selected, .drawer-links button.selected) {
+  background: var(--accent) !important;
+  color: var(--on-accent) !important;
+}
+:root[data-palette="cafe"]
+  :is(.cash-switch, #categories button:not(.selected), .drawer-heading) {
+  background: var(--palette-secondary);
+  color: var(--text);
+}
+:root[data-palette="cafe"] .cash-indicator {
+  background: var(--raised);
+}
+:root[data-palette="cafe"] .tile {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+:root[data-palette="cafe"] .tile b {
+  color: var(--text);
+}
+:root[data-palette="cafe"] .product-visual {
+  background: var(--raised);
+}
+:root[data-palette="cafe"] .queue-grid .card button.primary {
+  background: var(--source-color) !important;
+  color: var(--source-text) !important;
+}

@@ -82,6 +82,74 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
       const nav = await p.locator(".drawer-links button").allTextContents();
       assert.ok(nav.indexOf("Каса низ тест") === nav.indexOf("Каса") + 1);
       assert.ok(nav.indexOf("Видача низ тест") > nav.indexOf("Видача"));
+      await p
+        .getByRole("button", {
+          name: "Редагувати Видача низ тест",
+          exact: true,
+        })
+        .click();
+      await p.locator("#linkedCash").selectOption(cashId);
+      await p.locator("#locationForm [type=submit]").click();
+      await p.locator(".location-list").waitFor();
+      assert.equal(
+        await p.locator("button").filter({ hasText: /^←/ }).count(),
+        0,
+      );
+      const foodId = await p.evaluate(
+        () => data.products.find((p) => p.route === "instant" && p.active).id,
+      );
+      await p.evaluate((id) => change("delivery", id), delivery);
+      await p.locator(".availability-heading").click();
+      await p
+        .locator(`.availability-toggle[onclick="availability(${foodId})"]`)
+        .click();
+      await p.waitForFunction(
+        ({ foodId, cashId }) =>
+          data.products
+            .find((p) => p.id === foodId)
+            .unavailable_at?.includes(cashId),
+        { foodId, cashId },
+      );
+      await p.evaluate((id) => change("cash", id), cashId);
+      assert.equal(await p.locator(`[data-product="${foodId}"]`).count(), 0);
+      await p.evaluate(() => change("cash"));
+      assert.equal(await p.locator(`[data-product="${foodId}"]`).count(), 1);
+      const blocked = await context.request.post(url + "/api/order", {
+        headers,
+        data: {
+          request: "blocked-local-" + name,
+          location_id: cashId,
+          guest: "Тест",
+          items: [{ id: foodId, qty: 1 }],
+          cash_given: 10000,
+          card_amount: 0,
+        },
+      });
+      assert.equal(blocked.status(), 400);
+      await p.evaluate((id) => change("delivery", id), delivery);
+      await p.locator(".availability-heading").click();
+      await p
+        .locator(`.availability-toggle[onclick="availability(${foodId})"]`)
+        .click();
+      await p.waitForFunction(
+        ({ foodId, cashId }) =>
+          !data.products
+            .find((p) => p.id === foodId)
+            .unavailable_at?.includes(cashId),
+        { foodId, cashId },
+      );
+      const cashNav = p.locator(`.drawer-links [data-location="${cashId}"]`),
+        baseNav = p.locator(
+          '.drawer-links [data-view="cash"][data-location=""]',
+        );
+      assert.equal(
+        await cashNav.evaluate((b) => getComputedStyle(b).paddingLeft),
+        await baseNav.evaluate((b) => getComputedStyle(b).paddingLeft),
+      );
+      assert.equal(
+        await cashNav.evaluate((b) => getComputedStyle(b).borderColor),
+        "rgb(238, 204, 68)",
+      );
       await p.evaluate((id) => change("cash", id), cashId);
       assert.equal(
         await p
@@ -285,6 +353,11 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
       await p
         .getByRole("button", { name: "Редагувати Тимчасова", exact: true })
         .click();
+      await p.goBack();
+      await p.locator(".location-list").waitFor();
+      await p
+        .getByRole("button", { name: "Редагувати Тимчасова", exact: true })
+        .click();
       await p.locator("#locationKind").selectOption("bar");
       await p.locator("#locationForm [type=submit]").click();
       await p.locator(".location-list").waitFor();
@@ -309,8 +382,53 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
         ),
       });
 
+      await p.evaluate(() => change("themes"));
+      await p.locator('[data-palette-choice="cafe"]').click();
+      assert.equal(
+        await p.evaluate(() => localStorage.getItem("minicafe-palette")),
+        "cafe",
+      );
+      assert.equal(
+        await p.locator("button").filter({ hasText: /^←/ }).count(),
+        0,
+      );
+      await p.reload();
+      await p.waitForFunction(() => hasServerState);
+      assert.equal(
+        await p.evaluate(() => document.documentElement.dataset.palette),
+        "cafe",
+      );
+      assert.equal(
+        await p
+          .locator("header")
+          .evaluate((h) => getComputedStyle(h).backgroundColor),
+        "rgb(75, 46, 31)",
+      );
+      await p.evaluate(() => setCafeTheme("dark", false));
+      assert.equal(
+        await p.evaluate(() => document.documentElement.dataset.palette),
+        "cafe",
+      );
+      await p.evaluate(() => themesPage());
+      await p.waitForTimeout(220);
+      await p.screenshot({
+        path: path.join(
+          __dirname,
+          "../..",
+          `cafe-palette-${online ? "online" : "android"}-${name}.png`,
+        ),
+      });
+      await p.evaluate(() => {
+        setCafeTheme("light", false);
+        setCafePalette("standard");
+      });
       const guest = await context.newPage();
       guest.on("pageerror", (e) => errors.push(e.message));
+      await guest.addInitScript(() =>
+        Object.defineProperty(window.crypto, "getRandomValues", {
+          value: undefined,
+        }),
+      );
       await guest.goto(url + (online ? "/" : "/guest"));
       await guest.locator("#foodList .menu-row").first().waitFor();
       assert.equal(await guest.locator("#guestSubmit").isVisible(), false);
@@ -319,6 +437,9 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
         const image = document.querySelector(".guest-product-photo");
         return image?.complete && image.naturalWidth > 0;
       });
+      await guest.locator("#guestCodeSubmit").click();
+      await guest.getByRole("heading", { name: "Оберіть позиції" }).waitFor();
+      await guest.locator("#dialogActions [data-close]").click();
       await guest.locator("#guestFullName").fill("Відвідувач Тест");
       await guest.locator('#foodList [data-step="1"]').first().click();
       await guest.locator("#guestCodeSubmit").click();
@@ -334,6 +455,55 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
           `guest-cards-${online ? "online" : "android"}-${name}.png`,
         ),
       });
+      const firstCode = (await guest.locator(".code").innerText()).trim();
+      const productId = await p.evaluate(
+        () => data.products.find((p) => p.active && !p.sold_out).id,
+      );
+      const second = await context.request.post(url + "/api/public/code", {
+        headers,
+        data: {
+          mode: "code",
+          guest: "Другий Гість",
+          items: [{ id: productId, qty: 1 }],
+        },
+      });
+      assert.equal(second.status(), 200);
+      const secondCode = (await second.json()).code;
+      const loadCode = async (code, locationId) => {
+        await p.evaluate((id) => change("cash", id), locationId);
+        await p.locator("[data-guest-code]").click();
+        await p.locator("#guestCodeInput").fill(code);
+        await p.locator(".cloud-code-form [type=submit]").click();
+        await p.waitForFunction(
+          () =>
+            mobileCart &&
+            cart.length > 0 &&
+            !document.querySelector("#orderDialog"),
+        );
+      };
+      await loadCode(firstCode, cashId);
+      await loadCode(secondCode, "");
+      await p.evaluate((id) => change("cash", id), cashId);
+      await p.locator("#cartTab").click();
+      await p.locator("#send").click();
+      await p.waitForFunction(() => !busy && cart.length === 0);
+      let remaining = (
+        await (
+          await context.request.get(url + "/api/guest-codes", { headers })
+        ).json()
+      ).codes;
+      assert.ok(!remaining.some((c) => c.code === firstCode));
+      assert.ok(remaining.some((c) => c.code === secondCode));
+      await p.evaluate(() => change("cash"));
+      await p.locator("#cartTab").click();
+      await p.locator("#send").click();
+      await p.waitForFunction(() => !busy && cart.length === 0);
+      remaining = (
+        await (
+          await context.request.get(url + "/api/guest-codes", { headers })
+        ).json()
+      ).codes;
+      assert.ok(!remaining.some((c) => c.code === secondCode));
       assert.deepEqual(errors, []);
       console.log(
         `PASS ${name} ${online ? "online" : "Android"}: locations/forms/menu groups, routed issue/undo, named card ledger, transaction hiding, fullscreen editor/draft, expense deletion, payment toggle and public photo/code`,

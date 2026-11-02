@@ -190,7 +190,13 @@ async function availability(id) {
   let p = data.products.find((p) => p.id === id);
   if (!p) return;
   try {
-    await post("availability", { id, sold_out: !p.sold_out });
+    await post("availability", {
+      id,
+      sold_out: locationInfo()?.linked_cash
+        ? !locallyUnavailable(p)
+        : !p.sold_out,
+      location_id: activeLocation || view,
+    });
     orders();
   } catch (e) {
     toast(e.message);

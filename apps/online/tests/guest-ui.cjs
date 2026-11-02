@@ -223,7 +223,9 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))
       }
       await p.screenshot({ path: ".wrangler/guest-code-" + name + ".png" });
       await p.locator("[data-new-order]").click();
-      assert.equal(await p.locator("#guestCodeSubmit").isDisabled(), true);
+      assert.equal(await p.locator("#guestCodeSubmit").isDisabled(), false);
+      await p.locator("#guestCodeSubmit").click();
+      await p.getByRole("heading", { name: "Оберіть позиції" }).waitFor();
       assert.deepEqual(errors, []);
       console.log(
         "PASS " +

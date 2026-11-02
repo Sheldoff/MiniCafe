@@ -47,3 +47,12 @@ function toggleCafeTheme() {
     document.documentElement.dataset.theme === "dark" ? "light" : "dark",
   );
 }
+
+function setCafePalette(palette) {
+  if (!["standard", "cafe"].includes(palette)) return;
+  document.documentElement.dataset.palette = palette;
+  try {
+    localStorage.setItem("minicafe-palette", palette);
+  } catch (e) {}
+  applyLocationTheme();
+}

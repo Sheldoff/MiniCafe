@@ -4,6 +4,7 @@ import {
   inLocation,
   undoKey,
   checkLocationChange,
+  availabilityCash,
 } from "./locations.js";
 // Money is integer kopiykas. Reducer works on a private snapshot; DB commit is atomic.
 export const now = () =>
@@ -38,6 +39,16 @@ export function validateProduct(p) {
   integer(p.price, 0, 100000000);
   routeCheck(p.route);
   p.active = p.active ? 1 : 0;
+  if (
+    p.unavailable_at !== undefined &&
+    (!Array.isArray(p.unavailable_at) ||
+      p.unavailable_at.length > 50 ||
+      new Set(p.unavailable_at).size !== p.unavailable_at.length ||
+      p.unavailable_at.some(
+        (id) => typeof id !== "string" || !/^(cash|loc-[a-f0-9]{32})$/.test(id),
+      ))
+  )
+    fail("Некоректна наявність каси");
   if (p.stock != null) integer(p.stock, -1000000, 1000000);
   if (p.stock_estimated !== undefined && typeof p.stock_estimated !== "boolean")
     fail("Некоректний режим залишку");
@@ -140,7 +151,17 @@ export function mutate(d, path, input) {
     changed.add("products");
   } else if (path === "availability") {
     if (typeof input.sold_out !== "boolean") fail("Некоректна наявність");
-    find(p, input.id).sold_out = input.sold_out;
+    const product = find(p, input.id),
+      cash = availabilityCash(
+        d.locations,
+        input.location_id || (product.route === "bar" ? "bar" : "delivery"),
+      );
+    if (cash) {
+      const ids = new Set(product.unavailable_at || []);
+      if (input.sold_out) ids.add(cash);
+      else ids.delete(cash);
+      product.unavailable_at = [...ids];
+    } else product.sold_out = input.sold_out;
     changed.add("products");
   } else if (path === "location/save") {
     d.locations ||= [];
@@ -201,7 +222,12 @@ export function mutate(d, path, input) {
     const items = input.items.map((row) => {
       const product = find(p, integer(row.id, 1));
       const qty = integer(row.qty, 1, 99);
-      if (!product.active || product.sold_out) fail("Позиція недоступна");
+      if (
+        !product.active ||
+        product.sold_out ||
+        product.unavailable_at?.includes(input.location_id || "cash")
+      )
+        fail("Позиція недоступна на цій касі");
       const price =
         row.unit_price === undefined
           ? product.price

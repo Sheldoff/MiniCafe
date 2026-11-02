@@ -7,7 +7,8 @@
     "css/tablet.css",
     "css/app-layout.css",
     "css/card-payments.css",
-    "css/settings.css"
+    "css/settings.css",
+    "css/palettes.css"
   ],
   "scripts": [
     "js/state.js",
