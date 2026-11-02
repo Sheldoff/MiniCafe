@@ -59,7 +59,7 @@
     "private_password_file_separate": "work/android/signing.local.json",
     "certificate_fingerprint_file": "work/android/signing-cert.sha256"
   },
-  "validation_limit": "Android 3.47: full checks.py without skips passed (23 Java suites, local API, Chrome/WebKit and WebView/tablet modes), including design controls, drawer borders, theme color animation cancellation and row editing. Online 0.14.0: 19 Node/SQLite tests, disposable D1 API and Android/D1 backup interoperability, Chrome/WebKit design and bank history UI passed. Migration 0012 applied; Worker c852ed3b-1613-4b4c-85e4-8292312f56c4 deployed. No physical phone or production test orders; Windows frozen.",
+  "validation_limit": "Android 3.48: full checks.py without skips passed (23 Java suites, local API, Chrome/WebKit and tablet/WebView modes). New UI scenarios verify retired palette cleanup/route migration, unified Settings, equal 2px drawer borders/no brand frame, six location colors in light/dark with contrast >=4.5:1, and indicator colors while moving. Online 0.15.0: 19 Node/SQLite tests, disposable D1 API/backup interoperability and Chrome/WebKit UI passed. Worker 487f87f2-81f0-4d9f-aca6-53d68147328d deployed. No physical phone or production test orders; Windows frozen.",
   "development_tracks": {
     "policy": "docs/PROJECT-TRACKS-UA.md",
     "local_android": {
