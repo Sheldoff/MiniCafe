@@ -167,20 +167,3 @@
 #appDrawer .drawer-links button[data-nav-color] {
   border: 2px solid var(--nav-color) !important;
 }
-.theme-options {
-  display: grid;
-  gap: 14px;
-  margin-block: 20px;
-}
-.palette-swatches {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  margin-top: 10px;
-}
-.palette-swatches i {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: 1px solid #807366;
-}

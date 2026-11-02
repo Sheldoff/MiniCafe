@@ -39,8 +39,9 @@ function locationTextColor(color) {
     .match(/../g)
     .map((n) => parseInt(n, 16) / 255)
     .map((n) => (n <= 0.04045 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4));
-  return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722 > 0.179
-    ? "#101713"
+  const luminance = rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
+  return (luminance + 0.05) / 0.05 >= 1.05 / (luminance + 0.05)
+    ? "#000000"
     : "#ffffff";
 }
 function applyLocationTheme() {
@@ -59,6 +60,13 @@ function applyLocationTheme() {
     "--border",
     "--location-color",
     "--location-text",
+    "--text",
+    "--muted",
+    "--success",
+    "--success-bg",
+    "--theme-control-bg",
+    "--theme-control-text",
+    "--theme-control-border",
   ];
   props.forEach((key) => root.style.removeProperty(key));
   delete root.dataset.locationTheme;
@@ -78,6 +86,8 @@ function applyLocationTheme() {
       )
       .join("");
   const values = {
+    "--text": dark ? "#e9efe9" : "#26372f",
+    "--muted": dark ? "#b0beb2" : "#526355",
     "--location-color": color,
     "--location-text": locationTextColor(color),
     "--accent": dark ? mix("#ffffff", 0.45) : color,
@@ -88,6 +98,11 @@ function applyLocationTheme() {
     "--border": mix(dark ? "#65766b" : "#d2d8d3", 0.2),
   };
   values["--on-accent"] = locationTextColor(values["--accent"]);
+  values["--success"] = values["--text"];
+  values["--success-bg"] = values["--raised"];
+  values["--theme-control-bg"] = values["--raised"];
+  values["--theme-control-text"] = values["--text"];
+  values["--theme-control-border"] = values["--border"];
   Object.entries(values).forEach(([key, value]) =>
     root.style.setProperty(key, value),
   );
@@ -99,7 +114,7 @@ function orderLocationStyle(order) {
       source?.color ||
       (id === "cash"
         ? getComputedStyle(document.documentElement)
-            .getPropertyValue("--palette-accent")
+            .getPropertyValue("--default-accent")
             .trim() || "#27634f"
         : order.cash_location_color || "#27634f");
   return /^#[a-fA-F0-9]{6}$/.test(color)
@@ -118,20 +133,35 @@ function locationUndoKey(route) {
 }
 function settingsExtras() {
   if (document.querySelector("#settingsExtras")) return;
-  const root = document.createElement("section");
-  root.id = "settingsExtras";
-  root.className = "panel";
-  const admin = !data.access_role || data.access_role === "admin";
-  root.innerHTML =
-    "<h2>Налаштування</h2>" +
-    (admin
-      ? '<div class="settings-actions"><button onclick="change(\'locations\')">Локації</button><button onclick="change(\'transactions\')">Історія транзакцій</button><button onclick="change(\'themes\')">Вибір теми</button><button id="onlinePayToggle" onclick="toggleOnlinePayment()"></button></div>'
-      : "<button onclick=\"change('themes')\">Вибір теми</button>") +
-    (window.CafeNative
-      ? "<button onclick=\"location.href='minicafe://settings'\">Керування сервером телефона</button>"
-      : "");
-  document.querySelector("#main").prepend(root);
-  const button = root.querySelector("#onlinePayToggle");
+  const panel = document.querySelector("#main > .panel");
+  if (!panel) return;
+  panel.classList.add("settings-panel");
+  const isCloud = panel.classList.contains("cloud-server-panel");
+  if (isCloud) {
+    const title = document.createElement("h2");
+    title.textContent = "Налаштування";
+    panel.prepend(title);
+  } else panel.querySelector("h2").textContent = "Налаштування";
+  let actions = panel.querySelector(".cloud-server-actions");
+  if (!actions) {
+    actions = document.createElement("div");
+    for (const b of [...panel.children].filter((e) => e.tagName === "BUTTON"))
+      actions.append(b);
+    panel.append(actions);
+  }
+  actions.id = "settingsExtras";
+  actions.classList.add("settings-actions");
+  if (!data.access_role || data.access_role === "admin")
+    actions.insertAdjacentHTML(
+      "afterbegin",
+      '<button onclick="change(\'locations\')">Локації</button><button onclick="change(\'transactions\')">Історія транзакцій</button><button id="onlinePayToggle" onclick="toggleOnlinePayment()"></button>',
+    );
+  if (window.CafeNative)
+    actions.insertAdjacentHTML(
+      "beforeend",
+      "<button onclick=\"location.href='minicafe://settings'\">Керування сервером телефона</button>",
+    );
+  const button = actions.querySelector("#onlinePayToggle");
   if (button)
     button.textContent =
       data.online_payment_enabled === false
@@ -336,15 +366,6 @@ cash = function () {
   }
 };
 
-function themesPage() {
-  document.querySelector("#main").innerHTML =
-    `<section class="panel settings-page"><h2>Вибір теми</h2><div class="theme-options"><button data-palette-choice="standard" onclick="setCafePalette('standard');themesPage()">Стандартна</button><button data-palette-choice="cafe" onclick="setCafePalette('cafe');themesPage()">Кафе <span class="palette-swatches"><i style="background:#F6F3EE"></i><i style="background:#4B2E1F"></i><i style="background:#F4E6A6"></i><i style="background:#DCECEF"></i></span></button></div><h3>Режим</h3><button onclick="toggleCafeTheme();themesPage()">${document.documentElement.dataset.theme === "dark" ? "Темний" : "Світлий"}</button><p>Вибір зберігається на цьому пристрої. Кольори локацій доповнюють обрану тему.</p></section>`;
-  document
-    .querySelector(
-      `[data-palette-choice="${document.documentElement.dataset.palette || "standard"}"]`,
-    )
-    .classList.add("selected");
-}
 function availabilityContextCash() {
   return view === "cash"
     ? activeLocation || "cash"

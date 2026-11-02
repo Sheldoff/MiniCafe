@@ -12,7 +12,7 @@ serverPage = function () {
   document.querySelector("#main").innerHTML =
     `<section class="panel cloud-server-panel"><div class="cloud-account-heading"><h2>${esc(person)}</h2><span class="staff-role">${esc(cloudRoleNames[window.CafeCloud.role] || "Працівник")}</span></div><p class="muted">${esc(location.host)}</p><div class="cloud-server-actions">${window.CafeCloud.role === "admin" ? '<button class="primary" onclick="cloudStaff()">Доступи працівників</button>' + (window.CafeAndroidOnline ? "<button onclick=\"change('menu-transfer')\">Меню телефона ↔ сайт</button>" : "") + '<button onclick="cloudBackup()">Зберегти резервну копію</button><button onclick="cloudRestore()">Відновити резервну копію</button>' : ""}<button class="cloud-logout" onclick="cloudLogout()">Вийти з акаунта</button></div></section>`;
   if (!window.CafeCloud.username) {
-    const heading = document.querySelector(".cloud-server-panel h2");
+    const heading = document.querySelector(".cloud-account-heading h2");
     fetch("/api/me")
       .then((r) => r.json())
       .then((j) => {

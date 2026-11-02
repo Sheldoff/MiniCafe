@@ -49,16 +49,6 @@ function toggleCafeTheme() {
   );
 }
 
-function setCafePalette(palette) {
-  if (!["standard", "cafe"].includes(palette)) return;
-  document.documentElement.dataset.palette = palette;
-  try {
-    localStorage.setItem("minicafe-palette", palette);
-  } catch (e) {}
-  applyLocationTheme();
-  clearThemeColorMotion();
-}
-
 function clearThemeColorMotion() {
   for (const animation of document.getAnimations()) {
     if (

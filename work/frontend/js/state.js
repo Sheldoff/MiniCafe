@@ -38,6 +38,12 @@ let categoryFilter = "",
   sound = false,
   seen = null;
 
+if (view === "themes") {
+  view = "server";
+  activeLocation = "";
+  history.replaceState({}, "", "#server");
+}
+
 const esc = (s) =>
   String(s ?? "").replace(
     /[&<>"']/g,

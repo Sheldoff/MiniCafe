@@ -170,7 +170,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
         await p
           .locator("#drawerToggle")
           .evaluate((b) => getComputedStyle(b).color),
-        "rgb(16, 23, 19)",
+        "rgb(0, 0, 0)",
       );
       await p.locator('[data-product="1"]').click();
       await p.locator("#cartTab").click();
@@ -391,46 +391,14 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
         ),
       });
 
-      await p.evaluate(() => change("themes"));
-      await p.locator('[data-palette-choice="cafe"]').click();
-      assert.equal(
-        await p.evaluate(() => localStorage.getItem("minicafe-palette")),
-        "cafe",
-      );
-      assert.equal(
-        await p.locator("button").filter({ hasText: /^←/ }).count(),
-        0,
-      );
-      await p.reload();
-      await p.waitForFunction(() => hasServerState);
-      assert.equal(
-        await p.evaluate(() => document.documentElement.dataset.palette),
-        "cafe",
-      );
+      await p.evaluate(() => change("server"));
       assert.equal(
         await p
-          .locator("header")
-          .evaluate((h) => getComputedStyle(h).backgroundColor),
-        "rgb(75, 46, 31)",
+          .getByRole("button", { name: "Вибір теми", exact: true })
+          .count(),
+        0,
       );
-      await p.evaluate(() => setCafeTheme("dark", false));
-      assert.equal(
-        await p.evaluate(() => document.documentElement.dataset.palette),
-        "cafe",
-      );
-      await p.evaluate(() => themesPage());
-      await p.waitForTimeout(220);
-      await p.screenshot({
-        path: path.join(
-          __dirname,
-          "../..",
-          `cafe-palette-${online ? "online" : "android"}-${name}.png`,
-        ),
-      });
-      await p.evaluate(() => {
-        setCafeTheme("light", false);
-        setCafePalette("standard");
-      });
+      assert.equal(await p.locator("#main > .panel").count(), 1);
       const guest = await context.newPage();
       guest.on("pageerror", (e) => errors.push(e.message));
       await guest.addInitScript(() =>

@@ -1,10 +1,24 @@
 const assert = require("node:assert/strict");
 const path = require("node:path");
 const { chromium, webkit, chromeOptions, base, key } = require("./helpers.cjs");
-const online = process.env.CAFE_DESIGN_ONLINE === "1";
-const url = online ? process.env.CAFE_CLOUD_TEST_URL : base;
+const online = process.env.CAFE_DESIGN_ONLINE === "1",
+  url = online ? process.env.CAFE_CLOUD_TEST_URL : base;
 if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
   throw Error("Disposable local server required");
+function luminance(color) {
+  const channels = color
+    .match(/[\d.]+/g)
+    .slice(0, 3)
+    .map(Number)
+    .map((n) => n / 255)
+    .map((n) => (n <= 0.04045 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4));
+  return channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+}
+function contrast(fg, bg) {
+  const a = luminance(fg),
+    b = luminance(bg);
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
 (async () => {
   for (const [name, engine, options] of [
     ["Chrome", chromium, chromeOptions],
@@ -22,183 +36,148 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
         await p.setExtraHTTPHeaders({
           Cookie: "__Host-minicafe_session=" + "1".repeat(64),
         });
-      await p.goto(url + (online ? "/admin#cash" : "/?key=" + key + "#cash"));
+      await p.addInitScript(() =>
+        localStorage.setItem("minicafe-palette", "cafe"),
+      );
+      await p.goto(
+        url + (online ? "/admin#themes" : "/?key=" + key + "#themes"),
+      );
       await p.waitForFunction(() => hasServerState);
-      await p.evaluate(() => {
-        clearTimeout(pollTimer);
-        setCafePalette("cafe");
-      });
-      const color = async (variable) =>
-        p.evaluate((v) => {
-          const e = document.createElement("span");
-          e.style.color = `var(${v})`;
-          document.body.append(e);
-          const value = getComputedStyle(e).color;
-          e.remove();
-          return value;
-        }, variable);
-      for (const mode of ["light", "dark"]) {
-        await p.evaluate((m) => {
-          setCafeTheme(m, false);
-          change("cash");
-        }, mode);
-        await p.evaluate(() => toggleDrawer(true));
-        await p.waitForTimeout(320);
-        const accent = await color("--accent"),
-          text = await color("--text"),
-          onAccent = await color("--on-accent");
-        assert.equal(
-          await p
-            .locator("#drawerRefresh")
-            .evaluate((b) => getComputedStyle(b).backgroundColor),
-          accent,
-        );
-        assert.equal(
-          await p
-            .locator("#drawerRefresh")
-            .evaluate((b) => getComputedStyle(b).color),
-          onAccent,
-        );
-        const outlines = await p
-          .locator("#appDrawer button")
-          .evaluateAll((buttons) =>
-            buttons.map((b) => ({
-              text: b.textContent,
-              width: parseFloat(getComputedStyle(b).borderTopWidth),
-              style: getComputedStyle(b).borderTopStyle,
-            })),
-          );
-        assert.ok(
-          outlines.every((b) => b.width >= 1 && b.style !== "none"),
-          JSON.stringify(outlines),
-        );
-        const nav = p.locator('.drawer-links [data-view="bar"]');
-        await nav.hover();
-        assert.equal(
-          await nav.evaluate((b) => getComputedStyle(b).color),
-          text,
-        );
-        await p.screenshot({
-          path: path.join(
-            __dirname,
-            "../..",
-            `cafe-drawer-${online ? "online" : "android"}-${name}-${mode}.png`,
-          ),
-        });
-        await p.evaluate(() => toggleDrawer(false));
-        await p.waitForTimeout(250);
-        await p.evaluate(() => {
-          change("cash");
-          productFeedback(data.products[0].id, "tap-feedback");
-        });
-        assert.equal(
-          await p
-            .locator(".tile-feedback")
-            .first()
-            .evaluate((e) => getComputedStyle(e).backgroundColor),
-          accent,
-        );
-        await p.evaluate(() => setCafePalette("standard"));
-        assert.equal(
-          await p
-            .locator(".tile-feedback")
-            .first()
-            .evaluate((e) => getComputedStyle(e).opacity),
-          "0",
-        );
-        await p.evaluate(() => {
-          setCafePalette("cafe");
-          showCashPanel(true, true);
-          highlightAmount(document.querySelector("#sum"), "before");
-        });
-        const frames = await p.locator("#sum").evaluate((e) =>
-          e
-            .getAnimations()
-            .flatMap((a) => a.effect.getKeyframes())
-            .map((f) => f.backgroundColor)
-            .filter(Boolean),
-        );
-        assert.ok(frames.length > 0);
-        assert.ok(
-          !frames.some((c) =>
-            [
-              "#deedce",
-              "rgb(222, 237, 206)",
-              "#3b553b",
-              "rgb(59, 85, 59)",
-            ].includes(c),
-          ),
-          JSON.stringify(frames),
-        );
+      await p.evaluate(() => clearTimeout(pollTimer));
+      assert.equal(await p.evaluate(() => view), "server");
+      assert.equal(
+        await p.evaluate(() => localStorage.getItem("minicafe-palette")),
+        null,
+      );
+      assert.equal(
         await p.evaluate(() =>
-          setCafeTheme(
-            document.documentElement.dataset.theme === "dark"
-              ? "light"
-              : "dark",
-            false,
-          ),
-        );
-        assert.equal(
-          await p.locator("#sum").evaluate((e) => e.getAnimations().length),
-          0,
-        );
-        await p.evaluate(() => {
-          data.orders = [
-            {
-              id: 999,
-              created: "2026-01-01 12:00:00",
-              guest: "Тест",
-              items: [
-                { id: 999, route: "bar", qty: 1, status: "new", name: "Кава" },
-              ],
-            },
-          ];
-          change("bar");
-        });
-        assert.equal(
-          await p
-            .locator('[data-order="999"] > .primary')
-            .evaluate((b) => getComputedStyle(b).backgroundColor),
-          await color("--palette-accent"),
-        );
-        await p.evaluate(() => change("calculator"));
-        const buttons = await p
-          .locator("#main button:visible")
-          .evaluateAll((bs) =>
-            bs.map((b) => ({
-              text: b.textContent,
-              color: getComputedStyle(b).color,
-              bg: getComputedStyle(b).backgroundColor,
-            })),
-          );
-        assert.ok(
-          !buttons.some(
-            (b) =>
-              [
-                "rgb(39, 99, 79)",
-                "rgb(33, 89, 67)",
-                "rgb(33, 76, 61)",
-              ].includes(b.bg) || b.color === "rgb(33, 76, 61)",
-          ),
-          JSON.stringify(buttons),
-        );
-      }
-      await p.evaluate(() => {
-        setCafeTheme("light", false);
-        change("locations");
-      });
+          document.documentElement.hasAttribute("data-palette"),
+        ),
+        false,
+      );
       assert.equal(
         await p
-          .getByRole("button", { name: "Редагувати", exact: true })
+          .getByRole("button", { name: "Вибір теми", exact: true })
           .count(),
         0,
       );
+      assert.equal(await p.locator("#main > .panel").count(), 1);
+      assert.ok(
+        await p
+          .locator("#main button")
+          .evaluateAll((bs) => bs.every((b) => !!b.closest("#settingsExtras"))),
+      );
+      for (const mode of ["light", "dark"]) {
+        for (const hex of [
+          "#ffffff",
+          "#000000",
+          "#777777",
+          "#ffeb3b",
+          "#0057b8",
+          "#e91e63",
+        ]) {
+          await p.evaluate(
+            ({ mode, hex }) => {
+              setCafeTheme(mode, false, false);
+              data.locations = [
+                {
+                  id: "cash",
+                  kind: "cash",
+                  name: "Каса",
+                  color: hex,
+                  targets: ["bar", "delivery"],
+                },
+              ];
+              change("cash");
+            },
+            { mode, hex },
+          );
+          const samples = await p.evaluate(async () => {
+            const indicator = document.querySelector(".cash-tab-indicator"),
+              menu = document.querySelector(".cash-switch button"),
+              head = document.querySelector("#drawerToggle"),
+              send = document.querySelector("#send");
+            const css = (el) => ({
+              id: el.id || el.className,
+              fg: getComputedStyle(el).color,
+              bg: getComputedStyle(el).backgroundColor,
+            });
+            const result = {
+              head: css(head),
+              send: css(send),
+              menu: {
+                fg: getComputedStyle(menu).color,
+                bg: getComputedStyle(indicator).backgroundColor,
+              },
+              frames: [],
+            };
+            showCashPanel(true, true);
+            for (let i = 0; i < 6; i++) {
+              await new Promise(requestAnimationFrame);
+              result.frames.push({
+                bg: getComputedStyle(indicator).backgroundColor,
+                left: parseFloat(getComputedStyle(indicator).left),
+              });
+            }
+            return result;
+          });
+          for (const element of [samples.head, samples.send, samples.menu])
+            assert.ok(
+              contrast(element.fg, element.bg) >= 4.5,
+              JSON.stringify({
+                mode,
+                hex,
+                element,
+                contrast: contrast(element.fg, element.bg),
+              }),
+            );
+          assert.ok(
+            samples.frames.every((f) => f.bg === samples.menu.bg),
+            JSON.stringify(samples),
+          );
+          assert.ok(
+            samples.frames.at(-1).left > samples.frames[0].left,
+            JSON.stringify(samples.frames),
+          );
+          await p.evaluate(() => showCashPanel(false, true));
+          if (hex === "#0057b8") {
+            await p.evaluate(() => toggleDrawer(true));
+            await p.waitForTimeout(320);
+            const widths = await p
+              .locator("#appDrawer button:not(#drawerRefresh)")
+              .evaluateAll((bs) =>
+                bs.map((b) => getComputedStyle(b).borderTopWidth),
+              );
+            assert.ok(
+              widths.every((w) => w === "2px"),
+              JSON.stringify(widths),
+            );
+            assert.equal(
+              await p
+                .locator("#drawerRefresh")
+                .evaluate((b) => getComputedStyle(b).borderTopWidth),
+              "0px",
+            );
+            await p.screenshot({
+              path: path.join(
+                __dirname,
+                "../..",
+                `standard-drawer-${online ? "online" : "android"}-${name}-${mode}.png`,
+              ),
+            });
+            await p.evaluate(() => toggleDrawer(false));
+            await p.waitForTimeout(250);
+          }
+        }
+      }
+      await p.evaluate(() => {
+        data.locations = [];
+        setCafeTheme("light", false, false);
+        change("locations");
+      });
       const row = p.locator(".location-open").first();
-      assert.equal(await row.locator("b").innerText(), "Каса");
-      assert.equal(await row.locator("small").innerText(), "Основна");
       await row.click();
       await p.locator("#locationName").waitFor();
-      assert.equal(await p.locator("#locationName").inputValue(), "Каса");
       await p.goBack();
       await p.locator(".location-list").waitFor();
       await p.locator(".location-open").first().focus();
@@ -270,7 +249,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
       }
       assert.deepEqual(errors, []);
       console.log(
-        `PASS ${name}: Cafe controls/drawer outlines, hover and theme animation colors, row/keyboard location edit and bank history placement`,
+        `PASS ${name}: standard theme rollback, unified settings, uniform drawer borders, contrasting location colors and moving menu indicator, bank history placement`,
       );
     } finally {
       await browser.close();
