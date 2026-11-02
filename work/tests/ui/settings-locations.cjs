@@ -47,6 +47,8 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
         await p.locator('.drawer-tools [data-view="server"]').innerText(),
         "Налаштування",
       );
+      await p.getByRole("button", { name: "Локації", exact: true }).click();
+      assert.equal(await p.locator(".location-list-row").count(), 3);
       await p
         .getByRole("button", { name: "Створити локацію", exact: true })
         .click();
@@ -57,15 +59,19 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
       await p.waitForFunction(() =>
         data.locations?.some((l) => l.name === "Видача низ тест"),
       );
-      await p.waitForFunction(
-        () => document.querySelector("#locationName")?.value === "",
-      );
+      await p.waitForFunction(() => !!document.querySelector(".location-list"));
       const delivery = await p.evaluate(
         () => data.locations.find((l) => l.name === "Видача низ тест").id,
       );
+      await p
+        .getByRole("button", { name: "Створити локацію", exact: true })
+        .click();
       await p.locator("#locationName").fill("Каса низ тест");
-      await p.locator("#locationMode").selectOption("single");
-      await p.locator("#locationTarget").selectOption(delivery);
+      await p.locator("#locationColor").fill("#eecc44");
+      for (const checkbox of await p.locator("#locationTargets input").all())
+        await checkbox.uncheck();
+      await p.locator(`#locationTargets input[value="${delivery}"]`).check();
+      await p.locator('#locationTargets input[value="bar"]').check();
       await p.locator("#locationForm [type=submit]").click();
       await p.waitForFunction(() =>
         data.locations?.some((l) => l.name === "Каса низ тест"),
@@ -77,6 +83,18 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
       assert.ok(nav.indexOf("Каса низ тест") === nav.indexOf("Каса") + 1);
       assert.ok(nav.indexOf("Видача низ тест") > nav.indexOf("Видача"));
       await p.evaluate((id) => change("cash", id), cashId);
+      assert.equal(
+        await p
+          .locator("header")
+          .evaluate((h) => getComputedStyle(h).backgroundColor),
+        "rgb(238, 204, 68)",
+      );
+      assert.equal(
+        await p
+          .locator("#drawerToggle")
+          .evaluate((b) => getComputedStyle(b).color),
+        "rgb(16, 23, 19)",
+      );
       await p.locator('[data-product="1"]').click();
       await p.locator("#cartTab").click();
       await p.locator("#guest").fill("Локаційний Гість");
@@ -109,8 +127,18 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
         data.orders.find((o) => o.guest === "Локаційний Гість"),
       );
       assert.equal(order.cash_location, cashId);
-      assert.equal(order.items[0].location_id, delivery);
-      assert.equal(order.items[0].fulfillment_route, "instant");
+      assert.deepEqual(
+        order.items[0].destinations.map((d) => d.id),
+        ["bar", delivery],
+      );
+      assert.equal(order.cash_location_color, "#eecc44");
+      await p.screenshot({
+        path: path.join(
+          __dirname,
+          "../..",
+          `location-cash-${online ? "online" : "android"}-${name}.png`,
+        ),
+      });
       await p.locator("#cartTab").click();
       await p.locator(`[data-card-payment="${order.id}"]`).waitFor();
       assert.equal(
@@ -121,13 +149,37 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
       );
       await p.evaluate(() => change("delivery"));
       assert.equal(await p.locator(`[data-order="${order.id}"]`).count(), 0);
+      await p.evaluate(() => change("bar"));
+      await p.locator(`[data-order="${order.id}"]`).waitFor();
+      assert.equal(
+        await p.locator(`[data-order="${order.id}"] .order-source`).innerText(),
+        "Каса низ тест",
+      );
+      assert.equal(
+        await p
+          .locator(`[data-order="${order.id}"] > .primary`)
+          .evaluate((b) => getComputedStyle(b).backgroundColor),
+        "rgb(238, 204, 68)",
+      );
+      await p.screenshot({
+        path: path.join(
+          __dirname,
+          "../..",
+          `location-source-${online ? "online" : "android"}-${name}.png`,
+        ),
+      });
       await p.evaluate((id) => change("delivery", id), delivery);
       await p.locator(`[data-order="${order.id}"]`).waitFor();
       await p.locator(`[data-order="${order.id}"] > .primary`).click();
       await p
         .locator(`[data-order="${order.id}"]`)
         .waitFor({ state: "detached" });
+      await p.evaluate(() => change("bar"));
+      assert.equal(await p.locator(`[data-order="${order.id}"]`).count(), 0);
+      await p.evaluate((id) => change("delivery", id), delivery);
       await p.locator(".undo-issue").click();
+      await p.locator(`[data-order="${order.id}"]`).waitFor();
+      await p.evaluate(() => change("bar"));
       await p.locator(`[data-order="${order.id}"]`).waitFor();
       await p.evaluate(() => change("transactions"));
       await p.locator(`[data-transaction="${order.id}"]`).waitFor();
@@ -197,6 +249,66 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
         data: { enabled: true },
       });
       assert.equal(enabled.status(), 200);
+
+      await p.evaluate(() => change("locations"));
+      await p
+        .getByRole("button", { name: "Редагувати Бариста", exact: true })
+        .click();
+      assert.equal(await p.locator("#locationKind").isDisabled(), true);
+      await p.locator("#locationName").fill("Бариста головний");
+      await p.locator("#locationColor").fill("#2255aa");
+      await p.locator("#locationForm [type=submit]").click();
+      await p.locator(".location-list").waitFor();
+      await p.evaluate(() => change("bar"));
+      assert.equal(
+        await p
+          .locator("header")
+          .evaluate((h) => getComputedStyle(h).backgroundColor),
+        "rgb(34, 85, 170)",
+      );
+      await p.evaluate(() => setCafeTheme("dark", false));
+      assert.equal(
+        await p
+          .locator("header")
+          .evaluate((h) => getComputedStyle(h).backgroundColor),
+        "rgb(34, 85, 170)",
+      );
+      await p.evaluate(() => setCafeTheme("light", false));
+      await p.evaluate(() => change("locations"));
+      await p
+        .getByRole("button", { name: "Створити локацію", exact: true })
+        .click();
+      await p.locator("#locationKind").selectOption("delivery");
+      await p.locator("#locationName").fill("Тимчасова");
+      await p.locator("#locationForm [type=submit]").click();
+      await p.locator(".location-list").waitFor();
+      await p
+        .getByRole("button", { name: "Редагувати Тимчасова", exact: true })
+        .click();
+      await p.locator("#locationKind").selectOption("bar");
+      await p.locator("#locationForm [type=submit]").click();
+      await p.locator(".location-list").waitFor();
+      assert.equal(
+        await p.evaluate(
+          () => data.locations.find((l) => l.name === "Тимчасова").kind,
+        ),
+        "bar",
+      );
+      await p
+        .getByRole("button", { name: "Видалити Тимчасова", exact: true })
+        .click();
+      await p.waitForFunction(
+        () => !data.locations.some((l) => l.name === "Тимчасова"),
+      );
+      assert.equal(await p.locator(".location-list-row").count(), 5);
+      await p.screenshot({
+        path: path.join(
+          __dirname,
+          "../..",
+          `location-list-${online ? "online" : "android"}-${name}.png`,
+        ),
+      });
+
       const guest = await context.newPage();
       guest.on("pageerror", (e) => errors.push(e.message));
       await guest.goto(url + (online ? "/" : "/guest"));

@@ -77,6 +77,21 @@ export function restoreData(before, input) {
       maxItem = Math.max(maxItem, i.id);
       if (Number.isSafeInteger(i.product_id) && i.product_id > 0)
         maxHistoricalProduct = Math.max(maxHistoricalProduct, i.product_id);
+      if (
+        i.destinations !== undefined &&
+        (!Array.isArray(i.destinations) ||
+          !i.destinations.length ||
+          i.destinations.length > 50 ||
+          new Set(i.destinations.map((d) => d?.id)).size !==
+            i.destinations.length ||
+          i.destinations.some(
+            (d) =>
+              !d ||
+              !/^(bar|delivery|loc-[a-f0-9]{32})$/.test(d.id) ||
+              !["bar", "instant"].includes(d.route),
+          ))
+      )
+        fail("Некоректні напрямки позиції");
       integer(i.qty, 1, 99);
       integer(i.price, 0, 100000000);
       string(i.name, 100);

@@ -1,3 +1,4 @@
+import { hasFulfillment } from "./locations.js";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { claimPhone } from "./phone.js";
 
@@ -158,8 +159,10 @@ export function filterState(state, user) {
         created: o.created,
         guest: o.guest,
         cash_location: o.cash_location,
+        cash_location_name: o.cash_location_name,
+        cash_location_color: o.cash_location_color,
         items: o.items
-          .filter((i) => (i.fulfillment_route || i.route) === route)
+          .filter((i) => hasFulfillment(i, route))
           .map((i) => {
             const { price, catalog_price, requested_price, ...safe } = i;
             return safe;
@@ -182,6 +185,8 @@ export function filterState(state, user) {
       created: o.created,
       guest: o.guest,
       cash_location: o.cash_location,
+      cash_location_name: o.cash_location_name,
+      cash_location_color: o.cash_location_color,
       items: o.items.map((i) => {
         const { catalog_price, requested_price, ...safe } = i;
         return safe;

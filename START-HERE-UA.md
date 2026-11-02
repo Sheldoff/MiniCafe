@@ -1,3 +1,5 @@
+> 3.44: Локації — редагування/видалення, кілька спільних видач і кольори інтерфейсу. docs/SETTINGS-LOCATIONS-UA.md.
+
 > 3.43: Налаштування/локації/маршрути, імена й транзакції, гостьові фото/коди та видалення витрат: docs/SETTINGS-LOCATIONS-UA.md.
 
 > 3.41: спільна історія карткових оплат у касі; docs/CARD-PAYMENTS-UA.md.
@@ -21,7 +23,7 @@
 > Версія 3.37: ручне перенесення лише меню APK ↔ сайт через одноразові коди,
 > звичайні/орієнтовні залишки. Інструкція: docs/MENU-TRANSFER-UA.md.
 
-Це повний архів актуальних вихідних кодів МініКафе 3.43 (Android versionCode 55), а не макет. Прочитайте також README.md, PROJECT-CONTEXT.json та TEST-RESULTS.json. Архів призначено для продовження роботи в новому чаті без історії цієї розмови.
+Це повний архів актуальних вихідних кодів МініКафе 3.44 (Android versionCode 56), а не макет. Прочитайте також README.md, PROJECT-CONTEXT.json та TEST-RESULTS.json. Архів призначено для продовження роботи в новому чаті без історії цієї розмови.
 
 ## Що робить застосунок
 
@@ -80,7 +82,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File work/scripts/build_desktop.p
 python -X utf8 work/scripts/release.py --version 3.36
 ```
 
-Повний checks.py збирає APK/EXE, запускає Java-набори, API на обох серверах, міграцію SQLite, Tk/QR, браузерні сценарії та запуск готового EXE. --skip-build/--skip-ui призначені для проміжних перевірок й не замінюють випуск. APK збирається без Gradle: aapt2, javac, d8, zipalign, apksigner. При наступному релізі збільшуйте versionName і versionCode у AndroidManifest.xml та назву версії Windows, оновлюйте звіт і контекст.
+Повний checks.py збирає підписаний APK, запускає Java-набори, локальні Android API та браузерні сценарії Chrome/WebKit. --skip-build/--skip-ui призначені для проміжних перевірок і не замінюють повного випуску. APK збирається без Gradle: aapt2, javac, d8, zipalign, apksigner. Для наступного APK збільшуйте versionName і versionCode у AndroidManifest.xml; оновлюйте контекст, документацію та версію онлайн-напряму при його зміні. Windows заморожений; EXE/Tk/Windows API не збирати й не тестувати без нового прохання власника.
 
 ## Підпис APK — зберігати окремо
 

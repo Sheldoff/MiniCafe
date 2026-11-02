@@ -1,21 +1,109 @@
-function locationInfo(id = activeLocation) {
-  return (data.locations || []).find((l) => l.id === id);
+function allLocations() {
+  return [
+    { id: "cash", kind: "cash", name: "Каса", color: "#27634f" },
+    { id: "bar", kind: "bar", name: "Бариста", color: "#27634f" },
+    { id: "delivery", kind: "delivery", name: "Видача", color: "#27634f" },
+  ]
+    .map((l) => ({
+      ...l,
+      ...(data.locations || []).find((saved) => saved.id === l.id),
+    }))
+    .concat(
+      (data.locations || []).filter(
+        (l) => !["cash", "bar", "delivery"].includes(l.id),
+      ),
+    );
+}
+function locationInfo(id = activeLocation || view) {
+  return allLocations().find((l) => l.id === id);
 }
 function locationName() {
-  return (
-    locationInfo()?.name ||
-    { cash: "Каса", bar: "Бариста", delivery: "Видача" }[view] ||
-    ""
-  );
+  return locationInfo()?.name || "";
 }
-function fulfillmentRoute(item) {
-  return item.fulfillment_route || item.route;
+function itemAtDestination(item, route, id) {
+  return item.destinations
+    ? item.destinations.some((d) => d.route === route && d.id === id)
+    : (item.fulfillment_route || item.route) === route &&
+        (item.location_id || (route === "bar" ? "bar" : "delivery")) === id;
 }
 function itemAtLocation(item, route) {
-  return (
-    fulfillmentRoute(item) === route &&
-    (item.location_id || (route === "bar" ? "bar" : "delivery")) ===
-      (activeLocation || (route === "bar" ? "bar" : "delivery"))
+  return itemAtDestination(
+    item,
+    route,
+    activeLocation || (route === "bar" ? "bar" : "delivery"),
+  );
+}
+function locationTextColor(color) {
+  const rgb = color
+    .slice(1)
+    .match(/../g)
+    .map((n) => parseInt(n, 16) / 255)
+    .map((n) => (n <= 0.04045 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4));
+  return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722 > 0.179
+    ? "#101713"
+    : "#ffffff";
+}
+function applyLocationTheme() {
+  const root = document.documentElement,
+    configured = (data.locations || []).find(
+      (l) => l.id === (activeLocation || view),
+    ),
+    color = configured?.color;
+  const props = [
+    "--accent",
+    "--on-accent",
+    "--page",
+    "--surface",
+    "--raised",
+    "--input-bg",
+    "--border",
+    "--location-color",
+    "--location-text",
+  ];
+  props.forEach((key) => root.style.removeProperty(key));
+  delete root.dataset.locationTheme;
+  if (!color || !/^#[a-fA-F0-9]{6}$/.test(color)) return;
+  root.dataset.locationTheme = "true";
+  const dark = root.dataset.theme === "dark";
+  const mix = (base, amount) =>
+    "#" +
+    [0, 1, 2]
+      .map((i) =>
+        Math.round(
+          parseInt(base.slice(1 + i * 2, 3 + i * 2), 16) * (1 - amount) +
+            parseInt(color.slice(1 + i * 2, 3 + i * 2), 16) * amount,
+        )
+          .toString(16)
+          .padStart(2, "0"),
+      )
+      .join("");
+  const values = {
+    "--location-color": color,
+    "--location-text": locationTextColor(color),
+    "--accent": dark ? mix("#ffffff", 0.45) : color,
+    "--page": mix(dark ? "#111815" : "#ffffff", 0.06),
+    "--surface": mix(dark ? "#1c2520" : "#ffffff", 0.04),
+    "--raised": mix(dark ? "#27342b" : "#ffffff", 0.12),
+    "--input-bg": mix(dark ? "#17221d" : "#ffffff", 0.03),
+    "--border": mix(dark ? "#65766b" : "#d2d8d3", 0.2),
+  };
+  values["--on-accent"] = locationTextColor(values["--accent"]);
+  Object.entries(values).forEach(([key, value]) =>
+    root.style.setProperty(key, value),
+  );
+}
+function orderLocationStyle(order) {
+  const source = locationInfo(order.cash_location || "cash"),
+    color = source?.color || order.cash_location_color || "#27634f";
+  return /^#[a-fA-F0-9]{6}$/.test(color)
+    ? `--source-color:${color};--source-text:${locationTextColor(color)}`
+    : "";
+}
+function orderLocationLabel(order) {
+  return esc(
+    locationInfo(order.cash_location || "cash")?.name ||
+      order.cash_location_name ||
+      "Каса",
   );
 }
 function locationUndoKey(route) {
@@ -30,7 +118,7 @@ function settingsExtras() {
   root.innerHTML =
     "<h2>Налаштування</h2>" +
     (admin
-      ? '<div class="settings-actions"><button onclick="change(\'locations\')">Створити локацію</button><button onclick="change(\'transactions\')">Історія транзакцій</button><button id="onlinePayToggle" onclick="toggleOnlinePayment()"></button></div>'
+      ? '<div class="settings-actions"><button onclick="change(\'locations\')">Локації</button><button onclick="change(\'transactions\')">Історія транзакцій</button><button id="onlinePayToggle" onclick="toggleOnlinePayment()"></button></div>'
       : "") +
     (window.CafeNative
       ? "<button onclick=\"location.href='minicafe://settings'\">Керування сервером телефона</button>"
@@ -61,51 +149,36 @@ async function toggleOnlinePayment() {
   }
 }
 function locationsPage(id = "") {
-  const saved = (data.locations || []).find((l) => l.id === id),
-    editing = saved || {
-      id: "",
-      kind: "cash",
-      name: "",
-      color: "#27634f",
-      mode: "split",
-      bar_target: "bar",
-      delivery_target: "delivery",
-      single_target: "delivery",
-    };
-  const targets = [
-    { id: "bar", name: "Бариста", kind: "bar" },
-    { id: "delivery", name: "Видача", kind: "delivery" },
-    ...(data.locations || []).filter((l) => l.kind !== "cash"),
-  ];
-  const options = (key, kind) =>
-    targets
-      .filter((l) => !kind || l.kind === kind)
-      .map(
-        (l) =>
-          `<option value="${l.id}" ${l.id === editing[key] ? "selected" : ""}>${esc(l.name)}</option>`,
-      )
-      .join("");
-  document.querySelector("#main").innerHTML =
-    `<section class="panel settings-page"><button onclick="change('server')">← Налаштування</button><h2>${saved ? "Налаштування локації" : "Створити локацію"}</h2><form id="locationForm"><label>Функціонал і група в меню<select id="locationKind" ${saved ? "disabled" : ""}><option value="cash">Каса</option><option value="bar">Бариста</option><option value="delivery">Видача</option></select></label><label>Назва в бічному меню<input id="locationName" maxlength="80" required value="${esc(editing.name)}"></label><label>Колір<input id="locationColor" type="color" value="${editing.color}"></label><div id="locationCashRules"><label>Куди відправляти замовлення<select id="locationMode"><option value="split">Окремо напої та їжу</option><option value="single">Усе на одну видачу</option></select></label><div id="locationSplit"><label>Напої<select id="locationBar">${options("bar_target", "bar")}</select></label><label>Їжа<select id="locationDelivery">${options("delivery_target", "delivery")}</select></label></div><label id="locationSingle">Усе замовлення<select id="locationTarget">${options("single_target")}</select></label></div><p id="locationError" role="status"></p><button class="primary" type="submit">Зберегти локацію</button></form><h3>Створені локації</h3><button onclick="locationsPage('cash')">Налаштувати основну касу</button><div>${(
-      data.locations || []
+  const host = document.querySelector("#main"),
+    rows = allLocations();
+  if (!id) {
+    host.innerHTML = `<section class="panel settings-page"><button onclick="change('server')">← Налаштування</button><h2>Локації</h2><button class="primary" onclick="locationsPage('new')">Створити локацію</button><div class="location-list">${rows.map((l) => `<div class="location-list-row"><span class="location-color" style="background:${l.color}"></span><span class="grow"><b>${esc(l.name)}</b><small>${{ cash: "Каса", bar: "Бариста", delivery: "Видача" }[l.kind]}</small></span><button aria-label="Редагувати ${esc(l.name)}" onclick="locationsPage('${l.id}')">Редагувати</button>${["cash", "bar", "delivery"].includes(l.id) ? "<small>Основна</small>" : `<button class="danger" aria-label="Видалити ${esc(l.name)}" onclick="deleteLocation('${l.id}',this)">×</button>`}</div>`).join("")}</div><p id="locationError" role="status"></p></section>`;
+    return;
+  }
+  const saved = rows.find((l) => l.id === id),
+    editing = saved || { id: "", kind: "cash", name: "", color: "#27634f" },
+    selected =
+      editing.targets ||
+      (editing.mode === "single"
+        ? [editing.single_target || "delivery"]
+        : [editing.bar_target || "bar", editing.delivery_target || "delivery"]),
+    basic = ["cash", "bar", "delivery"].includes(id),
+    colors = [...new Set(rows.map((l) => l.color))];
+  host.innerHTML = `<section class="panel settings-page"><button onclick="locationsPage()">← Локації</button><h2>${saved ? "Редагувати локацію" : "Створити локацію"}</h2><form id="locationForm"><label>Функціонал і група в меню<select id="locationKind" ${basic ? "disabled" : ""}><option value="cash">Каса</option><option value="bar">Бариста</option><option value="delivery">Видача</option></select></label><label>Назва в бічному меню<input id="locationName" maxlength="80" required value="${esc(editing.name)}"></label><div id="locationCashRules"><fieldset><legend>Куди відправляти замовлення</legend><p class="muted">Оберіть потрібних бариста та видачі. Це спільне замовлення: відмітки виконання синхронні.</p><div id="locationTargets">${rows
+    .filter((l) => l.kind !== "cash" && l.id !== id)
+    .map(
+      (l) =>
+        `<label class="location-target"><input type="checkbox" value="${l.id}" ${selected.includes(l.id) ? "checked" : ""}><span class="location-color" style="background:${l.color}"></span><span>${esc(l.name)}</span></label>`,
     )
-      .filter((l) => l.id !== "cash")
-      .map(
-        (l) =>
-          `<button class="location-entry" onclick="locationsPage('${l.id}')"><span style="background:${l.color}" class="location-color"></span>${esc(l.name)}</button>`,
-      )
-      .join("")}</div></section>`;
+    .join(
+      "",
+    )}</div></fieldset></div><label>Колір інтерфейсу<input id="locationColor" type="color" value="${editing.color}"></label><div class="location-presets" aria-label="Кольори наявних локацій">${colors.map((color) => `<button type="button" aria-label="Обрати колір ${color}" style="background:${color};color:${locationTextColor(color)}" onclick="document.querySelector('#locationColor').value='${color}'">✓</button>`).join("")}</div><p id="locationError" role="status"></p><button class="primary" type="submit">Зберегти локацію</button></form></section>`;
   document.querySelector("#locationKind").value = editing.kind;
-  document.querySelector("#locationMode").value = editing.mode || "split";
   const update = () => {
     document.querySelector("#locationCashRules").hidden =
       document.querySelector("#locationKind").value !== "cash";
-    const single = document.querySelector("#locationMode").value === "single";
-    document.querySelector("#locationSplit").hidden = single;
-    document.querySelector("#locationSingle").hidden = !single;
   };
   document.querySelector("#locationKind").onchange = update;
-  document.querySelector("#locationMode").onchange = update;
   update();
   document.querySelector("#locationForm").onsubmit = async (e) => {
     e.preventDefault();
@@ -114,7 +187,7 @@ function locationsPage(id = "") {
     try {
       await post("location/save", {
         id:
-          id ||
+          saved?.id ||
           "loc-" +
             [...crypto.getRandomValues(new Uint8Array(16))]
               .map((v) => v.toString(16).padStart(2, "0"))
@@ -122,10 +195,13 @@ function locationsPage(id = "") {
         name: document.querySelector("#locationName").value,
         kind: document.querySelector("#locationKind").value,
         color: document.querySelector("#locationColor").value,
-        mode: document.querySelector("#locationMode").value,
-        bar_target: document.querySelector("#locationBar").value,
-        delivery_target: document.querySelector("#locationDelivery").value,
-        single_target: document.querySelector("#locationTarget").value,
+        ...(document.querySelector("#locationKind").value === "cash"
+          ? {
+              targets: [
+                ...document.querySelectorAll("#locationTargets input:checked"),
+              ].map((input) => input.value),
+            }
+          : {}),
       });
       toast("Локацію збережено");
       locationsPage();
@@ -134,6 +210,20 @@ function locationsPage(id = "") {
       b.disabled = false;
     }
   };
+}
+async function deleteLocation(id, button) {
+  if (!confirm("Видалити цю локацію? Історія замовлень і фінанси залишаться."))
+    return;
+  button.disabled = true;
+  try {
+    await post("location/delete", { id });
+    cashLocationDrafts.delete(id);
+    locationsPage();
+    toast("Локацію видалено");
+  } catch (e) {
+    document.querySelector("#locationError").textContent = e.message;
+    button.disabled = false;
+  }
 }
 let transactionCursor = null;
 async function transactionsPage(append = false) {

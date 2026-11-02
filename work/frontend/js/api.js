@@ -197,6 +197,15 @@ async function fetchState() {
     stateETag = r.headers.get("ETag") || "";
     pollFailures = 0;
     data = next;
+    if (
+      activeLocation &&
+      !data.locations?.some((l) => l.id === activeLocation && l.kind === view)
+    ) {
+      activeLocation = "";
+      view = roleView();
+      history.replaceState({}, "", "#" + view);
+      render();
+    }
     if (!allowedView(view)) {
       view = roleView();
       location.hash = view;

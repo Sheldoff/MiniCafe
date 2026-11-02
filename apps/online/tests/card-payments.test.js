@@ -398,5 +398,148 @@ test("cashier card history: narrow roles, pagination, card portion only, persist
   const settingsBackup = await (await call("backup")).json();
   assert.equal((await call("restore", "1", settingsBackup)).status, 200);
   assert.equal((await (await call("state")).json()).locations.length, 3);
+  await save({
+    id: "bar",
+    name: "Головний бариста",
+    kind: "bar",
+    color: "#eecc44",
+  });
+  const sharedCash = "loc-" + "d".repeat(32),
+    temporary = "loc-" + "e".repeat(32);
+  await save({
+    id: sharedCash,
+    name: "Спільна каса",
+    kind: "cash",
+    color: "#eecc44",
+    targets: [bar, delivery],
+  });
+  assert.equal(
+    (
+      await call("location/save", "1", {
+        id: sharedCash,
+        name: "X",
+        kind: "cash",
+        color: "#ffffff",
+        targets: [],
+      })
+    ).status,
+    400,
+  );
+  const jointResponse = await call("order", "2", {
+    request: "shared-multicast",
+    location_id: sharedCash,
+    guest: "Спільний Гість",
+    items: [{ id: 2, qty: 2 }],
+    cash_given: 100000,
+    card_amount: 0,
+  });
+  assert.equal(jointResponse.status, 200, await jointResponse.clone().text());
+  const jointId = (await jointResponse.json()).id;
+  const getJoint = () =>
+    JSON.parse(
+      sql.prepare("SELECT data FROM orders WHERE id=?").get(jointId).data,
+    );
+  const joint = getJoint();
+  assert.equal(
+    (
+      await call("location/save", "1", {
+        id: sharedCash,
+        name: "Інший тип",
+        kind: "delivery",
+        color: "#112233",
+      })
+    ).status,
+    400,
+  );
+  assert.equal(joint.items.length, 1);
+  assert.equal(joint.items[0].destinations.length, 2);
+  assert.equal(joint.cash_location_name, "Спільна каса");
+  assert.equal(joint.cash_location_color, "#eecc44");
+  for (const role of ["4", "5"]) {
+    const projection = (await (await call("state", role)).json()).orders.find(
+      (o) => o.id === jointId,
+    );
+    assert.equal(projection.items.length, 1);
+    assert.equal(projection.cash_location_name, "Спільна каса");
+    assert.ok(!("price" in projection.items[0]));
+  }
+  assert.equal(
+    (await call("location/delete", "1", { id: sharedCash })).status,
+    400,
+  );
+  assert.equal(
+    (await call("location/delete", "2", { id: sharedCash })).status,
+    403,
+  );
+  assert.equal(
+    (await call("location/delete", "1", { id: delivery })).status,
+    400,
+  );
+  assert.equal(
+    (
+      await call("issue-unit", "4", {
+        order: jointId,
+        id: joint.items[0].id,
+        unit: 0,
+        route: "bar",
+        location_id: bar,
+        delivered: true,
+      })
+    ).status,
+    200,
+  );
+  assert.equal(
+    (await (await call("state", "5")).json()).orders.find(
+      (o) => o.id === jointId,
+    ).items[0].unit_issued[0],
+    true,
+  );
+  assert.equal(
+    (
+      await call("issue", "5", {
+        id: jointId,
+        route: "instant",
+        location_id: delivery,
+      })
+    ).status,
+    200,
+  );
+  assert.equal(getJoint().items[0].status, "delivered");
+  assert.deepEqual(getJoint().payment, joint.payment);
+  assert.equal(
+    (await call("undo-issue", "5", { route: "instant", location_id: delivery }))
+      .status,
+    200,
+  );
+  assert.deepEqual(getJoint().items[0].unit_issued, [true, false]);
+  await save({
+    id: temporary,
+    name: "Тимчасова",
+    kind: "delivery",
+    color: "#ffffff",
+  });
+  await save({
+    id: temporary,
+    name: "Тимчасова",
+    kind: "bar",
+    color: "#000000",
+  });
+  assert.equal(
+    (await call("location/delete", "1", { id: temporary })).status,
+    200,
+  );
+  for (const id of ["cash", "bar", "delivery"])
+    assert.equal((await call("location/delete", "1", { id })).status, 400);
+  const jointBackup = await (await call("backup")).json();
+  assert.equal((await call("restore", "1", jointBackup)).status, 200);
+  assert.deepEqual(
+    getJoint().items[0].destinations,
+    joint.items[0].destinations,
+  );
+  assert.equal(
+    (await (await call("state")).json()).locations.find((l) => l.id === "bar")
+      .color,
+    "#eecc44",
+  );
   sql.close();
 });

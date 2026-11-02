@@ -42,6 +42,7 @@ const writes = new Set([
   "transaction/hide",
   "settings/update",
   "location/save",
+  "location/delete",
   "expenses/delete",
   "issue",
   "issue-unit",

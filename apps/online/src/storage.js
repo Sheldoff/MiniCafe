@@ -31,6 +31,8 @@ export async function load(
 export function mutationQuery(path, input, meta) {
   if (["card-payment/hide", "transaction/hide"].includes(path))
     return ["SELECT data FROM orders WHERE id=?", [input.id]];
+  if (["location/save", "location/delete"].includes(path))
+    return ["SELECT data FROM orders WHERE pending=1", []];
   if (path === "order")
     return ["SELECT data FROM orders WHERE request=?", [input.request]];
   if (["issue", "issue-unit", "issue-item"].includes(path))
