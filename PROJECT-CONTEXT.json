@@ -54,7 +54,7 @@
     "private_password_file_separate": "work/android/signing.local.json",
     "certificate_fingerprint_file": "work/android/signing-cert.sha256"
   },
-  "validation_limit": "Android 3.42 full local checks required; online simplified payment UI checked Chrome/WebKit, including denied clipboard, copy-and-open navigation and reload. No real transfer or physical phone tested; Windows frozen.",
+  "validation_limit": "Android 3.42: full checks.py without skips passed (21 Java suites, local API, Chrome/WebKit); final signed APK rebuilt/verified after checkout guard refinement. Online 0.10.1: 17 unit/SQLite tests and final Chrome/WebKit payment scenarios passed. No real transfer or physical phone testing; Windows frozen.",
   "development_tracks": {
     "policy": "docs/PROJECT-TRACKS-UA.md",
     "local_android": {

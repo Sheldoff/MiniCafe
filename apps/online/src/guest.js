@@ -48,7 +48,7 @@ function showPayment(j) {
     const field = document.createElement("textarea");
     field.value = j.reference;
     field.style.cssText = "position:fixed;opacity:0;left:0;top:0";
-    document.body.append(field);
+    $("#guestDialog").append(field);
     field.focus();
     field.select();
     let copied = false;
