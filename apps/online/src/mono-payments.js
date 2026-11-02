@@ -200,6 +200,47 @@ export async function syncMono(env, bankFetch = fetch) {
 }
 export async function paymentRoutes(request, env) {
   const path = new URL(request.url).pathname;
+  if (path === "/api/payments/history" && request.method === "GET") {
+    const user = await identity(request, env);
+    if (!user || user.role !== "admin")
+      return json({ error: "Недостатньо прав" }, 403);
+    const before = new URL(request.url).searchParams.get("before");
+    let anchor = null;
+    if (before) {
+      if (!/^MC-[A-F0-9]{16}$/.test(before))
+        return json({ error: "Некоректна сторінка" }, 400);
+      anchor = await env.DB.prepare(
+        "SELECT created,reference FROM mono_payments WHERE reference=?",
+      )
+        .bind(before)
+        .first();
+      if (!anchor) return json({ error: "Сторінку не знайдено" }, 400);
+    }
+    const rows = (
+      await env.DB.prepare(
+        "SELECT reference,total,status,order_id,created,expires,json_extract(data,'$.guest') AS guest FROM mono_payments " +
+          (anchor ? "WHERE created<? OR (created=? AND reference<?) " : "") +
+          "ORDER BY created DESC,reference DESC LIMIT 51",
+      )
+        .bind(
+          ...(anchor ? [anchor.created, anchor.created, anchor.reference] : []),
+        )
+        .all()
+    ).results;
+    const page = rows
+      .slice(0, 50)
+      .map((r) => ({
+        ...r,
+        status:
+          r.status === "waiting" && r.expires <= timestamp()
+            ? "expired"
+            : r.status,
+      }));
+    return json({
+      payments: page,
+      next_before: rows.length > 50 ? page.at(-1).reference : null,
+    });
+  }
   if (path === "/api/payments" && request.method === "GET") {
     const user = await identity(request, env);
     if (!user || !["admin", "cash", "service"].includes(user.role))

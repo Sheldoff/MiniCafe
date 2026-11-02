@@ -245,3 +245,76 @@ test("local disposable DB: payment idempotency, fail closed, atomic queue, repla
   );
   sql.close();
 });
+
+test("admin bank history includes completed and expired requests, stable pages, no private bank identifiers or state writes", async () => {
+  const { sql, env } = fixture();
+  env.ADMIN_TELEGRAM_IDS = "1";
+  for (const [id, role] of [
+    ["1", "admin"],
+    ["2", "cash"],
+  ]) {
+    sql
+      .prepare("INSERT INTO auth_sessions VALUES(?,?,?,?,?)")
+      .run(
+        await hash(id.repeat(64)),
+        id,
+        "Test",
+        "c".repeat(64),
+        timestamp() + 3600,
+      );
+    if (role !== "admin")
+      sql
+        .prepare("INSERT INTO staff_access VALUES(?,?,?,?)")
+        .run(id, role, 1, "test");
+  }
+  for (let i = 0; i < 52; i++)
+    sql
+      .prepare(
+        "INSERT INTO mono_payments(id,reference,data,total,created,expires,status,transaction_id) VALUES(?,?,?,?,?,?,?,?)",
+      )
+      .run(
+        "private-id-" + i,
+        "MC-" + i.toString(16).padStart(16, "0").toUpperCase(),
+        JSON.stringify({ guest: "Гість " + i, items: [] }),
+        5000,
+        1000,
+        timestamp() - 1,
+        ["fulfilled", "review", "waiting", "paid"][i % 4],
+        "private-bank-id-" + i,
+      );
+  const request = (suffix = "", id = "1") =>
+    paymentRoutes(
+      new Request("https://cafe.test/api/payments/history" + suffix, {
+        headers: id
+          ? { Cookie: "__Host-minicafe_session=" + id.repeat(64) }
+          : {},
+      }),
+      env,
+    );
+  assert.equal((await request("", null)).status, 403);
+  assert.equal((await request("", "2")).status, 403);
+  const before = sql.prepare("SELECT * FROM mono_payments ORDER BY id").all();
+  const first = await (await request()).json();
+  assert.equal(first.payments.length, 50);
+  assert.ok(first.payments.some((p) => p.status === "fulfilled"));
+  assert.ok(first.payments.some((p) => p.status === "expired"));
+  assert.ok(
+    first.payments.every(
+      (p) => !("id" in p) && !("transaction_id" in p) && !("data" in p),
+    ),
+  );
+  const second = await (await request("?before=" + first.next_before)).json();
+  assert.equal(second.payments.length, 2);
+  assert.equal(second.next_before, null);
+  assert.equal(
+    new Set([...first.payments, ...second.payments].map((p) => p.reference))
+      .size,
+    52,
+  );
+  assert.equal((await request("?before=bad")).status, 400);
+  assert.deepEqual(
+    sql.prepare("SELECT * FROM mono_payments ORDER BY id").all(),
+    before,
+  );
+  sql.close();
+});

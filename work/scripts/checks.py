@@ -146,6 +146,7 @@ def main():
                 "cashier",
                 "card-payments",
                 "settings-locations",
+                "design",
                 "interaction",
                 "statistics",
                 "optimized",

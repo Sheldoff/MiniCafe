@@ -1,0 +1,254 @@
+/* Shared interactive colors. Keep standard defaults and semantic danger colors. */
+:root:is([data-palette="cafe"], [data-location-theme]) {
+  --amount-pulse: var(--raised);
+  --feedback-add: var(--accent);
+  --feedback-remove: var(--danger, #a44c39);
+  --feedback-ring: var(--accent);
+  --feedback-bg: var(--raised);
+  --feedback-fade: var(--surface);
+}
+:root[data-palette="cafe"] {
+  --success: #4b2e1f;
+  --success-bg: #dcecef;
+  --danger: #913b2e;
+  --danger-bg: #f7dfd5;
+}
+:root[data-palette="cafe"][data-theme="dark"] {
+  --success: #f4e6a6;
+  --success-bg: #473626;
+  --danger: #ffc6b7;
+  --danger-bg: #4a2b25;
+}
+#appDrawer .drawer-links button,
+#appDrawer .drawer-tools button,
+#appDrawer .drawer-heading button {
+  border: 1px solid var(--border, #ccd4cb);
+}
+#appDrawer .drawer-heading #drawerRefresh {
+  padding: 8px 10px;
+  border-radius: 12px;
+}
+:root:is([data-palette="cafe"], [data-location-theme])
+  button:not(.primary):not(.selected):not(.danger):not(.cloud-logout):not(
+    [data-nav-color]
+  ):not(.tile) {
+  background: var(--input-bg, #fff);
+  color: var(--text, #26372f);
+  border-color: var(--border, #ccd4cb);
+}
+:root:is([data-palette="cafe"], [data-location-theme])
+  button:not(.primary):not(.selected):not(.danger):not(.cloud-logout):not(
+    .tile
+  ):hover {
+  background: var(--raised);
+  color: var(--text, #26372f);
+}
+:root:is([data-palette="cafe"], [data-location-theme])
+  button:not(.danger):not(.cloud-logout):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+:root:is([data-palette="cafe"], [data-location-theme])
+  :is(
+    button.primary,
+    button.selected,
+    .drawer-links .selected,
+    .drawer-tools .selected
+  ) {
+  background: var(--accent) !important;
+  color: var(--on-accent) !important;
+  border-color: var(--accent);
+}
+:root:is([data-palette="cafe"], [data-location-theme]) button.primary:hover {
+  background: var(--accent) !important;
+  color: var(--on-accent) !important;
+  filter: brightness(1.06);
+}
+:root:is([data-palette="cafe"], [data-location-theme])
+  :is(button.danger, .cloud-logout) {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+:root:is([data-palette="cafe"], [data-location-theme])
+  #appDrawer
+  :is(.drawer-heading, .drawer-tools) {
+  background: var(--surface);
+  color: var(--text, #26372f);
+  border-color: var(--border);
+}
+:root:is([data-palette="cafe"], [data-location-theme])
+  #appDrawer
+  #drawerRefresh {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+:root:is([data-palette="cafe"], [data-location-theme])
+  #appDrawer
+  .drawer-links
+  button:not(.selected) {
+  background: var(--surface);
+  color: var(--text, #26372f);
+}
+:root:is([data-palette="cafe"], [data-location-theme])
+  :is(
+    .chips .active,
+    .active-toggle[aria-pressed="true"],
+    .note-icon.has-note,
+    .category-suggestions .exact-category
+  ) {
+  background: var(--success-bg, var(--raised));
+  color: var(--success, var(--text, #26372f));
+  border-color: var(--accent);
+}
+:root:is([data-palette="cafe"], [data-location-theme])
+  :is(
+    .tile.chosen,
+    .cart-back,
+    .calc-add,
+    .calc-reset,
+    .calc-apply,
+    .calc-suggestions button,
+    .category-suggestions button,
+    .developer-action,
+    .support-card,
+    .cart-empty,
+    .availability-heading,
+    .money-fraction,
+    .queue-count
+  ) {
+  background: var(--raised);
+  color: var(--text, #26372f);
+  border-color: var(--border);
+}
+:root:is([data-palette="cafe"], [data-location-theme])
+  :is(
+    .tile b,
+    .editor-product b,
+    .calc-extra-row,
+    .calc-title h2,
+    .order-place,
+    .cart-name,
+    .report-document,
+    .order-dialog-card,
+    .cash-switch button
+  ) {
+  color: var(--text, #26372f);
+}
+:root:is([data-palette="cafe"], [data-location-theme])
+  :is(
+    .order-dialog-card,
+    .report-document,
+    .history-record,
+    .calc-row,
+    .editor-product,
+    .calc-extra-row
+  ) {
+  background: var(--surface);
+  border-color: var(--border);
+}
+:root:is([data-palette="cafe"], [data-location-theme])
+  :is(.editor-product, .calc-extra-row):is(:hover, :active, :focus-visible) {
+  background: var(--raised);
+  color: var(--text, #26372f);
+}
+.location-list-row .location-open {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  text-align: left;
+  padding: 14px;
+}
+.location-open .location-color {
+  flex-shrink: 0;
+}
+.bank-payment-panel {
+  margin-block: 18px;
+}
+.bank-payment-row {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border, #ccd4cb);
+  overflow-wrap: anywhere;
+}
+.settings-page [hidden] {
+  display: none !important;
+}
+@keyframes tile-tap {
+  50% {
+    transform: scale(0.94);
+    box-shadow: 0 0 0 3px var(--feedback-ring, #a3bd83);
+  }
+}
+@keyframes tile-remove {
+  50% {
+    transform: scale(0.94);
+    box-shadow: 0 0 0 3px var(--feedback-remove, #d8aa8f);
+    background: var(--feedback-bg, #f9eee4);
+  }
+}
+@keyframes tile-add-smooth {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(0.97);
+    box-shadow: 0 0 0 3px var(--feedback-ring, #8bb76d);
+    background: var(--feedback-bg, #e7f2df);
+  }
+  75% {
+    background: var(--feedback-fade, #f1f8eb);
+  }
+}
+@keyframes tile-remove-smooth {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(0.97);
+    box-shadow: 0 0 0 3px var(--feedback-remove, #d8aa8f);
+    background: var(--feedback-bg, #f9eee4);
+  }
+  75% {
+    background: var(--feedback-fade, #fbf4ef);
+  }
+}
+@keyframes calcAttention {
+  0%,
+  60% {
+    background: var(--feedback-bg, #fff2ce);
+    border-color: var(--feedback-ring, #c39335);
+    box-shadow: 0 0 0 3px var(--feedback-ring, #e6c36c55);
+  }
+  100% {
+    box-shadow: none;
+  }
+}
+
+:root {
+  --palette-accent: #27634f;
+}
+:root[data-theme="dark"] {
+  --palette-accent: #b3d9a4;
+}
+:root[data-palette="cafe"] {
+  --palette-accent: #4b2e1f;
+}
+:root[data-palette="cafe"][data-theme="dark"] {
+  --palette-accent: #f4e6a6;
+}
+:root:is([data-palette="cafe"], [data-location-theme]) :is(h1, h2, h3, h4) {
+  color: var(--text, #26372f);
+}
+:root:is([data-palette="cafe"], [data-location-theme]) #toast {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+:root:is([data-palette="cafe"], [data-location-theme]) .selected-count {
+  background: var(--accent);
+  color: var(--on-accent);
+}

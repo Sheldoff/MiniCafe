@@ -93,8 +93,15 @@ function applyLocationTheme() {
   );
 }
 function orderLocationStyle(order) {
-  const source = locationInfo(order.cash_location || "cash"),
-    color = source?.color || order.cash_location_color || "#27634f";
+  const id = order.cash_location || "cash",
+    source = (data.locations || []).find((l) => l.id === id),
+    color =
+      source?.color ||
+      (id === "cash"
+        ? getComputedStyle(document.documentElement)
+            .getPropertyValue("--palette-accent")
+            .trim() || "#27634f"
+        : order.cash_location_color || "#27634f");
   return /^#[a-fA-F0-9]{6}$/.test(color)
     ? `--source-color:${color};--source-text:${locationTextColor(color)}`
     : "";
@@ -158,7 +165,7 @@ function locationsPage(id = "", fromHistory = false) {
   const host = document.querySelector("#main"),
     rows = allLocations();
   if (!id) {
-    host.innerHTML = `<section class="panel settings-page"><h2>Локації</h2><button class="primary" onclick="locationsPage('new')">Створити локацію</button><div class="location-list">${rows.map((l) => `<div class="location-list-row"><span class="location-color" style="background:${l.color}"></span><span class="grow"><b>${esc(l.name)}</b><small>${{ cash: "Каса", bar: "Бариста", delivery: "Видача" }[l.kind]}</small></span><button aria-label="Редагувати ${esc(l.name)}" onclick="locationsPage('${l.id}')">Редагувати</button>${["cash", "bar", "delivery"].includes(l.id) ? "<small>Основна</small>" : `<button class="danger" aria-label="Видалити ${esc(l.name)}" onclick="deleteLocation('${l.id}',this)">×</button>`}</div>`).join("")}</div><p id="locationError" role="status"></p></section>`;
+    host.innerHTML = `<section class="panel settings-page"><h2>Локації</h2><button class="primary" onclick="locationsPage('new')">Створити локацію</button><div class="location-list">${rows.map((l) => `<div class="location-list-row"><button class="location-open" aria-label="Редагувати ${esc(l.name)}" onclick="locationsPage('${l.id}')"><span class="location-color" style="background:${l.color}"></span><b class="grow">${esc(l.name)}</b>${["cash", "bar", "delivery"].includes(l.id) ? "<small>Основна</small>" : ""}</button>${["cash", "bar", "delivery"].includes(l.id) ? "" : `<button class="danger" aria-label="Видалити ${esc(l.name)}" onclick="deleteLocation('${l.id}',this)">×</button>`}</div>`).join("")}</div><p id="locationError" role="status"></p></section>`;
     return;
   }
   const saved = rows.find((l) => l.id === id),
@@ -247,8 +254,10 @@ async function transactionsPage(append = false) {
   if (!append) {
     transactionCursor = null;
     document.querySelector("#main").innerHTML =
-      '<section class="panel settings-page"><h2>Історія транзакцій</h2><p class="muted">Карткові оплати замовлень. Видалення прибирає запис зі списку та не змінює оплату чи звіти.</p><div id="transactionRows"></div><button id="transactionMore" hidden onclick="transactionsPage(true)">Показати ще</button></section>';
+      '<section class="panel settings-page"><h2>Історія транзакцій</h2><div id="bankPaymentHistory"><p class="muted">Історія оплат банки доступна при підключенні до онлайн-сервера.</p></div><h3>Карткові оплати замовлень</h3><p class="muted">Карткові оплати замовлень. Видалення прибирає запис зі списку та не змінює оплату чи звіти.</p><div id="transactionRows"></div><button id="transactionMore" hidden onclick="transactionsPage(true)">Показати ще</button></section>';
   }
+  if (!append && typeof window.loadBankPaymentHistory === "function")
+    window.loadBankPaymentHistory();
   const host = document.querySelector("#transactionRows");
   if (!host) return;
   try {

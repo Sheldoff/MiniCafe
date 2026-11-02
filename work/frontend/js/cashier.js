@@ -405,7 +405,10 @@ function productFeedback(id, kind) {
   let opacity = Number(getComputedStyle(overlay).opacity) || 0;
   overlay.feedbackAnimation?.cancel();
   overlay.style.opacity = String(opacity);
-  overlay.style.background = kind === "remove-feedback" ? "#d48a64" : "#78aa5d";
+  overlay.style.background =
+    kind === "remove-feedback"
+      ? "var(--feedback-remove, #d48a64)"
+      : "var(--feedback-add, #78aa5d)";
   overlay.feedbackAnimation = overlay.animate(
     [{ opacity }, { opacity: 0.24, offset: 0.35 }, { opacity: 0 }],
     { duration: 750, easing: "cubic-bezier(.25,.1,.25,1)", fill: "forwards" },

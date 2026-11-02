@@ -8,7 +8,8 @@
     "css/app-layout.css",
     "css/card-payments.css",
     "css/settings.css",
-    "css/palettes.css"
+    "css/palettes.css",
+    "css/cafe-controls.css"
   ],
   "scripts": [
     "js/state.js",
