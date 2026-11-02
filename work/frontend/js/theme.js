@@ -35,6 +35,7 @@ function setCafeTheme(mode, animate = true, notifyNative = true) {
   if (meta) meta.content = mode === "dark" ? "#142d25" : "#173f35";
   syncThemeControl();
   applyLocationTheme();
+  clearThemeColorMotion();
   themeChangeTimer = setTimeout(
     () => root.classList.remove("theme-changing"),
     150,
@@ -55,4 +56,24 @@ function setCafePalette(palette) {
     localStorage.setItem("minicafe-palette", palette);
   } catch (e) {}
   applyLocationTheme();
+  clearThemeColorMotion();
+}
+
+function clearThemeColorMotion() {
+  for (const animation of document.getAnimations()) {
+    if (
+      animation.effect
+        ?.getKeyframes()
+        .some((frame) =>
+          Object.keys(frame).some((key) =>
+            /color|background|shadow/i.test(key),
+          ),
+        )
+    )
+      animation.cancel();
+  }
+  document.querySelectorAll(".tile-feedback").forEach((overlay) => {
+    overlay.feedbackAnimation?.cancel();
+    overlay.style.opacity = "0";
+  });
 }

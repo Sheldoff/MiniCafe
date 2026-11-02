@@ -1,7 +1,7 @@
 {
   "application": "МініКафе",
-  "version": "3.46",
-  "android_version_code": 58,
+  "version": "3.47",
+  "android_version_code": 59,
   "purpose": "Каса, окремі черги напоїв і їжі, гнучке меню, статистика/PDF, калькулятор, резервні копії",
   "entry_document": "START-HERE-UA.md",
   "human_prompt": "NEXT-CHAT-PROMPT-UA.txt",
@@ -26,6 +26,7 @@
     "delivery": "Тільки видача їжі"
   },
   "latest_requested_changes": [
+    "Complete Cafe control/interaction colors and drawer outlines, cancel stale color motion; row location editing without duplicate names; bank request history on Transactions with admin-only pagination",
     "Aligned colored location navigation, linked-cash availability, device Back in settings, persistent Cafe palette, responsive guest-code button and per-draft code redemption",
     "Manage all locations: base names/colors, edit types and guarded deletion, multiple destinations with shared fulfillment and financial record, location themes and source cashier color on tickets",
     "Settings, configurable locations and isolated routing/undo; named card history and transactions; full-screen editor; photo guest cards, cashier codes and payment toggle; delete additional expenses",
@@ -57,14 +58,14 @@
     "private_password_file_separate": "work/android/signing.local.json",
     "certificate_fingerprint_file": "work/android/signing-cert.sha256"
   },
-  "validation_limit": "Android 3.46: full checks.py without skips passed (23 Java suites, local API, Chrome/WebKit including scoped availability, navigation Back, Cafe palette persistence, guest-code creation and multi-cash redemption). Online 0.13.1: 18 Node/SQLite tests, disposable D1 API and Android/D1 backup interoperability, Chrome/WebKit new scenarios and mocked-bank payment regression passed. Worker 1d14da56-8a91-4964-af98-012bc131485c deployed. No physical phone or production test orders; Windows frozen.",
+  "validation_limit": "Android 3.47: full checks.py without skips passed (23 Java suites, local API, Chrome/WebKit and WebView/tablet modes), including design controls, drawer borders, theme color animation cancellation and row editing. Online 0.14.0: 19 Node/SQLite tests, disposable D1 API and Android/D1 backup interoperability, Chrome/WebKit design and bank history UI passed. Migration 0012 applied; Worker c852ed3b-1613-4b4c-85e4-8292312f56c4 deployed. No physical phone or production test orders; Windows frozen.",
   "development_tracks": {
     "policy": "docs/PROJECT-TRACKS-UA.md",
     "local_android": {
       "status": "active",
       "entry": "apps/local-android/README.md",
       "sources": "work/android",
-      "version": "3.46"
+      "version": "3.47"
     },
     "online": {
       "status": "telegram_auth_deployed",
@@ -75,7 +76,7 @@
       "sources": "apps/online/src",
       "database": "D1 minicafe-db",
       "deploy_docs": "apps/online/DEPLOY-UA.md",
-      "version": "0.13.1"
+      "version": "0.14.0"
     },
     "windows": {
       "status": "frozen",
