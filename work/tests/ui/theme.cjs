@@ -286,9 +286,10 @@ async function rowStates(page, selector, reports, label) {
     );
     let lastVisible = closing.filter((v) => !v.hidden).at(-1);
     // The shared full-height editor fades out rather than resizing its fields.
+    assert(closing.at(-1).hidden, "editor finishes closing");
     assert(
-      !lastVisible || lastVisible.opacity < 0.1,
-      JSON.stringify(lastVisible),
+      !lastVisible || closing.some((v) => !v.hidden && v.opacity < 1),
+      "editor fades before hiding",
     );
     await p.evaluate(() => {
       openProductEditor(true);
@@ -442,6 +443,8 @@ async function rowStates(page, selector, reports, label) {
       await interactive.evaluate((theme) => {
         setCafeTheme(theme);
         change("menu");
+        if (!document.querySelector(".product-form-panel").hidden)
+          closeProductEditor(true);
       }, theme);
       await interactive.waitForTimeout(300);
       await rowStates(

@@ -195,7 +195,10 @@ function drawSummary() {
     .join("");
   const t = totals(selection);
   $("#chosenDrinks").innerHTML = "";
-  $("#guestSubmit").hidden = !guestPaymentEnabled && !pendingPayment;
+  const liveCode =
+    lastCode?.payload === selectionPayload() && lastCode.until > Date.now();
+  $("#guestSubmit").hidden =
+    (!guestPaymentEnabled || liveCode) && !pendingPayment;
   $("#guestCodeSubmit").textContent =
     lastCode?.payload === selectionPayload() && lastCode.until > Date.now()
       ? "Показати код"
@@ -206,9 +209,7 @@ function drawSummary() {
   $("#guestSubmit").disabled = (!t.qty && !pendingPayment) || submitting;
   $("#guestSubmit").textContent = pendingPayment
     ? "Показати оплату"
-    : lastCode?.payload === selectionPayload() && lastCode.until > Date.now()
-      ? "Показати код"
-      : "Оплатити онлайн";
+    : "Оплатити онлайн";
 }
 function drawMenu() {
   $("#foodList").innerHTML = products

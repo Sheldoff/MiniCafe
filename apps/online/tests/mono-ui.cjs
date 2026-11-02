@@ -28,6 +28,12 @@ const {
         created++;
         const input = route.request().postDataJSON();
         assert.match(input.payment_request, /^[a-f0-9]{64}$/);
+        if (input.mode === "code") {
+          await route.fulfill({
+            json: { code: "123", expires_in: 1800, total: 5000 },
+          });
+          return;
+        }
         await route.fulfill({
           json: {
             payment: true,
@@ -110,6 +116,18 @@ const {
           localStorage.getItem("minicafe-pending-payment"),
         ),
         null,
+      );
+      await p.locator('#foodList [data-step="1"]').first().click();
+      await p.locator("#guestFullName").fill("Гість Коду");
+      assert.equal(await p.locator("#guestSubmit").isVisible(), true);
+      await p.locator("#guestCodeSubmit").click();
+      await p.locator(".code").waitFor();
+      assert.equal((await p.locator(".code").innerText()).trim(), "123");
+      await p.locator("[data-close]").click();
+      assert.equal(await p.locator("#guestSubmit").isVisible(), false);
+      assert.equal(
+        await p.locator("#guestCodeSubmit").innerText(),
+        "Показати код",
       );
       assert.deepEqual(errors, []);
       console.log(
