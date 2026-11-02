@@ -37,16 +37,56 @@ function savePending(value) {
 }
 function showPayment(j) {
   clearTimeout(paymentTimer);
-  showDialog(
-    "Оплата замовлення",
-    `<p>Перекажіть <strong>${money(j.total)}</strong> на банку «Кафе».</p><p>Обов’язково вставте в коментар до переказу цей код без змін:</p><p><input id="paymentReference" aria-label="Код оплати" readonly value="${escapeHtml(j.reference)}"></p><p>Оплатіть до ${new Date(j.expires * 1000).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}. Без правильного коментаря автоматична перевірка неможлива.</p><p id="paymentStatus" role="status">Очікуємо оплату. Перевірка може тривати кілька хвилин. Не переказуйте повторно.</p>`,
-    '<button id="copyPaymentReference">Копіювати код</button><a class="primary" href="https://send.monobank.ua/jar/5wkP16948Q" target="_blank" rel="noopener">Перейти до банки</a><button data-close>Закрити</button>',
-  );
-  $("#copyPaymentReference").onclick = async () => {
+  const paymentUrl = new URL("https://send.monobank.ua/jar/5wkP16948Q");
+  paymentUrl.searchParams.set("a", (j.total / 100).toFixed(2));
+  let paymentCanOpen = false;
+  const copyReference = async () => {
     try {
       await navigator.clipboard.writeText(j.reference);
-      $("#copyPaymentReference").textContent = "Скопійовано";
-    } catch {
+      return true;
+    } catch {}
+    const field = document.createElement("textarea");
+    field.value = j.reference;
+    field.style.cssText = "position:fixed;opacity:0;left:0;top:0";
+    document.body.append(field);
+    field.focus();
+    field.select();
+    let copied = false;
+    try {
+      copied = document.execCommand("copy");
+    } catch {}
+    field.remove();
+    return copied;
+  };
+  showDialog(
+    "Оплата замовлення",
+    `<p class="payment-amount">${money(j.total)}</p><p>Натисніть «Оплатити»: сума вже буде заповнена, а код замовлення скопіюється.</p><p><strong>У банку вставте код у поле коментаря</strong> та підтвердьте переказ. Після оплати поверніться до меню — статус оновиться автоматично.</p><p id="paymentCopyStatus" role="status"></p><details id="paymentHelp"><summary>Код та допомога з оплатою</summary><p><input id="paymentReference" aria-label="Код оплати" readonly value="${escapeHtml(j.reference)}"></p><button id="copyPaymentReference">Копіювати код</button><p>Оплатіть до ${new Date(j.expires * 1000).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}. Переказ без цього коду в коментарі потрібно перевіряти з касиром.</p><a id="paymentManualLink" href="${escapeHtml(paymentUrl.href)}">Відкрити банку із сумою</a></details><p id="paymentStatus" role="status">Очікуємо оплату. Не переказуйте повторно.</p>`,
+    `<button id="payInMono" class="primary" disabled>Оплатити ${money(j.total)}</button><button data-close>Пізніше</button>`,
+  );
+  $("#payInMono").onclick = async () => {
+    const button = $("#payInMono");
+    button.disabled = true;
+    const copied = await copyReference();
+    button.disabled = false;
+    if (!paymentCanOpen) return;
+    if (copied) {
+      $("#paymentCopyStatus").textContent =
+        "Код скопійовано. Вставте його в коментар у банку.";
+      location.assign(paymentUrl.href);
+    } else {
+      $("#paymentHelp").open = true;
+      $("#paymentReference").focus();
+      $("#paymentReference").select();
+      $("#paymentCopyStatus").textContent =
+        "Браузер не дозволив копіювання. Скопіюйте виділений код і відкрийте банку за посиланням нижче.";
+    }
+  };
+  $("#copyPaymentReference").onclick = async () => {
+    if (await copyReference())
+      $("#paymentCopyStatus").textContent =
+        "Код скопійовано. Вставте його в коментар у банку.";
+    else {
+      $("#paymentReference").focus();
       $("#paymentReference").select();
     }
   };
@@ -61,6 +101,11 @@ function showPayment(j) {
       });
       const result = await r.json();
       if (!r.ok) throw Error();
+      paymentCanOpen =
+        result.status === "waiting" && j.expires * 1000 > Date.now();
+      const payButton = $("#payInMono");
+      if (payButton) payButton.disabled = !paymentCanOpen;
+      if (!paymentCanOpen) $("#paymentManualLink")?.setAttribute("hidden", "");
       const messages = {
         fulfilled: `Оплату підтверджено. Замовлення №${result.order_id} передано на приготування.`,
         paid: "Оплату підтверджено. Передаємо замовлення на приготування.",

@@ -294,3 +294,26 @@ dialog::backdrop {
   margin-top: 8px;
   color: #9c3928;
 }
+
+.payment-amount {
+  font-size: 30px;
+  font-weight: 750;
+  margin: 12px 0;
+}
+#paymentHelp {
+  margin-block: 14px;
+}
+#paymentHelp summary {
+  cursor: pointer;
+  padding-block: 10px;
+}
+#paymentReference {
+  width: 100%;
+  font: inherit;
+  padding: 10px;
+}
+#paymentManualLink {
+  display: inline-block;
+  padding-block: 12px;
+  color: var(--accent);
+}
