@@ -13,7 +13,6 @@ window.addEventListener("popstate", () => {
       "server",
       "locations",
       "transactions",
-      "themes",
       "staff",
       "menu-transfer",
     ].includes(target) &&

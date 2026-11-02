@@ -8,7 +8,7 @@ function roleView() {
 function allowedView(v) {
   if (["locations", "transactions"].includes(v))
     return !data.access_role || data.access_role === "admin";
-  if (["developer", "server", "themes"].includes(v)) return true;
+  if (["developer", "server"].includes(v)) return true;
   if (data.access_role === "service")
     return ["cash", "bar", "delivery"].includes(v);
   return !data.access_role || data.access_role === "admin" || v === roleView();
@@ -146,11 +146,7 @@ function handleAppBack() {
     toggleDrawer(false);
     return true;
   }
-  if (
-    ["locations", "transactions", "themes", "staff", "menu-transfer"].includes(
-      view,
-    )
-  ) {
+  if (["locations", "transactions", "staff", "menu-transfer"].includes(view)) {
     if (history.state?.cafePreviousView || history.state?.cafeLocationEditor)
       history.back();
     else change("server");
@@ -336,7 +332,6 @@ function render() {
     settingsExtras();
   } else if (view === "locations")
     locationsPage(history.state?.cafeLocationEditor || "", true);
-  else if (view === "themes") themesPage();
   else if (view === "transactions") transactionsPage();
   else orders();
   revealPage();

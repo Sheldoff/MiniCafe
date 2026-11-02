@@ -1,7 +1,7 @@
 {
   "application": "МініКафе",
-  "version": "3.47",
-  "android_version_code": 59,
+  "version": "3.48",
+  "android_version_code": 60,
   "purpose": "Каса, окремі черги напоїв і їжі, гнучке меню, статистика/PDF, калькулятор, резервні копії",
   "entry_document": "START-HERE-UA.md",
   "human_prompt": "NEXT-CHAT-PROMPT-UA.txt",
@@ -26,6 +26,7 @@
     "delivery": "Тільки видача їжі"
   },
   "latest_requested_changes": [
+    "Remove Cafe palette and picker, preserve standard light/dark; unify Settings actions; equal drawer borders without brand frame; WCAG contrast for arbitrary location colors and adaptive moving menu indicator",
     "Complete Cafe control/interaction colors and drawer outlines, cancel stale color motion; row location editing without duplicate names; bank request history on Transactions with admin-only pagination",
     "Aligned colored location navigation, linked-cash availability, device Back in settings, persistent Cafe palette, responsive guest-code button and per-draft code redemption",
     "Manage all locations: base names/colors, edit types and guarded deletion, multiple destinations with shared fulfillment and financial record, location themes and source cashier color on tickets",
@@ -65,7 +66,7 @@
       "status": "active",
       "entry": "apps/local-android/README.md",
       "sources": "work/android",
-      "version": "3.47"
+      "version": "3.48"
     },
     "online": {
       "status": "telegram_auth_deployed",
@@ -76,7 +77,7 @@
       "sources": "apps/online/src",
       "database": "D1 minicafe-db",
       "deploy_docs": "apps/online/DEPLOY-UA.md",
-      "version": "0.14.0"
+      "version": "0.15.0"
     },
     "windows": {
       "status": "frozen",

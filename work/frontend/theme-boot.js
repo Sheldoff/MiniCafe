@@ -2,8 +2,7 @@
 (function () {
   var theme = "light";
   try {
-    document.documentElement.dataset.palette =
-      localStorage.getItem("minicafe-palette") === "cafe" ? "cafe" : "standard";
+    localStorage.removeItem("minicafe-palette");
     if (localStorage.getItem("minicafe-theme") === "dark") theme = "dark";
   } catch (e) {}
   document.documentElement.setAttribute("data-theme", theme);
