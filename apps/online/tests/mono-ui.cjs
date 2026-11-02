@@ -45,19 +45,55 @@ const {
       await p.locator("#guestFullName").fill("Іван Петренко");
       await p.locator('#foodList [data-step="1"]').first().click();
       await p.locator("#guestSubmit").click();
-      await p.locator("#paymentReference").waitFor();
+      await p.locator("#payInMono").waitFor();
+      await p.locator("#paymentHelp summary").click();
       assert.equal(
         await p.locator("#paymentReference").inputValue(),
         "MC-1234567890ABCDEF",
       );
       assert.equal(
-        await p.locator("a.primary").getAttribute("href"),
-        "https://send.monobank.ua/jar/5wkP16948Q",
+        await p.locator("#paymentManualLink").getAttribute("href"),
+        "https://send.monobank.ua/jar/5wkP16948Q?a=50.00",
       );
+      await p.evaluate(() => {
+        Object.defineProperty(navigator, "clipboard", {
+          configurable: true,
+          value: { writeText: () => Promise.reject(Error("denied")) },
+        });
+        document.execCommand = () => false;
+      });
+      await p.locator("#payInMono").click();
+      assert.match(
+        await p.locator("#paymentCopyStatus").innerText(),
+        /не дозволив/,
+      );
+      assert.ok(p.url().startsWith("http://127.0.0.1:8795"));
       assert.match(await p.locator("#paymentStatus").innerText(), /Очікуємо/);
       await p.locator("#dialogClose").click();
       await p.locator("#guestSubmit").click();
       assert.equal(created, 1);
+      await p.evaluate(() =>
+        Object.defineProperty(navigator, "clipboard", {
+          configurable: true,
+          value: {
+            writeText: async (text) =>
+              localStorage.setItem("test-copied-reference", text),
+          },
+        }),
+      );
+      await p.route("https://send.monobank.ua/**", (route) =>
+        route.fulfill({
+          body: "Bank navigation test only",
+          contentType: "text/html",
+        }),
+      );
+      await p.locator("#payInMono").click();
+      await p.waitForURL("https://send.monobank.ua/jar/5wkP16948Q?a=50.00");
+      await p.goto("http://127.0.0.1:8795");
+      assert.equal(
+        await p.evaluate(() => localStorage.getItem("test-copied-reference")),
+        "MC-1234567890ABCDEF",
+      );
       paid = true;
       await p.reload();
       await p.waitForFunction(() =>
