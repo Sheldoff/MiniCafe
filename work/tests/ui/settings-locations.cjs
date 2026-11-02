@@ -89,6 +89,12 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
           .evaluate((h) => getComputedStyle(h).backgroundColor),
         "rgb(238, 204, 68)",
       );
+      assert.equal(
+        await p
+          .locator("#drawerToggle")
+          .evaluate((b) => getComputedStyle(b).color),
+        "rgb(16, 23, 19)",
+      );
       await p.locator('[data-product="1"]').click();
       await p.locator("#cartTab").click();
       await p.locator("#guest").fill("Локаційний Гість");

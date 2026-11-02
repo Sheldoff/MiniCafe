@@ -161,3 +161,8 @@
     text-align: right;
   }
 }
+
+:root[data-location-theme] header :is(#drawerToggle, #connection, small) {
+  color: var(--location-text) !important;
+  border-color: currentColor;
+}
