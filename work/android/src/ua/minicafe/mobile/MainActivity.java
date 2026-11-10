@@ -368,7 +368,7 @@ public class MainActivity extends Activity {
           view.setBackgroundColor(color);
           if (view.getParent() instanceof View) ((View) view.getParent()).setBackgroundColor(color);
           getWindow().setStatusBarColor(CafeUi.coffee(this) ? Color.rgb(75, 48, 34) : Color.rgb(20, 45, 37));
-          getWindow().setNavigationBarColor(color);
+          getWindow().setNavigationBarColor(CafeUi.coffee(this) ? Color.rgb(75, 48, 34) : Color.rgb(20, 27, 24));
         }
         return true;
       } else if ("copy-support-card".equals(target.getHost())) {
