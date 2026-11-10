@@ -1,4 +1,3 @@
-import qrcode from "qrcode-generator";
 import {
   hash,
   random,
@@ -19,7 +18,7 @@ const expired = () =>
   secureJson({ error: "Час входу минув. Створіть новий QR-код." }, 410);
 const page = (csrf) =>
   new Response(
-    `<!doctype html><html lang="uk"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/brand.svg"><link rel="stylesheet" href="/auth.css"><script src="/theme-boot.js"></script><script src="/quick-login.js" defer></script><title>МініКафе · Вхід без коду</title><main id="quickLogin" data-csrf="${csrf}"><img class="brand-icon" src="/brand.svg" alt=""><h1>Вхід без коду</h1><p>Відскануйте QR-код камерою телефона або відкрийте Telegram кнопкою нижче. У боті натисніть Start, звірте цифри й підтвердьте вхід.</p><div id="loginQr" aria-label="QR-код входу"></div><p id="matchLabel" hidden>Цифри на цьому пристрої: <strong id="loginMatch"></strong></p><a id="openLoginBot" class="primary" target="_blank" rel="noopener noreferrer" hidden>Відкрити Telegram</a><p id="quickStatus" role="status">Створюємо запит…</p><small>Після підтвердження цей пристрій увійде автоматично. QR діє 5 хвилин. Підтверджуйте тільки свій запит із такими самими цифрами.</small><button id="refreshLoginQr" type="button" hidden>Створити новий QR-код</button><p><a id="manualLogin" href="/auth/code">Увести код вручну</a></p><a href="/auth/login">Інші способи входу</a></main></html>`,
+    `<!doctype html><html lang="uk"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/brand.svg"><link rel="stylesheet" href="/auth.css"><script src="/theme-boot.js"></script><script src="/qr-generator.js" defer></script><script src="/quick-login.js" defer></script><title>МініКафе · Вхід без коду</title><main id="quickLogin" data-csrf="${csrf}"><img class="brand-icon" src="/brand.svg" alt=""><h1>Вхід без коду</h1><p>Відскануйте QR-код камерою телефона або відкрийте Telegram кнопкою нижче. У боті натисніть Start, звірте цифри й підтвердьте вхід.</p><div id="loginQr" aria-label="QR-код входу"></div><p id="matchLabel" hidden>Цифри на цьому пристрої: <strong id="loginMatch"></strong></p><a id="openLoginBot" class="primary" target="_blank" rel="noopener noreferrer" hidden>Відкрити Telegram</a><p id="quickStatus" role="status">Створюємо запит…</p><small>Після підтвердження цей пристрій увійде автоматично. QR діє 5 хвилин. Підтверджуйте тільки свій запит із такими самими цифрами.</small><button id="refreshLoginQr" type="button" hidden>Створити новий QR-код</button><p><a id="manualLogin" href="/auth/code">Увести код вручну</a></p><a href="/auth/login">Інші способи входу</a></main></html>`,
     {
       headers: {
         "Content-Type": "text/html;charset=utf-8",
@@ -76,14 +75,10 @@ export async function quickLogin(request, env) {
         "INSERT INTO telegram_login_links VALUES(?,?,?,'pending',NULL,?) ON CONFLICT(browser_hash) DO UPDATE SET ticket_hash=excluded.ticket_hash,match_code=excluded.match_code,status='pending',telegram_id=NULL,expires=excluded.expires",
       ).bind(await hash(ticket), browserHash, match, now + 300),
     ]);
-    const qr = qrcode(0, "M");
-    qr.addData(link);
-    qr.make();
     return secureJson({
       link,
       match,
       expires_in: 300,
-      qr: qr.createSvgTag({ cellSize: 4, margin: 16, scalable: true }),
     });
   }
   if (!(await rateLimit(env, request, "quick-poll", 900, 600)))

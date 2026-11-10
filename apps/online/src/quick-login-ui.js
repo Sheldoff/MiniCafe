@@ -71,7 +71,14 @@
   });
   request("/auth/quick/start")
     .then((result) => {
-      document.querySelector("#loginQr").innerHTML = result.qr;
+      const qr = window.qrcode(0, "M");
+      qr.addData(result.link);
+      qr.make();
+      document.querySelector("#loginQr").innerHTML = qr.createSvgTag({
+        cellSize: 4,
+        margin: 16,
+        scalable: true,
+      });
       document.querySelector("#loginMatch").textContent = result.match;
       document.querySelector("#matchLabel").hidden = false;
       link.href = result.link;

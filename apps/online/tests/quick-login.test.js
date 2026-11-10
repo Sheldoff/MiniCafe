@@ -94,7 +94,7 @@ test("QR approval: independent browser proof, authenticated callbacks, roles, ex
   );
   const request = await start(p),
     ticket = request.link.split("q_")[1];
-  assert.match(request.qr, /<svg/);
+  assert.equal(request.qr, undefined); // The browser builds QR; no Worker CPU spent encoding.
   assert.match(request.match, /^\d{6}$/);
   assert.equal(request.expires_in, 300);
   assert.ok(!request.link.includes(p.proof));
