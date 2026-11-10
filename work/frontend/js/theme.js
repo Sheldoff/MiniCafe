@@ -61,6 +61,7 @@ function setCafePalette(palette, notifyNative = true) {
   else delete root.dataset.palette;
   try {
     localStorage.setItem("minicafe-palette", palette);
+    localStorage.setItem("minicafe-coffee-default-v2", "1");
   } catch (e) {}
   setCafeTheme(root.dataset.theme || "light", false, false);
   if (view === "appearance") appearancePage();
@@ -73,8 +74,8 @@ function appearancePage() {
   const palette = document.documentElement.dataset.palette || "standard";
   document.querySelector("#main").innerHTML =
     `<section class="panel settings-panel"><h2>Оформлення</h2><p class="muted">Виберіть кольори для цього пристрою. Власні кольори локацій зберігаються.</p><div class="appearance-options">${[
-      ["standard", "Стандартна", ["#173f35", "#b3d9a4", "#f5f4ef"]],
-      ["coffee", "Кавова", ["#78563f", "#f3e6ca", "#211914"]],
+      ["standard", "Класична", ["#173f35", "#b3d9a4", "#f5f4ef"]],
+      ["coffee", "Кавова · типова", ["#78563f", "#f3e6ca", "#211914"]],
     ]
       .map(
         ([id, name, colors]) =>

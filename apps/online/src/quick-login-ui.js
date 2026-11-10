@@ -51,7 +51,7 @@
       if (result.redirect) {
         stopped = true;
         status.textContent = "Вхід підтверджено. Відкриваємо МініКафе…";
-        location.assign(result.redirect);
+        location.replace(result.redirect);
       } else timer = setTimeout(poll, 2000);
     } catch (e) {
       stop(e.message || "З’єднання втрачено. Почніть вхід заново.");
@@ -68,6 +68,9 @@
   window.addEventListener("pagehide", () => {
     stopped = true;
     clearTimeout(timer);
+  });
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted) location.reload();
   });
   request("/auth/quick/start")
     .then((result) => {

@@ -187,7 +187,7 @@ test("QR approval: independent browser proof, authenticated callbacks, roles, ex
         "/start q_" + old.link.split("q_")[1],
       )
     ).text,
-    /використаний/,
+    /попереднього входу/,
   );
   // Public ticket knowledge cannot replace cookie-bound proof.
   assert.equal(

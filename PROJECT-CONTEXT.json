@@ -1,7 +1,7 @@
 {
   "application": "МініКафе",
-  "version": "3.50",
-  "android_version_code": 62,
+  "version": "3.51",
+  "android_version_code": 63,
   "purpose": "Каса, окремі черги напоїв і їжі, гнучке меню, статистика/PDF, калькулятор, резервні копії",
   "entry_document": "START-HERE-UA.md",
   "human_prompt": "NEXT-CHAT-PROMPT-UA.txt",
@@ -26,6 +26,7 @@
     "delivery": "Тільки видача їжі"
   },
   "latest_requested_changes": [
+    "Coffee default with one-time browser/native migration and preserved later choices; full-bleed adaptive launcher icon; fresh Telegram re-login after logout/bfcache and Android reauth, spent-link recovery without accepting replay",
     "Automatic Telegram QR/deep-link approval: matching digits and explicit phone button, independent browser proof, automatic cookie session/redirect and existing APK proof; manual bot code/copy fallback",
     "Vector coffee-cup brand throughout Android and web, optional Coffee light/dark palette including feedback/keyframes, native theme synchronization; one-use bot codes for cross-device staff login",
     "Remove Cafe palette and picker, preserve standard light/dark; unify Settings actions; equal drawer borders without brand frame; WCAG contrast for arbitrary location colors and adaptive moving menu indicator",
@@ -61,14 +62,14 @@
     "private_password_file_separate": "work/android/signing.local.json",
     "certificate_fingerprint_file": "work/android/signing-cert.sha256"
   },
-  "validation_limit": "Android 3.50: full checks.py without skips passed (23 Java suites, local API, Chrome/WebKit, tablet/WebView modes, navigation/motion and Coffee coverage), result c78b0d1efa8e48e6ad6d95ab29186a94. Original signing certificate verified. Swipe regression waits for actual transition completion before the next gesture. Online 0.17.0: 21 Node/SQLite tests, disposable D1 API/backup interoperability, Chrome/WebKit HTTPS automatic QR approval in separate phone/desktop contexts, client-generated QR decoded by ZXing, original APK browser proof/bar-role and manual-code fallback passed. Migration 0014 applied; Worker d262845d-237e-4a31-9f12-0e8b2b87228f deployed. Existing webhook extended to callback_query while preserving URL, IP, connection limit, original secret and pending updates; verified healthy. Production GET-only page/asset smoke passed. No physical phone/real Telegram account login or production test orders; Windows frozen.",
+  "validation_limit": "Android 3.51: complete checks.py without skips passed, result b0e0a996cb374e8f9d4f6d4775ffa4db (23 Java suites, local API, Chrome/WebKit, tablet/WebView, motion/navigation, Coffee defaults). Original certificate verified. Adaptive icon and opaque #ff78563f background verified in packaged APK with aapt2; circular/rounded mask preview inspected. Queue animation regression now waits for actual final opacity. Online 0.18.0: 21 Node/SQLite tests, disposable D1 API/backup interoperability, Chrome/WebKit HTTPS login→logout→login, spent-history avoidance, flow-cookie cleanup, bfcache fresh QR, coffee default and later classic persistence passed. Worker 7277edc5-91b5-4a0b-b6eb-f7bcad15449e deployed; GET-only page/asset smoke passed. No new migrations/secrets/webhook changes. No physical phone/launcher/real Telegram account login or production test orders; Windows frozen.",
   "development_tracks": {
     "policy": "docs/PROJECT-TRACKS-UA.md",
     "local_android": {
       "status": "active",
       "entry": "apps/local-android/README.md",
       "sources": "work/android",
-      "version": "3.50"
+      "version": "3.51"
     },
     "online": {
       "status": "telegram_auth_deployed",
@@ -79,7 +80,7 @@
       "sources": "apps/online/src",
       "database": "D1 minicafe-db",
       "deploy_docs": "apps/online/DEPLOY-UA.md",
-      "version": "0.17.0"
+      "version": "0.18.0"
     },
     "windows": {
       "status": "frozen",

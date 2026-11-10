@@ -101,6 +101,11 @@ header h1,
 :root[data-palette="coffee"] input:focus {
   border-color: var(--accent);
 }
+:root[data-palette="coffee"] .queue-grid .card button.primary {
+  background: var(--source-color) !important;
+  color: var(--source-text) !important;
+  border-color: var(--source-color);
+}
 :root[data-palette="coffee"] button.primary:hover {
   background: var(--accent) !important;
   color: var(--on-accent) !important;
@@ -162,4 +167,14 @@ header h1,
 }
 :root[data-theme="dark"] .calc-suggestions small {
   color: var(--muted);
+}
+:root[data-palette="coffee"]
+  :is(
+    button.primary,
+    .drawer-links button.selected,
+    .drawer-tools button.selected
+  ) {
+  background: var(--accent) !important;
+  color: var(--on-accent) !important;
+  border-color: var(--accent);
 }

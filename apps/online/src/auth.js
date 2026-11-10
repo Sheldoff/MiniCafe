@@ -222,9 +222,14 @@ export async function authRoutes(request, env) {
     await env.DB.prepare("DELETE FROM auth_sessions WHERE token_hash=?")
       .bind(await hash(cookie(request, "__Host-minicafe_session")))
       .run();
-    return secureJson({ ok: true }, 200, {
-      "Set-Cookie": sessionCookie("", 0),
-    });
+    const response = secureJson({ ok: true });
+    response.headers.append("Set-Cookie", sessionCookie("", 0));
+    for (const name of ["app", "quick", "code", "oauth"])
+      response.headers.append(
+        "Set-Cookie",
+        `__Host-minicafe_${name}=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0`,
+      );
+    return response;
   }
   if (path === "/auth/login" && request.method === "GET") {
     const asset = await env.ASSETS.fetch(

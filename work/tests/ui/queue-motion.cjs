@@ -91,6 +91,10 @@ const { chromium, webkit, base, key, chromeOptions } = require("./helpers.cjs");
         },
       );
       await page.waitForTimeout(300);
+      await page.waitForFunction(() => {
+        const empty = document.querySelector(".empty-state");
+        return empty && getComputedStyle(empty).opacity === "1";
+      });
       assert.equal(
         await page
           .locator(".empty-state")

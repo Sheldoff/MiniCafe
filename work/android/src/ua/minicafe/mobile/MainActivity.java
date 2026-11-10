@@ -249,7 +249,7 @@ public class MainActivity extends Activity {
                     : org.json.JSONObject.quote(savedTheme);
             v.evaluateJavascript(
                 "if(typeof setCafePalette==='function')setCafePalette("
-                    + org.json.JSONObject.quote(getSharedPreferences("appearance", 0).getString("palette", "standard"))
+                    + org.json.JSONObject.quote(getSharedPreferences("appearance", 0).getString("palette", "coffee"))
                     + ",false);if(typeof setCafeTheme==='function')setCafeTheme(" + initial + ",false,true)",
                 null);
             revealWhenReady(v);

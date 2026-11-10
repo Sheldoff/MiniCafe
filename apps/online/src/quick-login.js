@@ -131,7 +131,17 @@ export async function quickLoginMessage(env, id, text) {
     .first();
   if (!row)
     return {
-      text: "Запит входу вже використаний або час минув. Створіть новий QR-код на потрібному пристрої.",
+      text: "Це посилання від попереднього входу або його час минув. На пристрої, де потрібен вхід, знову відкрийте «Вхід без коду» — буде новий QR. Старий QR повторно не використовується.",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "Відкрити новий вхід",
+              url: "https://minicafe.minicafe.workers.dev/auth/quick",
+            },
+          ],
+        ],
+      },
     };
   if (!(await botAccess(env, id)))
     return {
