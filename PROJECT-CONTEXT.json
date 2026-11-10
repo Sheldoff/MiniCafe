@@ -60,7 +60,7 @@
     "private_password_file_separate": "work/android/signing.local.json",
     "certificate_fingerprint_file": "work/android/signing-cert.sha256"
   },
-  "validation_limit": "3.49 / online 0.16.0 validation in progress. Never test orders against production; Windows frozen.",
+  "validation_limit": "Android 3.49: full checks.py without skips passed (23 Java suites, local API, Chrome/WebKit, tablet/WebView modes, navigation/motion and Coffee coverage). Final signed rebuild verifies original certificate after native system-bar contrast adjustment. Coffee UI tested in both engines online and Android, all principal screens and light/dark text contrast, persisted choice, location priority and animation tokens; CSS literal/keyframe coverage check passed. Online 0.16.0: 20 Node/SQLite tests, disposable D1 API/backup interoperability, shared UI and HTTPS cross-device bot codes + browser-to-APK bar-role proof passed. Migration 0013 applied; Worker 50971986-d668-4c51-ac41-e54856f07bc4 deployed. Production GET-only smoke passed; webhook unchanged/healthy. No physical phone/real Telegram account login or production test orders; Windows frozen.",
   "development_tracks": {
     "policy": "docs/PROJECT-TRACKS-UA.md",
     "local_android": {
