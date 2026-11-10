@@ -43,6 +43,9 @@ async function swipe(
       { dx, dy, cancel, delay, multi },
     );
   await page.waitForTimeout(390);
+  // A busy browser may finish frames later than the nominal duration. Start
+  // the next gesture only once the app has released its transition guard.
+  await page.waitForFunction(() => !document.querySelector(".cash-swiping"));
 }
 (async () => {
   for (const [name, engine, options] of [

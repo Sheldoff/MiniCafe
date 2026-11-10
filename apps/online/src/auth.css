@@ -136,3 +136,29 @@ button:focus-visible {
 [role="alert"] {
   color: #923c31;
 }
+
+#loginQr {
+  width: min(100%, 280px);
+  margin: 20px auto;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 8px;
+}
+#loginQr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+#loginMatch {
+  display: inline-block;
+  font-size: 28px;
+  letter-spacing: 0.18em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+#quickLogin [hidden] {
+  display: none !important;
+}
+#refreshLoginQr {
+  margin-top: 18px;
+}

@@ -8,12 +8,14 @@
 <link rel="stylesheet" href="/auth.css"><script src="/theme-boot.js"></script>
 <main>
 <small><img class="brand-icon" src="/brand.svg" width="40" height="40" alt=""> МініКафе</small><h1>Вхід працівника</h1>
-<p>Підтвердьте свій акаунт на захищеній сторінці Telegram. Якщо доступ надано за номером телефону, дозвольте Telegram передати цей номер МініКафе.</p>
+<p>Виберіть зручний спосіб входу. Вхід без коду підтверджується кнопкою в Telegram-боті. Якщо доступ уперше надано за номером телефону, скористайтеся «Продовжити з Telegram» і дозвольте передати номер.</p>
+<a class="primary" href="/auth/quick">Вхід без коду · Telegram / QR</a>
+<small>Відскануйте QR телефоном і підтвердьте в боті — цей пристрій увійде автоматично.</small>
 <a class="primary" href="/auth/start">Продовжити з Telegram</a>
 <a class="primary" href="/auth/code">Отримати код у боті на телефоні</a><small>Введіть код із бота на цьому пристрої — Telegram на ноутбуці не потрібний.</small><small>Після підтвердження поверніться в цю саму вкладку браузера.</small>
 <details><summary>Telegram не відкривається?</summary>
 <ol><li>На сторінці Telegram натисніть <b>Або ввійдіть за номером телефону</b> (англійською — <b>Or log in with a phone number</b>). Цей спосіб не потребує запуску застосунку.</li><li>Якщо сайт відкрито всередині іншого застосунку, відкрийте <a href="https://minicafe.minicafe.workers.dev/auth/login">цю сторінку</a> у Safari на iPhone або Chrome на Android через меню браузера. Потім почніть вхід заново.</li><li>Не закривайте вкладку входу. Якщо повернення не відбулося автоматично, поверніться до неї вручну.</li></ol>
-<p>Код підтвердження вводьте лише на сторінці Telegram. МініКафе не запитує ваш пароль Telegram.</p>
+<p>Код входу в сам Telegram вводьте лише на сторінці Telegram. Окремий код МініКафе з бота можна ввести на сторінці МініКафе. Пароль Telegram тут не потрібний.</p>
 </details>
 <a href="/">Повернутися до меню</a>
 </main><script>if(location.hash==='#menu-transfer')document.querySelectorAll('.primary').forEach(a=>a.href+='?return=menu-transfer');</script></html>

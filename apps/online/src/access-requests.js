@@ -8,6 +8,7 @@ import {
 } from "./auth.js";
 import { normalizePhone } from "./phone.js";
 import { issueBotCode } from "./bot-login.js";
+import { quickLoginMessage, quickLoginCallback } from "./quick-login.js";
 const roles = ["service", "cash", "bar", "delivery"];
 const keyboard = {
   keyboard: [
@@ -109,8 +110,9 @@ async function webhook(request, env) {
   const update = await bounded(request);
   if (!update || !Number.isSafeInteger(update.update_id))
     return secureJson({ error: "Invalid update" }, 400);
-  const m = update.message,
-    u = m?.from;
+  const callback = update.callback_query,
+    m = callback?.message || update.message,
+    u = callback?.from || m?.from;
   if (
     !m ||
     m.chat?.type !== "private" ||
@@ -149,6 +151,23 @@ async function webhook(request, env) {
     .bind(id, u.username || null, name, now)
     .run();
   const text = (m.text || "").trim();
+  if (callback) {
+    if (
+      typeof callback.id !== "string" ||
+      callback.id.length > 128 ||
+      typeof callback.data !== "string"
+    )
+      return ack();
+    const message = await quickLoginCallback(env, id, callback.data);
+    return secureJson({
+      method: "answerCallbackQuery",
+      callback_query_id: callback.id,
+      text: message || "Ця дія вже недоступна.",
+      show_alert: true,
+    });
+  }
+  const quick = await quickLoginMessage(env, id, text);
+  if (quick) return reply(id, quick.text, quick.reply_markup || keyboard);
   if (
     text === "/login" ||
     /^\/start\s+login$/.test(text) ||
@@ -162,6 +181,16 @@ async function webhook(request, env) {
         : "Вашому Telegram-акаунту ще не надано доступ або його відкликано. Подайте заявку чи зверніться до адміністратора.",
       {
         inline_keyboard: [
+          ...(code
+            ? [
+                [
+                  {
+                    text: "Скопіювати код",
+                    copy_text: { text: code.replace(/ /g, "") },
+                  },
+                ],
+              ]
+            : []),
           [
             {
               text: "Ввести код на цьому пристрої",

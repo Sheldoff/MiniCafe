@@ -12,7 +12,7 @@ import {
 } from "./auth.js";
 
 // Explicit ID grants (including disabled grants) always override phone grants.
-async function botAccess(env, id) {
+export async function botAccess(env, id) {
   if (admins(env).has(id)) return { role: "admin" };
   const direct = await env.DB.prepare(
     "SELECT role,enabled FROM staff_access WHERE telegram_id=?",
@@ -25,6 +25,42 @@ async function botAccess(env, id) {
   )
     .bind(id)
     .first();
+}
+
+export async function createBotSession(env, id) {
+  const access = await botAccess(env, id);
+  if (!access) return null;
+  const profile = await env.DB.prepare(
+    "SELECT name FROM telegram_profiles WHERE telegram_id=?",
+  )
+    .bind(id)
+    .first();
+  const session = random(),
+    digest = await hash(session);
+  await env.DB.batch([
+    env.DB.prepare("INSERT INTO auth_sessions VALUES(?,?,?,?,?)").bind(
+      digest,
+      id,
+      profile?.name || "Працівник",
+      random(),
+      timestamp() + 604800,
+    ),
+    ...(access.phone
+      ? [
+          env.DB.prepare("INSERT INTO session_phone VALUES(?,?)").bind(
+            digest,
+            access.phone,
+          ),
+        ]
+      : []),
+  ]);
+  if (!(await identityByHash(digest, env))) {
+    await env.DB.prepare("DELETE FROM auth_sessions WHERE token_hash=?")
+      .bind(digest)
+      .run();
+    return null;
+  }
+  return session;
 }
 
 export async function issueBotCode(env, id) {
@@ -132,41 +168,14 @@ export async function botLogin(request, env) {
       "Код неправильний, прострочений або доступ відкликано. Отримайте новий код у боті.",
       400,
     );
-  const profile = await env.DB.prepare(
-    "SELECT name FROM telegram_profiles WHERE telegram_id=?",
-  )
-    .bind(row.telegram_id)
-    .first();
-  const session = random(),
-    digest = await hash(session);
-  await env.DB.batch([
-    env.DB.prepare("INSERT INTO auth_sessions VALUES(?,?,?,?,?)").bind(
-      digest,
-      row.telegram_id,
-      profile?.name || "Працівник",
-      random(),
-      timestamp() + 604800,
-    ),
-    ...(access.phone
-      ? [
-          env.DB.prepare("INSERT INTO session_phone VALUES(?,?)").bind(
-            digest,
-            access.phone,
-          ),
-        ]
-      : []),
-  ]);
-  if (!(await identityByHash(digest, env))) {
-    await env.DB.prepare("DELETE FROM auth_sessions WHERE token_hash=?")
-      .bind(digest)
-      .run();
+  const session = await createBotSession(env, row.telegram_id);
+  if (!session)
     return codePage(
       csrf,
       bot,
       "Доступ відкликано. Зверніться до адміністратора.",
       403,
     );
-  }
   const headers = new Headers({
     "Cache-Control": "no-store",
     "Referrer-Policy": "no-referrer",

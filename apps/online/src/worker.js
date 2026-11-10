@@ -8,6 +8,7 @@ import { menuTransfer } from "./menu-transfer.js";
 import { accessRequests } from "./access-requests.js";
 import { appLogin } from "./app-login.js";
 import { botLogin } from "./bot-login.js";
+import { quickLogin } from "./quick-login.js";
 import { guestOrders, codeForOrder } from "./guest-orders.js";
 import {
   authRoutes,
@@ -67,6 +68,8 @@ async function handle(request, env, ctx) {
   if (authentication) return authentication;
   const codeLogin = await botLogin(request, env);
   if (codeLogin) return codeLogin;
+  const quick = await quickLogin(request, env);
+  if (quick) return quick;
   const mobileLogin = await appLogin(request, env);
   if (mobileLogin) return mobileLogin;
   const application = await accessRequests(request, env, ctx);
