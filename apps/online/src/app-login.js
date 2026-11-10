@@ -55,7 +55,7 @@ export async function appLogin(request, env) {
     // A rendered first-party page resets the navigation initiator. Redirecting
     // directly can carry Android's cross-site metadata into /auth/start.
     const response = page(
-      `<p>Продовжте вхід через Telegram, потім поверніться до застосунку.</p><a class="primary" href="${user ? "/auth/app/confirm" : "/auth/start"}">Продовжити вхід</a><p><a href="/auth/code">Отримати код у боті на телефоні</a></p>`,
+      `<p>Продовжте вхід через Telegram, потім поверніться до застосунку.</p><a class="primary" href="${user ? "/auth/app/confirm" : "/auth/start"}">Продовжити вхід</a><p><a class="primary" href="/auth/quick">Вхід без коду · Telegram / QR</a></p><p><a href="/auth/code">Отримати код у боті на телефоні</a></p>`,
     );
     response.headers.set("Set-Cookie", appCookie(challenge));
     return response;

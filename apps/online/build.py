@@ -32,6 +32,7 @@ for name in ['guest.js','guest.css']:
 shutil.copyfile(ROOT / 'work/frontend/assets/brand.svg', out / 'brand.svg')
 shutil.copyfile(ROOT / 'work/frontend/assets/brand-512.png', out / 'brand-512.png')
 shutil.copyfile(ROOT / 'work/frontend/theme-boot.js', out / 'theme-boot.js')
+shutil.copyfile(HERE / 'src/quick-login-ui.js', out / 'quick-login.js')
 (out / 'auth.css').write_text(palette_styles((HERE / 'src/auth.css').read_text(encoding='utf-8')) + (HERE / 'src/auth-coffee.css').read_text(encoding='utf-8'), encoding='utf-8')
 (out / 'login.html').write_text((HERE / 'src/login.html').read_text(encoding='utf-8'), encoding='utf-8')
 (out / 'images').mkdir(exist_ok=True)
@@ -54,6 +55,7 @@ shutil.copyfile(ROOT / 'work/android/assets/fonts/LICENSE-DejaVu.txt', out / 've
 for package, name in [('pdf-lib','LICENSE-pdf-lib.txt'),('@pdf-lib/fontkit','LICENSE-fontkit.txt')]:
     license_file = next((HERE / 'node_modules' / package).glob('LICENSE*'), HERE / 'licenses' / name)
     shutil.copyfile(license_file, out / 'vendor' / name)
+shutil.copyfile(HERE / 'licenses/LICENSE-qrcode-generator.txt', out / 'vendor/LICENSE-qrcode-generator.txt')
 (out / 'robots.txt').write_text('User-agent: *\nDisallow: /\n', encoding='utf-8')
 (out / '_headers').write_text('/*\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: no-referrer\n  X-Frame-Options: DENY\n', encoding='utf-8')
 print('Built online UI; seed: 8 drinks and 3 test food items. Existing products never overwritten.')
