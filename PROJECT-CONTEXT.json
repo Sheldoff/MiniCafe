@@ -61,7 +61,7 @@
     "private_password_file_separate": "work/android/signing.local.json",
     "certificate_fingerprint_file": "work/android/signing-cert.sha256"
   },
-  "validation_limit": "3.50 / 0.17.0 validation in progress. Windows frozen; test API only on disposable local D1.",
+  "validation_limit": "Android 3.50: full checks.py without skips passed (23 Java suites, local API, Chrome/WebKit, tablet/WebView modes, navigation/motion and Coffee coverage), result c78b0d1efa8e48e6ad6d95ab29186a94. Original signing certificate verified. Swipe regression waits for actual transition completion before the next gesture. Online 0.17.0: 21 Node/SQLite tests, disposable D1 API/backup interoperability, Chrome/WebKit HTTPS automatic QR approval in separate phone/desktop contexts, client-generated QR decoded by ZXing, original APK browser proof/bar-role and manual-code fallback passed. Migration 0014 applied; Worker d262845d-237e-4a31-9f12-0e8b2b87228f deployed. Existing webhook extended to callback_query while preserving URL, IP, connection limit, original secret and pending updates; verified healthy. Production GET-only page/asset smoke passed. No physical phone/real Telegram account login or production test orders; Windows frozen.",
   "development_tracks": {
     "policy": "docs/PROJECT-TRACKS-UA.md",
     "local_android": {
