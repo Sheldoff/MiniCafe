@@ -24,21 +24,22 @@ public class ScanActivity extends Activity
 
   @Override
   public void onCreate(Bundle b) {
+    CafeUi.applyTheme(this);
     super.onCreate(b);
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     LinearLayout layout = new LinearLayout(this);
     layout.setOrientation(1);
-    layout.setBackgroundColor(Color.rgb(24, 61, 48));
+    layout.setBackgroundColor(CafeUi.coffee(this) ? CafeUi.background(this) : Color.rgb(24, 61, 48));
     TextView title = new TextView(this);
     title.setText("Наведіть камеру на QR-код\nу вікні МініКафе на ноутбуці");
-    title.setTextColor(Color.WHITE);
+    title.setTextColor(CafeUi.coffee(this) ? CafeUi.text(this) : Color.WHITE);
     title.setTextSize(19);
     title.setGravity(17);
     title.setPadding(20, 24, 20, 24);
     layout.addView(title);
     preview = new SurfaceView(this);
     layout.addView(preview, new LinearLayout.LayoutParams(-1, 0, 1));
-    Button cancel = new Button(this);
+    Button cancel = CafeUi.button(this, "Скасувати", false);
     cancel.setText("Скасувати");
     cancel.setOnClickListener(v -> finish());
     layout.addView(cancel);

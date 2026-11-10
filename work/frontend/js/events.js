@@ -11,6 +11,7 @@ window.addEventListener("popstate", () => {
       "calculator",
       "developer",
       "server",
+      "appearance",
       "locations",
       "transactions",
       "staff",

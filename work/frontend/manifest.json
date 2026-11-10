@@ -8,7 +8,8 @@
     "css/app-layout.css",
     "css/card-payments.css",
     "css/settings.css",
-    "css/location-controls.css"
+    "css/location-controls.css",
+    "css/coffee.css"
   ],
   "scripts": [
     "js/state.js",

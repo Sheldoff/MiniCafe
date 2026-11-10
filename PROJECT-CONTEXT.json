@@ -1,7 +1,7 @@
 {
   "application": "МініКафе",
-  "version": "3.48",
-  "android_version_code": 60,
+  "version": "3.49",
+  "android_version_code": 61,
   "purpose": "Каса, окремі черги напоїв і їжі, гнучке меню, статистика/PDF, калькулятор, резервні копії",
   "entry_document": "START-HERE-UA.md",
   "human_prompt": "NEXT-CHAT-PROMPT-UA.txt",
@@ -26,6 +26,7 @@
     "delivery": "Тільки видача їжі"
   },
   "latest_requested_changes": [
+    "Vector coffee-cup brand throughout Android and web, optional Coffee light/dark palette including feedback/keyframes, native theme synchronization; one-use bot codes for cross-device staff login",
     "Remove Cafe palette and picker, preserve standard light/dark; unify Settings actions; equal drawer borders without brand frame; WCAG contrast for arbitrary location colors and adaptive moving menu indicator",
     "Complete Cafe control/interaction colors and drawer outlines, cancel stale color motion; row location editing without duplicate names; bank request history on Transactions with admin-only pagination",
     "Aligned colored location navigation, linked-cash availability, device Back in settings, persistent Cafe palette, responsive guest-code button and per-draft code redemption",
@@ -59,25 +60,25 @@
     "private_password_file_separate": "work/android/signing.local.json",
     "certificate_fingerprint_file": "work/android/signing-cert.sha256"
   },
-  "validation_limit": "Android 3.48: full checks.py without skips passed (23 Java suites, local API, Chrome/WebKit and tablet/WebView modes). New UI scenarios verify retired palette cleanup/route migration, unified Settings, equal 2px drawer borders/no brand frame, six location colors in light/dark with contrast >=4.5:1, and indicator colors while moving. Online 0.15.0: 19 Node/SQLite tests, disposable D1 API/backup interoperability and Chrome/WebKit UI passed. Worker 487f87f2-81f0-4d9f-aca6-53d68147328d deployed. No physical phone or production test orders; Windows frozen.",
+  "validation_limit": "Android 3.49: full checks.py without skips passed (23 Java suites, local API, Chrome/WebKit, tablet/WebView modes, navigation/motion and Coffee coverage). Final signed rebuild verifies original certificate after native system-bar contrast adjustment. Coffee UI tested in both engines online and Android, all principal screens and light/dark text contrast, persisted choice, location priority and animation tokens; CSS literal/keyframe coverage check passed. Online 0.16.0: 20 Node/SQLite tests, disposable D1 API/backup interoperability, shared UI and HTTPS cross-device bot codes + browser-to-APK bar-role proof passed. Migration 0013 applied; Worker 50971986-d668-4c51-ac41-e54856f07bc4 deployed. Production GET-only smoke passed; webhook unchanged/healthy. No physical phone/real Telegram account login or production test orders; Windows frozen.",
   "development_tracks": {
     "policy": "docs/PROJECT-TRACKS-UA.md",
     "local_android": {
       "status": "active",
       "entry": "apps/local-android/README.md",
       "sources": "work/android",
-      "version": "3.48"
+      "version": "3.49"
     },
     "online": {
       "status": "telegram_auth_deployed",
       "entry": "apps/online/README.md",
       "hosting": "Cloudflare Workers + D1",
-      "auth": "Telegram OIDC + PKCE, server-side roles and revocation; public menu and short-lived cashier codes",
+      "auth": "Telegram OIDC + PKCE and one-use 5-minute MiniCafe bot codes for cross-device login, live server-side roles and revocation",
       "url": "https://minicafe.minicafe.workers.dev",
       "sources": "apps/online/src",
       "database": "D1 minicafe-db",
       "deploy_docs": "apps/online/DEPLOY-UA.md",
-      "version": "0.15.0"
+      "version": "0.16.0"
     },
     "windows": {
       "status": "frozen",

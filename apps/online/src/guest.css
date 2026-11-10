@@ -365,3 +365,5 @@ dialog::backdrop {
 #dialogBody .qty-controls {
   justify-content: space-between;
 }
+
+.brand {display:flex;align-items:center;gap:10px}

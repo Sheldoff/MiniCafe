@@ -40,6 +40,7 @@ import sys
 
 sys.path.insert(0, str(root.parent / "cafe"))
 from frontend_build import build_html
+from brand_theme import palette_styles
 
 html = build_html()
 (root / "assets/index.html").write_text(html, encoding="utf-8")
@@ -50,7 +51,14 @@ for name in ["index.html", "default-menu.json", "pdf-font.bin"]:
     shutil.copyfile(root / "assets" / name, package / name)
 # Guest page is shared with the website; no second copy to maintain.
 for name in ["guest.html", "guest.js", "guest.css"]:
-    shutil.copyfile(root.parents[1] / "apps/online/src" / name, package / name)
+    content = (root.parents[1] / "apps/online/src" / name).read_text(encoding="utf-8")
+    if name.endswith(".html"):
+        content = content.replace('/brand-512.png', 'data:image/png;base64,' + base64.b64encode((root.parent / "frontend/assets/brand-512.png").read_bytes()).decode("ascii"))
+    if name.endswith(".css"):
+        content = palette_styles(content) + (root.parents[1] / "apps/online/src/guest-coffee.css").read_text(encoding="utf-8")
+    (package / name).write_text(content, encoding="utf-8")
+shutil.copyfile(root.parent / "frontend/assets/brand.svg", package / "brand.svg")
+shutil.copyfile(root.parent / "frontend/theme-boot.js", package / "theme-boot.js")
 shutil.copyfile(
     root / "assets/fonts/LICENSE-DejaVu.txt", package / "LICENSE-DejaVu.txt"
 )

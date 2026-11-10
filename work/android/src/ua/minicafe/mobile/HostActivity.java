@@ -15,7 +15,7 @@ import java.net.*;
 import java.util.*;
 
 public class HostActivity extends Activity {
-  private boolean nativeDark;
+  private String nativeAppearance;
   private String page = "";
   private EditText remoteAddress;
   private Spinner remoteRole;
@@ -66,10 +66,10 @@ public class HostActivity extends Activity {
 
   private void accent(Button b, boolean gold) {
     GradientDrawable bg = new GradientDrawable();
-    bg.setColor(gold ? Color.rgb(228, 193, 118) : CafeUi.accent(this));
+    bg.setColor(gold && !CafeUi.coffee(this) ? Color.rgb(228, 193, 118) : CafeUi.accent(this));
     bg.setCornerRadius(px(11));
     b.setBackground(bg);
-    b.setTextColor(gold ? Color.rgb(23, 54, 43) : CafeUi.onAccent(this));
+    b.setTextColor(gold && !CafeUi.coffee(this) ? Color.rgb(23, 54, 43) : CafeUi.onAccent(this));
     b.setTypeface(null, Typeface.BOLD);
   }
 
@@ -197,7 +197,8 @@ public class HostActivity extends Activity {
 
   @Override
   public void onCreate(Bundle b) {
-    nativeDark = CafeUi.applyTheme(this);
+    CafeUi.applyTheme(this);
+    nativeAppearance = CafeUi.appearance(this);
     super.onCreate(b);
     if (b != null) {
       page = b.getString("page", "");
@@ -262,7 +263,7 @@ public class HostActivity extends Activity {
         CafeUi.label(root, page, 24, false);
       }
       if (page.isEmpty()) {
-        root.addView(text("☕ МініКафе", 16));
+        CafeUi.brand(root);
         CafeUi.label(root, "Підключення", 28, false);
         navigationButton("Онлайн", () -> startActivity(new Intent(this, OnlineActivity.class)));
         LinearLayout page = root;
@@ -780,7 +781,7 @@ public class HostActivity extends Activity {
   @Override
   protected void onResume() {
     super.onResume();
-    if (nativeDark != CafeUi.dark(this)) recreate();
+    if (!CafeUi.appearance(this).equals(nativeAppearance)) recreate();
   }
 
   @Override

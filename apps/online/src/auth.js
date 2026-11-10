@@ -35,7 +35,7 @@ export function cookie(request, name) {
     .find((x) => x.startsWith(name + "="));
   return raw?.slice(name.length + 1) || "";
 }
-function sessionCookie(value, age = 7 * DAY) {
+export function sessionCookie(value, age = 7 * DAY) {
   return `__Host-minicafe_session=${value}; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=${age}`;
 }
 const flowCookie = (value, age = 600) =>
@@ -55,7 +55,7 @@ export function secureJson(value, status = 200, extra = {}) {
 function errorPage(message, status = 400) {
   // Only fixed, server-authored messages go here; provider errors are never reflected.
   return new Response(
-    `<!doctype html><html lang="uk"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>МініКафе · Вхід</title><body style="font:18px system-ui;background:#f5f4ef;color:#173f35;padding:32px;max-width:640px;margin:auto"><h1>МініКафе</h1><p>${message}</p><a href="/">Повернутися до меню</a></body></html>`,
+    `<!doctype html><html lang="uk"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/brand.svg"><link rel="stylesheet" href="/auth.css"><script src="/theme-boot.js"></script><title>МініКафе · Вхід</title><body><main><img src="/brand.svg" width="48" height="48" alt=""><h1>МініКафе</h1><p>${message}</p><a href="/">Повернутися до меню</a></main></body></html>`,
     {
       status,
       headers: { ...privateHeaders, "Content-Type": "text/html;charset=utf-8" },

@@ -8,6 +8,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / 'work/cafe'))
 from frontend_build import build_html
+from brand_theme import palette_styles
 
 out = HERE / 'dist'
 out.mkdir(exist_ok=True)
@@ -16,7 +17,7 @@ html = build_html()
 # chin outside the DOM, even when body and fixed overlays fill their viewport.
 html = html.replace('content="width=device-width,initial-scale=1"',
                     'content="width=device-width,initial-scale=1,viewport-fit=cover"', 1)
-html = html.replace('</style>', (HERE / 'src/cloud.css').read_text(encoding='utf-8') + '</style>', 1)
+html = html.replace('</style>', palette_styles((HERE / 'src/cloud.css').read_text(encoding='utf-8')) + '</style>', 1)
 html = html.replace('<script>', '<script>window.CafeCloud=__CLOUD_CONTEXT__;</script><script>', 1)
 html += '<script>' + (HERE / 'src/cloud-ui.js').read_text(encoding='utf-8') + '</script>'
 for source in ['staff-ui.js','guest-admin-ui.js']:
@@ -26,7 +27,12 @@ html += '<script>if(view==="server")settingsExtras();</script>'
 (out / 'private/admin.html').write_text(html, encoding='utf-8')
 (out / 'index.html').write_text((HERE / 'src/guest.html').read_text(encoding='utf-8'), encoding='utf-8')
 for name in ['guest.js','guest.css']:
-    shutil.copyfile(HERE / 'src' / name,out / name)
+    content = (HERE / 'src' / name).read_text(encoding='utf-8')
+    (out / name).write_text(palette_styles(content) + (HERE / 'src/guest-coffee.css').read_text(encoding='utf-8') if name.endswith('.css') else content, encoding='utf-8')
+shutil.copyfile(ROOT / 'work/frontend/assets/brand.svg', out / 'brand.svg')
+shutil.copyfile(ROOT / 'work/frontend/assets/brand-512.png', out / 'brand-512.png')
+shutil.copyfile(ROOT / 'work/frontend/theme-boot.js', out / 'theme-boot.js')
+(out / 'auth.css').write_text(palette_styles((HERE / 'src/auth.css').read_text(encoding='utf-8')) + (HERE / 'src/auth-coffee.css').read_text(encoding='utf-8'), encoding='utf-8')
 (out / 'login.html').write_text((HERE / 'src/login.html').read_text(encoding='utf-8'), encoding='utf-8')
 (out / 'images').mkdir(exist_ok=True)
 source = ROOT / 'work/android/assets/default-menu'

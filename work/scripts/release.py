@@ -66,6 +66,7 @@ def main():
         "PROJECT-CONTEXT.json",
         ".gitignore",
         "work/cafe/frontend_build.py",
+        "work/cafe/brand_theme.py",
         "work/android/AndroidManifest.xml",
         "work/android/build.ps1",
         "work/android/prepare_assets.py",

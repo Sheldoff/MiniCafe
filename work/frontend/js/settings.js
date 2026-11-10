@@ -1,8 +1,12 @@
 function allLocations() {
+  const defaultColor =
+    getComputedStyle(document.documentElement)
+      .getPropertyValue("--default-accent")
+      .trim() || "#27634f";
   return [
-    { id: "cash", kind: "cash", name: "Каса", color: "#27634f" },
-    { id: "bar", kind: "bar", name: "Бариста", color: "#27634f" },
-    { id: "delivery", kind: "delivery", name: "Видача", color: "#27634f" },
+    { id: "cash", kind: "cash", name: "Каса", color: defaultColor },
+    { id: "bar", kind: "bar", name: "Бариста", color: defaultColor },
+    { id: "delivery", kind: "delivery", name: "Видача", color: defaultColor },
   ]
     .map((l) => ({
       ...l,
@@ -72,7 +76,8 @@ function applyLocationTheme() {
   delete root.dataset.locationTheme;
   if (!color || !/^#[a-fA-F0-9]{6}$/.test(color)) return;
   root.dataset.locationTheme = "true";
-  const dark = root.dataset.theme === "dark";
+  const dark = root.dataset.theme === "dark",
+    coffee = root.dataset.palette === "coffee";
   const mix = (base, amount) =>
     "#" +
     [0, 1, 2]
@@ -86,16 +91,34 @@ function applyLocationTheme() {
       )
       .join("");
   const values = {
-    "--text": dark ? "#e9efe9" : "#26372f",
-    "--muted": dark ? "#b0beb2" : "#526355",
+    "--text": coffee
+      ? dark
+        ? "#f3e6ca"
+        : "#38271d"
+      : dark
+        ? "#e9efe9"
+        : "#26372f",
+    "--muted": coffee
+      ? dark
+        ? "#d1bba0"
+        : "#705744"
+      : dark
+        ? "#b0beb2"
+        : "#526355",
     "--location-color": color,
     "--location-text": locationTextColor(color),
     "--accent": dark ? mix("#ffffff", 0.45) : color,
-    "--page": mix(dark ? "#111815" : "#ffffff", 0.06),
-    "--surface": mix(dark ? "#1c2520" : "#ffffff", 0.04),
-    "--raised": mix(dark ? "#27342b" : "#ffffff", 0.12),
-    "--input-bg": mix(dark ? "#17221d" : "#ffffff", 0.03),
-    "--border": mix(dark ? "#65766b" : "#d2d8d3", 0.2),
+    "--page": mix(dark ? (coffee ? "#211914" : "#111815") : "#ffffff", 0.06),
+    "--surface": mix(dark ? (coffee ? "#2d211b" : "#1c2520") : "#ffffff", 0.04),
+    "--raised": mix(dark ? (coffee ? "#443125" : "#27342b") : "#ffffff", 0.12),
+    "--input-bg": mix(
+      dark ? (coffee ? "#261c17" : "#17221d") : "#ffffff",
+      0.03,
+    ),
+    "--border": mix(
+      dark ? (coffee ? "#94795e" : "#65766b") : coffee ? "#c9b69c" : "#d2d8d3",
+      0.2,
+    ),
   };
   values["--on-accent"] = locationTextColor(values["--accent"]);
   values["--success"] = values["--text"];
@@ -161,6 +184,10 @@ function settingsExtras() {
       "beforeend",
       "<button onclick=\"location.href='minicafe://settings'\">Керування сервером телефона</button>",
     );
+  actions.insertAdjacentHTML(
+    "beforeend",
+    "<button onclick=\"change('appearance')\">Оформлення</button>",
+  );
   const button = actions.querySelector("#onlinePayToggle");
   if (button)
     button.textContent =

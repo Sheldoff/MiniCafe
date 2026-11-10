@@ -48,7 +48,7 @@ public final class CafeQr {
             int[] pixels = new int[size * size];
             for (int y = 0; y < size; y++)
               for (int x = 0; x < size; x++)
-                pixels[y * size + x] = matrix.get(x, y) ? Color.rgb(23, 63, 53) : Color.WHITE;
+                pixels[y * size + x] = matrix.get(x, y) ? Color.rgb(75, 48, 34) : Color.WHITE;
             bitmap = Bitmap.createBitmap(pixels, size, size, Bitmap.Config.ARGB_8888);
             cache.put(key, bitmap);
           } catch (Exception ignored) {

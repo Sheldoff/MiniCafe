@@ -40,6 +40,7 @@ def main():
     java = jdk / "bin/java.exe"
     javac = jdk / "bin/javac.exe"
     (WORK / "android/assets/index.html").write_text(build_html(), encoding="utf-8")
+    run([sys.executable, WORK / "scripts/check_brand.py"])
     run(["node", WORK / "scripts/lint_frontend.cjs"])
     run(
         [
@@ -147,6 +148,7 @@ def main():
                 "card-payments",
                 "settings-locations",
                 "design",
+                "coffee",
                 "interaction",
                 "statistics",
                 "optimized",
