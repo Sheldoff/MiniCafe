@@ -26,6 +26,10 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
         url + (online ? "/admin#server" : "/?key=" + key + "#server"),
       );
       await p.waitForFunction(() => hasServerState);
+      assert.equal(
+        await p.evaluate(() => document.documentElement.dataset.palette),
+        "coffee",
+      );
       await p.getByRole("button", { name: "Оформлення", exact: true }).click();
       await p.getByRole("button", { name: /Кавова/ }).click();
       assert.equal(

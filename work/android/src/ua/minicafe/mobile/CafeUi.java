@@ -14,7 +14,10 @@ import android.widget.Button;
 /** Shared native controls; screen classes only decide layout and actions. */
 public final class CafeUi {
   public static boolean coffee(Context c) {
-    return "coffee".equals(c.getSharedPreferences("appearance", 0).getString("palette", "standard"));
+    android.content.SharedPreferences prefs = c.getSharedPreferences("appearance", 0);
+    if (!prefs.getBoolean("coffee_default_v2", false))
+      prefs.edit().putString("palette", "coffee").putBoolean("coffee_default_v2", true).apply();
+    return "coffee".equals(c.getSharedPreferences("appearance", 0).getString("palette", "coffee"));
   }
 
   public static String appearance(Context c) {

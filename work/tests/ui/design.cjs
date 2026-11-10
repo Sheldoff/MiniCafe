@@ -47,13 +47,11 @@ function contrast(fg, bg) {
       assert.equal(await p.evaluate(() => view), "server");
       assert.equal(
         await p.evaluate(() => localStorage.getItem("minicafe-palette")),
-        null,
+        "coffee",
       );
       assert.equal(
-        await p.evaluate(() =>
-          document.documentElement.hasAttribute("data-palette"),
-        ),
-        false,
+        await p.evaluate(() => document.documentElement.dataset.palette),
+        "coffee",
       );
       assert.equal(
         await p

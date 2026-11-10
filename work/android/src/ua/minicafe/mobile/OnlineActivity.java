@@ -31,6 +31,10 @@ public class OnlineActivity extends Activity {
     super.onCreate(state);
     secret = getPreferences(0).getString("proof", null);
     started = getPreferences(0).getLong("started", 0);
+    if (getIntent().getBooleanExtra("reauth", false)) {
+      secret = null;
+      getPreferences(0).edit().clear().apply();
+    }
     LinearLayout root = CafeUi.screen(this, 600);
     CafeUi.brand(root);
     CafeUi.label(root, "Онлайн · Telegram", 26, false);
@@ -63,6 +67,9 @@ public class OnlineActivity extends Activity {
 
   private void begin() {
     try {
+      handler.removeCallbacksAndMessages(null);
+      checking = false;
+      opening = false;
       byte[] bytes = new byte[32];
       new SecureRandom().nextBytes(bytes);
       secret = hex(bytes);
@@ -96,7 +103,8 @@ public class OnlineActivity extends Activity {
   protected void onNewIntent(Intent intent) {
     super.onNewIntent(intent);
     setIntent(intent);
-    poll();
+    if (intent.getBooleanExtra("reauth", false)) begin();
+    else poll();
   }
 
   private void poll() {
@@ -138,8 +146,8 @@ public class OnlineActivity extends Activity {
                 final JSONObject response = data;
                 runOnUiThread(
                     () -> {
-                      checking = false;
                       if (isFinishing() || !proof.equals(secret)) return;
+                      checking = false;
                       if (result == 200) {
                         String token = response.optString("session");
                         if (!token.matches("[a-f0-9]{64}")) {
@@ -157,6 +165,7 @@ public class OnlineActivity extends Activity {
                               if (ok) {
                                 cookies.flush();
                                 getPreferences(0).edit().clear().apply();
+                                secret = null;
                                 openApp();
                               } else
                                 status.setText("Не вдалося зберегти сеанс. Почніть вхід заново.");
@@ -173,6 +182,7 @@ public class OnlineActivity extends Activity {
               } catch (Exception e) {
                 runOnUiThread(
                     () -> {
+                      if (isFinishing() || !proof.equals(secret)) return;
                       checking = false;
                       if (!isFinishing()) {
                         status.setText(

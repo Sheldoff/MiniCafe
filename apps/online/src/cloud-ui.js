@@ -102,7 +102,7 @@ window.fetch = async function (input, options) {
 };
 async function cloudLogout() {
   const r = await fetch("/auth/logout", { method: "POST", headers: auth });
-  if (r.ok) location.replace("/");
+  if (r.ok) location.replace("/auth/login");
   else toast("Оновіть сторінку та повторіть вихід");
 }
 async function cloudStaffWrite(data) {

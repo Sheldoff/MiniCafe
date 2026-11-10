@@ -185,11 +185,11 @@ async function swipe(
       assert(await selected.evaluate((e) => e.classList.contains("selected")));
       assert.equal(
         await selected.evaluate((e) => getComputedStyle(e).color),
-        theme === "light" ? "rgb(255, 255, 255)" : "rgb(22, 38, 25)",
+        theme === "light" ? "rgb(255, 244, 223)" : "rgb(44, 29, 20)",
       );
       assert.equal(
         await selected.evaluate((e) => getComputedStyle(e).backgroundColor),
-        theme === "light" ? "rgb(33, 89, 67)" : "rgb(179, 217, 164)",
+        theme === "light" ? "rgb(120, 86, 63)" : "rgb(215, 184, 142)",
       );
       await p.evaluate(() => toggleDrawer(false));
       await p.waitForTimeout(330);
