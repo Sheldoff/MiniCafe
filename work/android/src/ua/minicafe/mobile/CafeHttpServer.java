@@ -73,7 +73,7 @@ public final class CafeHttpServer extends NanoHTTPD {
         String mime =
             path.endsWith(".js")
                 ? "application/javascript"
-                : path.endsWith(".css") ? "text/css" : "text/html";
+                : path.endsWith(".svg") ? "image/svg+xml" : path.endsWith(".css") ? "text/css" : "text/html";
         Response r =
             newFixedLengthResponse(
                 Response.Status.OK, mime + "; charset=utf-8", guestAssets.get(path));

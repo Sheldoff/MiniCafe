@@ -239,7 +239,7 @@ public class MainActivity extends Activity {
                 online
                     ? "window.CafeNative=false;window.CafeAndroidOnline=true;if(!window.cafeOnlineThemeInstalled&&typeof"
                           + " setCafeTheme==='function'){window.cafeOnlineThemeInstalled=true;let"
-                          + " originalTheme=setCafeTheme;setCafeTheme=function(mode,animate,notify){originalTheme(mode,animate,false);if(notify!==false)location.href='minicafe://theme?mode='+encodeURIComponent(mode);};}"
+                          + " originalTheme=setCafeTheme;setCafeTheme=function(mode,animate,notify){originalTheme(mode,animate,false);if(notify!==false)location.href='minicafe://theme?mode='+encodeURIComponent(mode)+'&palette='+(document.documentElement.dataset.palette||'standard');};}"
                     : "window.CafeNative=true;window.CafeNativeHold=false;document.querySelectorAll('[data-native]').forEach(b=>b.hidden=false);",
                 null);
             String savedTheme = getSharedPreferences("appearance", 0).getString("theme", null);
@@ -248,7 +248,9 @@ public class MainActivity extends Activity {
                     ? "document.documentElement.dataset.theme"
                     : org.json.JSONObject.quote(savedTheme);
             v.evaluateJavascript(
-                "if(typeof setCafeTheme==='function')setCafeTheme(" + initial + ",false,true)",
+                "if(typeof setCafePalette==='function')setCafePalette("
+                    + org.json.JSONObject.quote(getSharedPreferences("appearance", 0).getString("palette", "standard"))
+                    + ",false);if(typeof setCafeTheme==='function')setCafeTheme(" + initial + ",false,true)",
                 null);
             revealWhenReady(v);
           }
@@ -359,12 +361,14 @@ public class MainActivity extends Activity {
       if ("theme".equals(target.getHost())) {
         String mode = target.getQueryParameter("mode");
         if ("light".equals(mode) || "dark".equals(mode)) {
-          getSharedPreferences("appearance", 0).edit().putString("theme", mode).apply();
+          String palette = "coffee".equals(target.getQueryParameter("palette")) ? "coffee" : "standard";
+          getSharedPreferences("appearance", 0).edit().putString("theme", mode).putString("palette", palette).apply();
           CafeUi.applyTheme(this);
           int color = CafeUi.background(this);
           view.setBackgroundColor(color);
           if (view.getParent() instanceof View) ((View) view.getParent()).setBackgroundColor(color);
-          getWindow().setStatusBarColor(Color.rgb(20, 45, 37));
+          getWindow().setStatusBarColor(CafeUi.coffee(this) ? Color.rgb(75, 48, 34) : Color.rgb(20, 45, 37));
+          getWindow().setNavigationBarColor(color);
         }
         return true;
       } else if ("copy-support-card".equals(target.getHost())) {

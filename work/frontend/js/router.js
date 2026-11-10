@@ -8,7 +8,7 @@ function roleView() {
 function allowedView(v) {
   if (["locations", "transactions"].includes(v))
     return !data.access_role || data.access_role === "admin";
-  if (["developer", "server"].includes(v)) return true;
+  if (["developer", "server", "appearance"].includes(v)) return true;
   if (data.access_role === "service")
     return ["cash", "bar", "delivery"].includes(v);
   return !data.access_role || data.access_role === "admin" || v === roleView();
@@ -171,7 +171,7 @@ function handleAppBack() {
 }
 
 function drawerMarkup() {
-  return `<div id="drawerOverlay" hidden onclick="closeDrawerOverlay()"></div><aside id="appDrawer" role="dialog" aria-modal="true" aria-label="Навігація" hidden><div class="drawer-heading"><button id="drawerRefresh" type="button" onclick="refreshInPlace()" aria-label="МініКафе — оновити"><span>МініКафе</span><span class="refresh-spinner" aria-hidden="true"></span></button><button id="themeToggle" type="button" role="switch" aria-checked="false" onclick="toggleCafeTheme()">${themeIcon()}</button><button aria-label="Закрити меню" onclick="toggleDrawer(false)">×</button></div><div class="drawer-links">${availableViews()
+  return `<div id="drawerOverlay" hidden onclick="closeDrawerOverlay()"></div><aside id="appDrawer" role="dialog" aria-modal="true" aria-label="Навігація" hidden><div class="drawer-heading"><button id="drawerRefresh" type="button" onclick="refreshInPlace()" aria-label="МініКафе — оновити"><img class="brand-icon" src="{{BRAND_ICON}}" alt=""><span>МініКафе</span><span class="refresh-spinner" aria-hidden="true"></span></button><button id="themeToggle" type="button" role="switch" aria-checked="false" onclick="toggleCafeTheme()">${themeIcon()}</button><button aria-label="Закрити меню" onclick="toggleDrawer(false)">×</button></div><div class="drawer-links">${availableViews()
     .map(
       ([v, t, id]) =>
         `<button ${drawerLocationColor(id || v)} data-view="${v}" data-location="${id || ""}" class="${view === v && activeLocation === (id || "") ? "selected" : ""}" onclick="change('${v}','${id || ""}');toggleDrawer(false)">${esc(t)}</button>`,
@@ -333,6 +333,7 @@ function render() {
   } else if (view === "locations")
     locationsPage(history.state?.cafeLocationEditor || "", true);
   else if (view === "transactions") transactionsPage();
+  else if (view === "appearance") appearancePage();
   else orders();
   revealPage();
 }

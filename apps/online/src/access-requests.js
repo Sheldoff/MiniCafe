@@ -7,9 +7,11 @@ import {
   hash,
 } from "./auth.js";
 import { normalizePhone } from "./phone.js";
+import { issueBotCode } from "./bot-login.js";
 const roles = ["service", "cash", "bar", "delivery"];
 const keyboard = {
   keyboard: [
+    [{ text: "Код для входу" }],
     [{ text: "Подати заявку" }],
     [{ text: "Подати заявку з номером", request_contact: true }],
     [{ text: "Мій статус" }],
@@ -146,6 +148,30 @@ async function webhook(request, env) {
   )
     .bind(id, u.username || null, name, now)
     .run();
+  const text = (m.text || "").trim();
+  if (
+    text === "/login" ||
+    /^\/start\s+login$/.test(text) ||
+    text === "Код для входу"
+  ) {
+    const code = await issueBotCode(env, id);
+    return reply(
+      id,
+      code
+        ? `Код входу в МініКафе: ${code}\n\nДіє 5 хвилин і лише один раз. Введіть його на своєму ноутбуці чи іншому пристрої на minicafe.minicafe.workers.dev/auth/code. Новий код скасовує попередній. Нікому не передавайте цей код. Якщо ви не входите — не використовуйте його.`
+        : "Вашому Telegram-акаунту ще не надано доступ або його відкликано. Подайте заявку чи зверніться до адміністратора.",
+      {
+        inline_keyboard: [
+          [
+            {
+              text: "Ввести код на цьому пристрої",
+              url: "https://minicafe.minicafe.workers.dev/auth/code",
+            },
+          ],
+        ],
+      },
+    );
+  }
   const staff = await env.DB.prepare(
     "SELECT enabled FROM staff_access WHERE telegram_id=?",
   )
@@ -156,13 +182,18 @@ async function webhook(request, env) {
       inline_keyboard: [
         [
           {
+            text: "Отримати код для іншого пристрою",
+            url: `https://t.me/${env.TELEGRAM_BOT_USERNAME}?start=login`,
+          },
+        ],
+        [
+          {
             text: "Відкрити МініКафе",
             url: "https://minicafe.minicafe.workers.dev/admin",
           },
         ],
       ],
     });
-  const text = (m.text || "").trim();
   if (/^\/start(?:\s+apply)?$/.test(text))
     return reply(
       id,

@@ -1,0 +1,11 @@
+/* Guests remain light by default, including on phones with dark system UI. */
+:root[data-palette="coffee"] {
+  --page: #f7f1e6;
+  --surface: #fffdf7;
+  --text: #38271d;
+  --muted: #705744;
+  --line: #c9b69c;
+  --accent: #78563f;
+  --on: #fff4df;
+  --raised: #f0e3cc;
+}

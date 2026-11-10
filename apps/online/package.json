@@ -1,6 +1,6 @@
 {
   "name": "minicafe-online",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,8 @@
     "test:api": "node tests/integration.mjs && node tests/app-login-api.mjs && node tests/guest-api.mjs && node tests/security.mjs && node tests/transfer.mjs",
     "test:ui": "node tests/browser.cjs",
     "deploy": "wrangler deploy",
-    "test:app-login": "node tests/app-login-browser.mjs"
+    "test:app-login": "node tests/app-login-browser.mjs",
+    "test:bot-login": "node tests/bot-login-browser.mjs"
   },
   "devDependencies": {
     "@pdf-lib/fontkit": "1.1.1",

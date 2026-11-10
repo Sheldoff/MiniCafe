@@ -32,6 +32,7 @@ public class OnlineActivity extends Activity {
     secret = getPreferences(0).getString("proof", null);
     started = getPreferences(0).getLong("started", 0);
     LinearLayout root = CafeUi.screen(this, 600);
+    CafeUi.brand(root);
     CafeUi.label(root, "Онлайн · Telegram", 26, false);
     status = CafeUi.label(root, "Підтвердьте вхід у браузері, потім поверніться сюди.", 16, true);
     Button login = CafeUi.button(this, "Увійти через Telegram", true);

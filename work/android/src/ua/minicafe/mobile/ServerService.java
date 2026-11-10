@@ -165,7 +165,7 @@ public class ServerService extends Service {
                   CafeHttpServer http =
                       new CafeHttpServer(8765, database, key(this), html, font, permissions);
                   java.util.Map<String, String> guestAssets = new java.util.HashMap<>();
-                  for (String name : new String[] {"guest.html", "guest.js", "guest.css"}) {
+                  for (String name : new String[] {"guest.html", "guest.js", "guest.css", "brand.svg", "theme-boot.js"}) {
                     try (InputStream in = getAssets().open(name)) {
                       guestAssets.put(
                           name.equals("guest.html") ? "/guest" : "/" + name,
