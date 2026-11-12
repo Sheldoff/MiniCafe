@@ -1,0 +1,52 @@
+.nav-symbol {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  stroke: currentColor;
+  pointer-events: none;
+}
+#settingsExtras > button,
+.drawer-links > button,
+.drawer-tools > button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+#settingsExtras > button:not(.cloud-logout) {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+#settingsExtras > button.settings-closed {
+  background: color-mix(in srgb, var(--surface) 88%, #c94d45);
+  border-color: color-mix(in srgb, var(--border) 70%, #c94d45);
+}
+#settingsExtras > .cloud-logout {
+  margin-top: 18px;
+}
+#appDrawer #themeToggle {
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent;
+}
+html:not([data-palette="coffee"]) #appDrawer [data-nav-color] {
+  border-color: var(--border) !important;
+}
+
+html:not([data-palette="coffee"]) #appDrawer [data-nav-color] {
+  border-color: #d4ddd0 !important;
+}
+html[data-theme="dark"]:not([data-palette="coffee"])
+  #appDrawer
+  [data-nav-color] {
+  border-color: #4c6254 !important;
+}
+.staff-name {
+  padding: 6px 0;
+  min-height: 44px;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}

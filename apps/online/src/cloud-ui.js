@@ -106,6 +106,8 @@ async function cloudLogout() {
   else toast("Оновіть сторінку та повторіть вихід");
 }
 async function cloudStaffWrite(data) {
+  const [role, location = data.location || ""] = data.role.split("@");
+  data = { ...data, role, location };
   const r = await fetch("/api/staff", {
     method: "POST",
     headers: { ...auth, "Content-Type": "application/json" },

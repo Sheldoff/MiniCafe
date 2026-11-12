@@ -1,6 +1,10 @@
 window.addEventListener("popstate", () => {
   const nextLocation = location.hash.slice(1).split("@")[1] || "";
   let target = location.hash.slice(1).split("@")[0] || "cash";
+  if (view === "appearance" && target !== "appearance") {
+    target = "server";
+    history.replaceState({ cafePreviousView: "server" }, "", "#server");
+  }
   if (
     [
       "cash",
@@ -20,7 +24,9 @@ window.addEventListener("popstate", () => {
     (target !== view || nextLocation !== activeLocation)
   ) {
     captureLocationDraft();
-    activeLocation = nextLocation;
+    activeLocation = ["cash", "bar", "delivery"].includes(target)
+      ? data.access_location || nextLocation
+      : nextLocation;
     if (!allowedView(target)) return;
     view = target;
     render();

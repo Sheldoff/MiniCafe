@@ -110,7 +110,7 @@ public class InternetActivity extends Activity {
     super.onCreate(saved);
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     root = CafeUi.screen(this, 840);
-    button(root, "← Назад до сервера", () -> finish());
+    button(root, "Назад до сервера", () -> finish());
     fold(
         root,
         "Перше налаштування Termux",

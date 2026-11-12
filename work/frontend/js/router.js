@@ -24,9 +24,13 @@ function availableViews() {
   ]
     .filter(([v]) => allowedView(v))
     .flatMap(([v, t]) => [
-      [v, locationInfo(v)?.name || t, ""],
+      ...(data.access_location ? [] : [[v, locationInfo(v)?.name || t, ""]]),
       ...(data.locations || [])
-        .filter((l) => l.kind === v && l.id !== v)
+        .filter(
+          (l) =>
+            l.kind === v &&
+            (data.access_location ? l.id === data.access_location : l.id !== v),
+        )
         .map((l) => [v, l.name, l.id]),
     ]);
 }
@@ -34,7 +38,9 @@ function change(v, locationId = "") {
   const previousView = view;
   if (!allowedView(v)) return;
   captureLocationDraft();
-  activeLocation = locationId;
+  activeLocation = ["cash", "bar", "delivery"].includes(v)
+    ? data.access_location || locationId
+    : locationId;
   if (view === "menu") captureEditorDraft();
   view = v;
   history.pushState(
@@ -133,6 +139,10 @@ function showCashPanel(open, fromHistory = false) {
 }
 
 function handleAppBack() {
+  if (view === "appearance") {
+    change("server");
+    return true;
+  }
   if (document.querySelector("#orderDialog")) {
     if (
       additionalExpenseBusy ||
@@ -146,7 +156,15 @@ function handleAppBack() {
     toggleDrawer(false);
     return true;
   }
-  if (["locations", "transactions", "staff", "menu-transfer"].includes(view)) {
+  if (
+    [
+      "locations",
+      "transactions",
+      "staff",
+      "menu-transfer",
+      "appearance",
+    ].includes(view)
+  ) {
     if (history.state?.cafePreviousView || history.state?.cafeLocationEditor)
       history.back();
     else change("server");
@@ -171,7 +189,7 @@ function handleAppBack() {
 }
 
 function drawerMarkup() {
-  return `<div id="drawerOverlay" hidden onclick="closeDrawerOverlay()"></div><aside id="appDrawer" role="dialog" aria-modal="true" aria-label="Навігація" hidden><div class="drawer-heading"><button id="drawerRefresh" type="button" onclick="refreshInPlace()" aria-label="МініКафе — оновити"><img class="brand-icon" src="{{BRAND_ICON}}" alt=""><span>МініКафе</span><span class="refresh-spinner" aria-hidden="true"></span></button><button id="themeToggle" type="button" role="switch" aria-checked="false" onclick="toggleCafeTheme()">${themeIcon()}</button><button aria-label="Закрити меню" onclick="toggleDrawer(false)">×</button></div><div class="drawer-links">${availableViews()
+  return `<div id="drawerOverlay" hidden onclick="closeDrawerOverlay()"></div><aside id="appDrawer" role="dialog" aria-modal="true" aria-label="Навігація" hidden><div class="drawer-heading"><button id="drawerRefresh" type="button" onclick="refreshInPlace()" aria-label="МініКафе — оновити"><img class="brand-icon" src="{{BRAND_ICON}}" alt=""><span>МініКафе</span><span class="refresh-spinner" aria-hidden="true"></span></button><button id="themeToggle" type="button" role="switch" aria-checked="false" onclick="toggleCafeTheme()">${themeIcon()}</button></div><div class="drawer-links">${availableViews()
     .map(
       ([v, t, id]) =>
         `<button ${drawerLocationColor(id || v)} data-view="${v}" data-location="${id || ""}" class="${view === v && activeLocation === (id || "") ? "selected" : ""}" onclick="change('${v}','${id || ""}');toggleDrawer(false)">${esc(t)}</button>`,
@@ -309,9 +327,7 @@ function toggleDrawer(open, keyboard = false) {
   );
   if (open) {
     if (keyboard)
-      drawer
-        .querySelector('[aria-label="Закрити меню"]')
-        .focus({ preventScroll: true });
+      drawer.querySelector("#themeToggle").focus({ preventScroll: true });
     else document.activeElement?.blur();
   } else document.querySelector("#drawerToggle").focus({ preventScroll: true });
   return drawer.drawerCompletion;

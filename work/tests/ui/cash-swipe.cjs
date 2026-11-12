@@ -196,8 +196,8 @@ async function swipe(
     }
     await p.evaluate(() => toggleDrawer(true, true));
     assert.equal(
-      await p.evaluate(() => document.activeElement.getAttribute("aria-label")),
-      "Закрити меню",
+      await p.evaluate(() => document.activeElement.id),
+      "themeToggle",
     );
     await p.waitForTimeout(320);
     await p.evaluate(() => {

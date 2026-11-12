@@ -142,7 +142,9 @@ function contrast(fg, bg) {
             await p.evaluate(() => toggleDrawer(true));
             await p.waitForTimeout(320);
             const widths = await p
-              .locator("#appDrawer button:not(#drawerRefresh)")
+              .locator(
+                "#appDrawer button:not(#drawerRefresh):not(#themeToggle)",
+              )
               .evaluateAll((bs) =>
                 bs.map((b) => getComputedStyle(b).borderTopWidth),
               );

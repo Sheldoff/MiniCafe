@@ -9,7 +9,8 @@
     "css/card-payments.css",
     "css/settings.css",
     "css/location-controls.css",
-    "css/coffee.css"
+    "css/coffee.css",
+    "css/settings-controls.css"
   ],
   "scripts": [
     "js/state.js",
@@ -30,6 +31,7 @@
     "js/layout.js",
     "js/guest-codes.js",
     "js/settings.js",
+    "js/settings-controls.js",
     "js/startup.js"
   ]
 }

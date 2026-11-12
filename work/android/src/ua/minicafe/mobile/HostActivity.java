@@ -91,7 +91,7 @@ public class HostActivity extends Activity {
   }
 
   private Button navigationButton(String title, Runnable action) {
-    Button b = button(title + "  →", action);
+    Button b = button(title, action);
     b.getLayoutParams().height = px(64);
     b.setMaxLines(2);
     return b;

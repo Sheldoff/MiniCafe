@@ -63,7 +63,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))
         change("server");
       });
       await p
-        .getByRole("button", { name: "Меню телефона ↔ сайт", exact: true })
+        .getByRole("button", { name: "Синхронізувати", exact: true })
         .click();
       p.once("dialog", (d) => d.accept());
       await p
@@ -79,7 +79,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(base))
       });
       assert.equal(
         await p
-          .getByRole("button", { name: "Меню телефона ↔ сайт", exact: true })
+          .getByRole("button", { name: "Синхронізувати", exact: true })
           .count(),
         0,
       );

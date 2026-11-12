@@ -10,7 +10,7 @@ serverPage = function () {
     ? "@" + window.CafeCloud.username
     : window.CafeCloud.name || "Працівник";
   document.querySelector("#main").innerHTML =
-    `<section class="panel cloud-server-panel"><div class="cloud-account-heading"><h2>${esc(person)}</h2><span class="staff-role">${esc(cloudRoleNames[window.CafeCloud.role] || "Працівник")}</span></div><p class="muted">${esc(location.host)}</p><div class="cloud-server-actions">${window.CafeCloud.role === "admin" ? '<button class="primary" onclick="cloudStaff()">Доступи працівників</button>' + (window.CafeAndroidOnline ? "<button onclick=\"change('menu-transfer')\">Меню телефона ↔ сайт</button>" : "") + '<button onclick="cloudBackup()">Зберегти резервну копію</button><button onclick="cloudRestore()">Відновити резервну копію</button>' : ""}<button class="cloud-logout" onclick="cloudLogout()">Вийти з акаунта</button></div></section>`;
+    `<section class="panel cloud-server-panel"><div class="cloud-account-heading"><h2>${esc(person)}</h2><span class="staff-role">${esc(cloudRoleNames[window.CafeCloud.role] || "Працівник")}</span></div><p class="muted">${esc(location.host)}</p><div class="cloud-server-actions">${window.CafeCloud.role === "admin" ? '<button class="primary" onclick="cloudStaff()">Доступи працівників</button>' + (window.CafeAndroidOnline ? "<button onclick=\"change('menu-transfer')\">Синхронізувати</button>" : "") + '<button onclick="cloudBackup()">Зберегти резервну копію</button><button onclick="cloudRestore()">Відновити резервну копію</button>' : ""}<button class="cloud-logout" onclick="cloudLogout()">Вийти з акаунта</button></div></section>`;
   if (!window.CafeCloud.username) {
     const heading = document.querySelector(".cloud-account-heading h2");
     fetch("/api/me")
@@ -25,12 +25,14 @@ serverPage = function () {
   }
 };
 const cloudRoleOptions = () =>
-  ["service", "cash", "bar", "delivery"]
-    .map(
-      (r) =>
-        `<option value="${r}">${r === "service" ? "Каса + видачі" : cloudRoleNames[r]}</option>`,
-    )
-    .join("");
+  [
+    ...["service", "cash", "bar", "delivery"].map(
+      (r) => `<option value="${r}">${esc(cloudRoleNames[r])}</option>`,
+    ),
+    ...(data.locations || [])
+      .filter((l) => !["cash", "bar", "delivery"].includes(l.id))
+      .map((l) => `<option value="${l.kind}@${l.id}">${esc(l.name)}</option>`),
+  ].join("");
 let cloudRequestRows = [],
   cloudRequestTimer;
 let cloudApplicationLink = "",
@@ -90,13 +92,16 @@ function cloudStaffEdit(button) {
   });
 }
 function staffIdentity(s) {
-  const label = s.username
-    ? "@" + s.username
-    : s.name || s.phone || "ID " + s.telegram_id;
-  const secondary = [s.phone, s.telegram_id ? "ID " + s.telegram_id : ""]
-    .filter((v) => v && v !== label)
+  const label =
+    s.label ||
+    (s.username ? "@" + s.username : s.name || s.phone || "Працівник");
+  const secondary = [
+    s.phone || s.contact_phone,
+    s.telegram_id ? "ID " + s.telegram_id : "",
+  ]
+    .filter(Boolean)
     .join(" · ");
-  return `<div class="staff-person"><b>${esc(label)}</b>${secondary !== label ? `<small>${esc(secondary)}</small>` : ""}</div>`;
+  return `<button type="button" class="staff-person staff-name" aria-label="${esc(label)}" title="Редагувати назву" data-id="${esc(s.telegram_id || "")}" data-phone="${esc(s.phone || "")}" data-role="${esc(s.role)}" data-label="${esc(s.label || "")}" onclick="cloudStaffRename(this)"><b>${esc(label)}</b>${secondary ? `<small>${esc(secondary)}</small>` : ""}</button>`;
 }
 async function cloudStaff() {
   if (view !== "staff") {
@@ -161,8 +166,8 @@ async function loadCloudStaff(root = document.querySelector("#cloudStaff")) {
     root.querySelector("#staffRows").innerHTML = j.staff.length
       ? j.staff
           .map((s) => {
-            const attrs = `data-id="${esc(s.telegram_id || "")}" data-phone="${esc(s.phone || "")}" data-role="${esc(s.role)}" data-enabled="${s.enabled ? "1" : "0"}"`;
-            return `<article class="staff-entry row">${staffIdentity(s)}<span class="staff-role ${s.enabled ? "" : "is-off"}">${esc(cloudRoleNames[s.role])}${s.enabled ? "" : " · вимкнено"}</span><div class="staff-actions"><button ${attrs} onclick="cloudStaffEdit(this)">Змінити</button><button ${attrs} onclick="cloudStaffRevoke(this)" ${s.enabled ? "" : "disabled"}>Відкликати</button><button class="danger" ${attrs} onclick="cloudStaffDelete(this)">Видалити</button></div></article>`;
+            const attrs = `data-id="${esc(s.telegram_id || "")}" data-phone="${esc(s.phone || "")}" data-role="${esc(s.role + (s.location ? "@" + s.location : ""))}" data-enabled="${s.enabled ? "1" : "0"}"`;
+            return `<article class="staff-entry row">${staffIdentity(s)}<span class="staff-role ${s.enabled ? "" : "is-off"}">${esc((data.locations || []).find((l) => l.id === s.location)?.name || cloudRoleNames[s.role])}${s.enabled ? "" : " · вимкнено"}</span><div class="staff-actions"><button ${attrs} onclick="cloudStaffEdit(this)">Редагувати</button><button class="danger" ${attrs} onclick="cloudStaffDelete(this)">Видалити</button></div></article>`;
           })
           .join("")
       : '<p class="muted staff-empty">Працівників ще немає</p>';
@@ -320,3 +325,31 @@ document.addEventListener("visibilitychange", () => {
   if (!document.hidden && view === "staff") loadCloudRequests();
   else clearTimeout(cloudRequestTimer);
 });
+
+function cloudStaffRename(button) {
+  const box = requestDialog(
+    "Назва працівника",
+    `<form id="staffLabelForm"><label>Назва<input name="label" maxlength="80" value="${esc(button.dataset.label)}" autocomplete="off"></label><div class="row"><button type="button" onclick="closeOrderDialog()">Скасувати</button><button class="primary">Зберегти</button></div></form>`,
+  );
+  box.querySelector("form").onsubmit = async (e) => {
+    e.preventDefault();
+    const b = e.target.querySelector(".primary");
+    b.disabled = true;
+    try {
+      await cloudStaffWrite({
+        ...(button.dataset.phone
+          ? { phone: button.dataset.phone }
+          : { telegram_id: button.dataset.id }),
+        role: button.dataset.role,
+        enabled: true,
+        action: "label",
+        label: e.target.elements.label.value,
+      });
+      closeOrderDialog();
+      await loadCloudStaff();
+    } catch (error) {
+      toast(error.message);
+      b.disabled = false;
+    }
+  };
+}
