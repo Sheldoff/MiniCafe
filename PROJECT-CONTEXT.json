@@ -63,7 +63,7 @@
     "private_password_file_separate": "work/android/signing.local.json",
     "certificate_fingerprint_file": "work/android/signing-cert.sha256"
   },
-  "validation_limit": "Android 3.52: complete checks.py without skips passed (85cced61a42246578f33ffb14c4f9822, 23 Java suites, local API and Chrome/WebKit). Final scoped-cash initial render and bundled Lucide license additionally checked with focused Chrome/WebKit staff tests and original-signed APK rebuild. Online 0.19: 21 unit suites and disposable D1 API, scoped staff privacy/writes/ledger/rename/revocation, settings and scoped-client UI checks passed. No physical phones or production test orders. Windows frozen.",
+  "validation_limit": "Android 3.52: complete checks.py without skips passed (85cced61a42246578f33ffb14c4f9822, 23 Java suites, local API and Chrome/WebKit). Final scoped-cash initial render and bundled Lucide license additionally checked with focused Chrome/WebKit staff tests and original-signed APK rebuild. Online 0.19: 21 unit suites and disposable D1 API, scoped staff privacy/writes/ledger/rename/revocation, settings and scoped-client UI checks passed. No physical phones or production test orders. Windows frozen. Online deployed after migration 0015: 18a837f8-c778-48e4-9d62-66167eccce2c; source/online GitHub checks passed. APK icon license and source-archive exclusion/checksums verified.",
   "development_tracks": {
     "policy": "docs/PROJECT-TRACKS-UA.md",
     "local_android": {

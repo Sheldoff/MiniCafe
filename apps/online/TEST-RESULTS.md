@@ -12,7 +12,8 @@
 - Settings UI verified in Chrome/WebKit: icons, ordering, neighboring toggles,
   last logout, appearance Back, no drawer close control/theme border, dynamic
   location options, full identity-row click and cosmetic labels. Screens inspected.
-- New additive migration 0015_staff_details.sql must precede Worker deploy.
+- Migration 0015 applied and Worker 18a837f8-c778-48e4-9d62-66167eccce2c deployed.
+  Source/online GitHub checks passed; GET-only public/login/auth isolation smoke passed.
   No physical phone/real Telegram login or production test orders; Windows frozen.
 
 
