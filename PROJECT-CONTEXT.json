@@ -1,7 +1,7 @@
 {
   "application": "МініКафе",
-  "version": "3.40",
-  "android_version_code": 52,
+  "version": "3.52",
+  "android_version_code": 64,
   "purpose": "Каса, окремі черги напоїв і їжі, гнучке меню, статистика/PDF, калькулятор, резервні копії",
   "entry_document": "START-HERE-UA.md",
   "human_prompt": "NEXT-CHAT-PROMPT-UA.txt",
@@ -26,6 +26,18 @@
     "delivery": "Тільки видача їжі"
   },
   "latest_requested_changes": [
+    "Settings ordering, Lucide SVG navigation icons, appearance Back and neutral drawer borders; scoped staff location permissions and cosmetic labels independent of identity, single delete/revoke action",
+    "Coffee default with one-time browser/native migration and preserved later choices; full-bleed adaptive launcher icon; fresh Telegram re-login after logout/bfcache and Android reauth, spent-link recovery without accepting replay",
+    "Automatic Telegram QR/deep-link approval: matching digits and explicit phone button, independent browser proof, automatic cookie session/redirect and existing APK proof; manual bot code/copy fallback",
+    "Vector coffee-cup brand throughout Android and web, optional Coffee light/dark palette including feedback/keyframes, native theme synchronization; one-use bot codes for cross-device staff login",
+    "Remove Cafe palette and picker, preserve standard light/dark; unify Settings actions; equal drawer borders without brand frame; WCAG contrast for arbitrary location colors and adaptive moving menu indicator",
+    "Complete Cafe control/interaction colors and drawer outlines, cancel stale color motion; row location editing without duplicate names; bank request history on Transactions with admin-only pagination",
+    "Aligned colored location navigation, linked-cash availability, device Back in settings, persistent Cafe palette, responsive guest-code button and per-draft code redemption",
+    "Manage all locations: base names/colors, edit types and guarded deletion, multiple destinations with shared fulfillment and financial record, location themes and source cashier color on tickets",
+    "Settings, configurable locations and isolated routing/undo; named card history and transactions; full-screen editor; photo guest cards, cashier codes and payment toggle; delete additional expenses",
+    "Simplified jar checkout: single copy-and-open button, prefilled amount, persistent payment status, explicit paste requirement and clipboard failure fallback",
+    "Shared online + APK cashier card payment history: show card portion only, persistent server-side hide without changing orders/statistics",
+    "Online monobank jar payment verification; exact reference and amount; paid orders atomically enter queue; docs/MONO-PAYMENTS-UA.md",
     "Shared Android/online guest menu with persistent three-digit unpaid drafts and atomic payment redemption",
     "Admin-only menu transfer from online APK Server screen; removed connection-screen transfer",
     "Shared full-height layout, editor list visibility, empty-area cashier swipes and reduced-motion cleanup"
@@ -51,25 +63,25 @@
     "private_password_file_separate": "work/android/signing.local.json",
     "certificate_fingerprint_file": "work/android/signing-cert.sha256"
   },
-  "validation_limit": "Local Android original suites retained; cloud domain + local D1 API and Chrome/WebKit tested. No physical iPhone/Android cloud testing. Windows frozen.",
+  "validation_limit": "Android 3.52: complete checks.py without skips passed (85cced61a42246578f33ffb14c4f9822, 23 Java suites, local API and Chrome/WebKit). Final scoped-cash initial render and bundled Lucide license additionally checked with focused Chrome/WebKit staff tests and original-signed APK rebuild. Online 0.19: 21 unit suites and disposable D1 API, scoped staff privacy/writes/ledger/rename/revocation, settings and scoped-client UI checks passed. No physical phones or production test orders. Windows frozen. Online deployed after migration 0015: 18a837f8-c778-48e4-9d62-66167eccce2c; source/online GitHub checks passed. APK icon license and source-archive exclusion/checksums verified.",
   "development_tracks": {
     "policy": "docs/PROJECT-TRACKS-UA.md",
     "local_android": {
       "status": "active",
       "entry": "apps/local-android/README.md",
       "sources": "work/android",
-      "version": "3.40"
+      "version": "3.52"
     },
     "online": {
       "status": "telegram_auth_deployed",
       "entry": "apps/online/README.md",
       "hosting": "Cloudflare Workers + D1",
-      "auth": "Telegram OIDC + PKCE, server-side roles and revocation; public menu and short-lived cashier codes",
+      "auth": "Telegram OIDC + PKCE and one-use 5-minute MiniCafe bot codes for cross-device login, live server-side roles and revocation",
       "url": "https://minicafe.minicafe.workers.dev",
       "sources": "apps/online/src",
       "database": "D1 minicafe-db",
       "deploy_docs": "apps/online/DEPLOY-UA.md",
-      "version": "0.8.0"
+      "version": "0.19.0"
     },
     "windows": {
       "status": "frozen",
@@ -79,5 +91,6 @@
       "build_or_test": false
     },
     "data_sync": "Separate databases; manual, confirmed menu-only transfer via one-use capability; no order/statistics sync"
-  }
+  },
+  "development_policy": "Future shared product updates must ship in both online and Android APK; Windows stays frozen"
 }

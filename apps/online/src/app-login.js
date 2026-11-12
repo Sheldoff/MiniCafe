@@ -17,7 +17,7 @@ const headers = {
   "Referrer-Policy": "same-origin",
   "X-Frame-Options": "DENY",
   "Content-Security-Policy":
-    "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
+    "default-src 'none'; script-src 'self'; img-src 'self'; style-src 'self' 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
   "Content-Type": "text/html;charset=utf-8",
 };
 const appCookie = (value, seconds = 600) =>
@@ -32,7 +32,7 @@ const esc = (value) =>
   );
 const page = (body) =>
   new Response(
-    `<!doctype html><html lang="uk"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>МініКафе · Вхід у застосунок</title><body style="font:18px system-ui;background:#f5f4ef;color:#173f35;max-width:560px;margin:40px auto;padding:24px"><h1>Вхід у МініКафе</h1>${body}</body></html>`,
+    `<!doctype html><html lang="uk"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="icon" href="/brand.svg"><link rel="stylesheet" href="/auth.css"><script src="/theme-boot.js"></script><title>МініКафе · Вхід у застосунок</title><body><main><img class="brand-icon" src="/brand.svg" alt=""><h1>Вхід у МініКафе</h1>${body}</main></body></html>`,
     { headers },
   );
 export async function appLogin(request, env) {
@@ -55,7 +55,7 @@ export async function appLogin(request, env) {
     // A rendered first-party page resets the navigation initiator. Redirecting
     // directly can carry Android's cross-site metadata into /auth/start.
     const response = page(
-      `<p>Продовжте вхід через Telegram, потім поверніться до застосунку.</p><a style="display:block;padding:16px;background:#215943;color:white;border-radius:12px;text-align:center" href="${user ? "/auth/app/confirm" : "/auth/start"}">Продовжити вхід</a>`,
+      `<p>Продовжте вхід через Telegram, потім поверніться до застосунку.</p><a class="primary" href="${user ? "/auth/app/confirm" : "/auth/start"}">Продовжити вхід</a><p><a class="primary" href="/auth/quick">Вхід без коду · Telegram / QR</a></p><p><a href="/auth/code">Отримати код у боті на телефоні</a></p>`,
     );
     response.headers.set("Set-Cookie", appCookie(challenge));
     return response;
@@ -72,7 +72,7 @@ export async function appLogin(request, env) {
       return json({ error: "Почніть вхід із застосунку заново" }, 400);
     if (request.method === "GET")
       return page(
-        `<p>Акаунт: <b>${esc(user.name)}</b></p><p>Підтвердьте вхід тільки якщо ви щойно натиснули «Онлайн» у своєму застосунку. Права визначаються вашим Telegram-акаунтом.</p><form method="post"><input type="hidden" name="csrf" value="${esc(user.csrf)}"><button style="padding:16px;background:#215943;color:white;border:0;border-radius:12px;font:inherit">Увійти в застосунок</button></form><p><a href="/admin">Продовжити в браузері</a></p>`,
+        `<p>Акаунт: <b>${esc(user.name)}</b></p><p>Підтвердьте вхід тільки якщо ви щойно натиснули «Онлайн» у своєму застосунку. Права визначаються вашим Telegram-акаунтом.</p><form method="post"><input type="hidden" name="csrf" value="${esc(user.csrf)}"><button class="primary">Увійти в застосунок</button></form><p><a href="/admin">Продовжити в браузері</a></p>`,
       );
     if (request.method !== "POST")
       return json({ error: "Метод не підтримується" }, 405);
@@ -101,7 +101,7 @@ export async function appLogin(request, env) {
       ),
     ]);
     const response = page(
-      '<p>Вхід підтверджено. Поверніться у застосунок — робота продовжиться там.</p><p><a href="minicafe://online-complete" style="display:block;padding:16px;background:#215943;color:white;border-radius:12px;text-align:center">Повернутися в МініКафе</a></p>',
+      '<p>Вхід підтверджено. Поверніться у застосунок — робота продовжиться там.</p><p><a href="minicafe://online-complete" class="primary">Повернутися в МініКафе</a></p>',
     );
     response.headers.set("Set-Cookie", appCookie("", 0));
     return response;

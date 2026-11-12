@@ -10,7 +10,7 @@ function acknowledgeIssue(
   let ticket = data.orders.find((o) => o.id === order);
   ticket?.items.forEach((item) => {
     if (
-      item.route !== route ||
+      !itemAtLocation(item, route) ||
       item.status === "cancelled" ||
       (itemId !== null && item.id !== itemId)
     )
@@ -25,14 +25,14 @@ function acknowledgeIssue(
     item.status = flags.every(Boolean) ? "delivered" : "new";
   });
   data.can_undo_issue ||= {};
-  data.can_undo_issue[route] = true;
+  data.can_undo_issue[locationUndoKey(route)] = true;
   stateETag = "";
   refreshSerial++;
 }
 
 function unitRows(o, route) {
   return o.items
-    .filter((i) => i.route === route && i.status !== "cancelled")
+    .filter((i) => itemAtLocation(i, route) && i.status !== "cancelled")
     .map((i) =>
       Array.from({ length: i.qty }, (_, unit) => {
         let issued =
@@ -49,10 +49,12 @@ function queueOrders() {
   let route = view === "bar" ? "bar" : "instant",
     pending = (i) => !["delivered", "cancelled"].includes(i.status),
     os = data.orders
-      .filter((o) => o.items.some((i) => i.route === route && pending(i)))
+      .filter((o) =>
+        o.items.some((i) => itemAtLocation(i, route) && pending(i)),
+      )
       .reverse();
   document.querySelector("#main").innerHTML =
-    `<div class="row queue-title"><h2 class="grow">${route === "bar" ? "Черга напоїв" : "Видача їжі"} <span class="queue-count">${os.length}</span></h2><button class="undo-issue" onclick="undoIssue('${route}',this)" ${data.can_undo_issue?.[route] ? "" : "disabled"}>↶ Повернути замовлення</button></div><div class="queue-grid">${os.length ? os.map((o) => `<article class="card" data-order="${o.id}"><div class="order-head"><span class="muted tiny">${new Date(o.created.replace(" ", "T") + "Z").toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}</span><div class="order-place">${esc(o.guest || "Гість")}</div></div>${o.comment ? `<div class="order-note">${esc(o.comment)}</div>` : ""}${unitRows(o, route)}<button class="primary" style="width:100%;margin-top:12px" onclick="issue(${o.id},'${route}',this)">✓ Видано</button></article>`).join("") : '<div class="panel empty-state" style="grid-column:1/-1"><div class="empty-icon">' + (route === "bar" ? "☕" : "🥐") + "</div><h2>Черга порожня</h2></div>"}</div>`;
+    `<div class="row queue-title"><h2 class="grow">${esc(locationName())} <span class="queue-count">${os.length}</span></h2><button class="undo-issue" onclick="undoIssue('${route}',this)" ${!issuingOrder && data.can_undo_issue?.[locationUndoKey(route)] ? "" : "disabled"}>↶ Повернути замовлення</button></div><div class="queue-grid">${os.length ? os.map((o) => `<article class="card" data-order="${o.id}" style="${orderLocationStyle(o)}"><div class="order-source">${orderLocationLabel(o)}</div><div class="order-head"><span class="muted tiny">${new Date(o.created.replace(" ", "T") + "Z").toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}</span><div class="order-place">${esc(o.guest || "Гість")}</div></div>${o.comment ? `<div class="order-note">${esc(o.comment)}</div>` : ""}${unitRows(o, route)}<button class="primary" style="width:100%;margin-top:12px" onclick="issue(${o.id},'${route}',this)">✓ Видано</button></article>`).join("") : '<div class="panel empty-state" style="grid-column:1/-1"><div class="empty-icon">' + (route === "bar" ? "☕" : "🥐") + "</div><h2>Черга порожня</h2></div>"}</div>`;
 }
 
 async function animateIssued(card) {
@@ -134,7 +136,14 @@ async function issueUnit(order, id, unit, route, button) {
     let r = await fetch("/api/issue-unit", {
         method: "POST",
         headers: { ...auth, "Content-Type": "application/json" },
-        body: JSON.stringify({ order, id, unit, route, delivered }),
+        body: JSON.stringify({
+          order,
+          id,
+          unit,
+          route,
+          delivered,
+          location_id: activeLocation,
+        }),
       }),
       j = await r.json();
     if (!r.ok) throw Error(j.error);
@@ -186,7 +195,7 @@ async function undoIssue(route, button) {
     let r = await fetch("/api/undo-issue", {
         method: "POST",
         headers: { ...auth, "Content-Type": "application/json" },
-        body: JSON.stringify({ route }),
+        body: JSON.stringify({ route, location_id: activeLocation }),
       }),
       j = await r.json();
     if (!r.ok) throw Error(j.error);
@@ -265,7 +274,7 @@ async function issue(id, route, button) {
     let r = await fetch("/api/issue", {
         method: "POST",
         headers: { ...auth, "Content-Type": "application/json" },
-        body: JSON.stringify({ id, route }),
+        body: JSON.stringify({ id, route, location_id: activeLocation }),
       }),
       j = await r.json();
     if (!r.ok) throw Error(j.error);
@@ -331,7 +340,7 @@ function orders() {
 
 function availabilityPanel(route) {
   let products = data.products.filter((p) => p.route === route && p.active);
-  return `<section class="availability-panel" data-route="${route}"><button class="availability-heading" aria-expanded="false" onclick="toggleAvailability(this)"><span>Наявність позицій</span><span class="availability-chevron">⌄</span></button><div class="availability-body" hidden><div class="availability-grid">${products.map((p) => `<button class="availability-toggle ${productUnavailable(p) ? "off" : ""}" aria-pressed="${productUnavailable(p)}" ${p.stock != null && !p.stock_estimated && p.stock <= 0 ? "disabled" : ""} onclick="availability(${p.id})"><span>${esc(p.name)}</span><b>${p.stock != null && !p.stock_estimated && p.stock <= 0 ? "Залишок 0 · оновіть кількість" : p.sold_out ? "Закінчилось · повернути" : "Є в наявності · вимкнути"}</b></button>`).join("")}</div></div></section>`;
+  return `<section class="availability-panel" data-route="${route}"><button class="availability-heading" aria-expanded="false" onclick="toggleAvailability(this)"><span>Наявність позицій</span><span class="availability-chevron">⌄</span></button><div class="availability-body" hidden><div class="availability-grid">${products.map((p) => `<button class="availability-toggle ${productUnavailable(p) ? "off" : ""}" aria-pressed="${productUnavailable(p)}" ${p.stock != null && !p.stock_estimated && p.stock <= 0 ? "disabled" : ""} onclick="availability(${p.id})"><span>${esc(p.name)}</span><b>${p.stock != null && !p.stock_estimated && p.stock <= 0 ? "Залишок 0 · оновіть кількість" : p.sold_out || locallyUnavailable(p) ? "Закінчилось · повернути" : "Є в наявності · вимкнути"}</b></button>`).join("")}</div></div></section>`;
 }
 
 function toggleAvailability(button) {

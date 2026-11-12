@@ -13,34 +13,64 @@ import android.widget.Button;
 
 /** Shared native controls; screen classes only decide layout and actions. */
 public final class CafeUi {
+  public static boolean coffee(Context c) {
+    android.content.SharedPreferences prefs = c.getSharedPreferences("appearance", 0);
+    if (!prefs.getBoolean("coffee_default_v2", false))
+      prefs.edit().putString("palette", "coffee").putBoolean("coffee_default_v2", true).apply();
+    return "coffee".equals(c.getSharedPreferences("appearance", 0).getString("palette", "coffee"));
+  }
+
+  public static String appearance(Context c) {
+    return (dark(c) ? "dark" : "light") + (coffee(c) ? ":coffee" : ":standard");
+  }
+
   public static boolean dark(Context c) {
     return "dark".equals(c.getSharedPreferences("appearance", 0).getString("theme", "light"));
   }
 
   public static int background(Context c) {
-    return dark(c) ? Color.rgb(20, 27, 24) : Color.rgb(245, 244, 239);
+    return coffee(c) ? (dark(c) ? Color.rgb(33, 25, 20) : Color.rgb(247, 241, 230)) : (dark(c) ? Color.rgb(20, 27, 24) : Color.rgb(245, 244, 239));
   }
 
   public static int surface(Context c) {
-    return dark(c) ? Color.rgb(30, 41, 36) : Color.WHITE;
+    return coffee(c) ? (dark(c) ? Color.rgb(45, 33, 27) : Color.rgb(255, 253, 247)) : (dark(c) ? Color.rgb(30, 41, 36) : Color.WHITE);
   }
 
   public static int text(Context c) {
-    return dark(c) ? Color.rgb(233, 239, 233) : Color.rgb(23, 63, 53);
+    return coffee(c) ? (dark(c) ? Color.rgb(243, 230, 202) : Color.rgb(56, 39, 29)) : (dark(c) ? Color.rgb(233, 239, 233) : Color.rgb(23, 63, 53));
   }
 
   public static int accent(Context c) {
-    return dark(c) ? Color.rgb(179, 217, 164) : Color.rgb(33, 89, 67);
+    return coffee(c) ? (dark(c) ? Color.rgb(215, 184, 142) : Color.rgb(120, 86, 63)) : (dark(c) ? Color.rgb(179, 217, 164) : Color.rgb(33, 89, 67));
   }
 
   public static int onAccent(Context c) {
-    return dark(c) ? Color.rgb(22, 38, 25) : Color.WHITE;
+    return coffee(c) ? (dark(c) ? Color.rgb(44, 29, 20) : Color.rgb(255, 244, 223)) : (dark(c) ? Color.rgb(22, 38, 25) : Color.WHITE);
   }
 
   public static boolean applyTheme(Activity a) {
     boolean dark = dark(a);
-    a.setTheme(dark ? R.style.CafeTheme_Dark : R.style.CafeTheme);
+    a.setTheme(coffee(a) ? (dark ? R.style.CafeTheme_CoffeeDark : R.style.CafeTheme_Coffee) : (dark ? R.style.CafeTheme_Dark : R.style.CafeTheme));
     return dark;
+  }
+
+  public static int muted(Context c) {
+    return coffee(c) ? (dark(c) ? Color.rgb(209, 187, 160) : Color.rgb(112, 87, 68)) : (dark(c) ? Color.rgb(176, 190, 178) : Color.rgb(93, 112, 99));
+  }
+
+  public static int raised(Context c) {
+    return coffee(c) ? (dark(c) ? Color.rgb(68, 49, 37) : Color.rgb(240, 227, 204)) : (dark(c) ? Color.rgb(41, 56, 47) : Color.rgb(237, 241, 229));
+  }
+
+  public static void brand(LinearLayout parent) {
+    Context c = parent.getContext();
+    LinearLayout row = new LinearLayout(c);
+    row.setGravity(Gravity.CENTER_VERTICAL);
+    ImageView icon = new ImageView(c);
+    icon.setImageResource(R.drawable.cafe_icon);
+    row.addView(icon, new LinearLayout.LayoutParams(px(c, 44), px(c, 44)));
+    label(row, "МініКафе", 20, false);
+    parent.addView(row);
   }
 
   public static int px(Context c, int n) {
@@ -83,7 +113,7 @@ public final class CafeUi {
     text.setText(value);
     text.setTextSize(size);
     text.setTextColor(
-        muted ? (dark(c) ? Color.rgb(176, 190, 178) : Color.rgb(93, 112, 99)) : text(c));
+        muted ? muted(c) : text(c));
     text.setPadding(0, px(c, 3), 0, px(c, 8));
     text.setLineSpacing(px(c, 2), 1f);
     if (size >= 18) text.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
@@ -95,8 +125,8 @@ public final class CafeUi {
     Context c = field.getContext();
     field.setTextSize(15);
     field.setTextColor(text(c));
-    field.setHintTextColor(dark(c) ? Color.rgb(176, 190, 178) : Color.rgb(106, 122, 109));
-    field.setBackground(shape(c, dark(c) ? Color.rgb(23, 34, 29) : Color.rgb(249, 250, 246), true));
+    field.setHintTextColor(muted(c));
+    field.setBackground(shape(c, coffee(c) ? surface(c) : (dark(c) ? Color.rgb(23, 34, 29) : Color.rgb(249, 250, 246)), true));
     field.setPadding(px(c, 12), px(c, 12), px(c, 12), px(c, 12));
     field.setMinimumHeight(px(c, 50));
     field.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_DONE);
@@ -129,7 +159,7 @@ public final class CafeUi {
     GradientDrawable bg = new GradientDrawable();
     bg.setColor(color);
     bg.setCornerRadius(px(c, 14));
-    if (border) bg.setStroke(px(c, 1), dark(c) ? Color.rgb(76, 98, 84) : Color.rgb(216, 224, 212));
+    if (border) bg.setStroke(px(c, 1), coffee(c) ? (dark(c) ? Color.rgb(148, 121, 94) : Color.rgb(201, 182, 156)) : (dark(c) ? Color.rgb(76, 98, 84) : Color.rgb(216, 224, 212)));
     return bg;
   }
 
@@ -143,14 +173,14 @@ public final class CafeUi {
     StateListDrawable states = new StateListDrawable();
     states.addState(
         new int[] {-android.R.attr.state_enabled},
-        shape(c, dark(c) ? Color.rgb(44, 54, 47) : Color.rgb(230, 234, 225), !primary));
+        shape(c, coffee(c) ? raised(c) : (dark(c) ? Color.rgb(44, 54, 47) : Color.rgb(230, 234, 225)), !primary));
     states.addState(
         new int[] {android.R.attr.state_pressed},
         shape(
             c,
             primary
-                ? (dark(c) ? Color.rgb(195, 228, 182) : Color.rgb(24, 70, 53))
-                : (dark(c) ? Color.rgb(44, 62, 50) : Color.rgb(235, 242, 227)),
+                ? (coffee(c) ? accent(c) : (dark(c) ? Color.rgb(195, 228, 182) : Color.rgb(24, 70, 53)))
+                : (coffee(c) ? raised(c) : (dark(c) ? Color.rgb(44, 62, 50) : Color.rgb(235, 242, 227))),
             !primary));
     states.addState(new int[] {}, shape(c, primary ? accent(c) : surface(c), !primary));
     b.setBackground(states);
@@ -159,7 +189,7 @@ public final class CafeUi {
         new ColorStateList(
             new int[][] {new int[] {-android.R.attr.state_enabled}, new int[] {}},
             new int[] {
-              dark(c) ? Color.rgb(156, 170, 159) : Color.rgb(117, 131, 118),
+              muted(c),
               primary ? onAccent(c) : text(c)
             }));
     b.setMinHeight(px(c, 48));

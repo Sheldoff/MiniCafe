@@ -34,7 +34,7 @@ async function cloudStaffDelete(button) {
 }
 function cloudTransferPage() {
   document.querySelector("#main").innerHTML =
-    `<section class="panel cloud-staff-page"><button onclick="change('server')">← Сервер</button><h2>Меню телефона ↔ сайт</h2><p class="muted">Меню замінюється повністю разом із фото, цінами та залишками. Замовлення, статистика й доступи не переносяться.</p><div class="cloud-server-actions"><button onclick="cloudTransferCode('upload')">Телефон → сайт</button><button onclick="cloudTransferCode('download')">Сайт → телефон</button></div><div id="transferCode" aria-live="polite"></div></section>`;
+    `<section class="panel cloud-staff-page"><h2>Меню телефона ↔ сайт</h2><p class="muted">Меню замінюється повністю разом із фото, цінами та залишками. Замовлення, статистика й доступи не переносяться.</p><div class="cloud-server-actions"><button onclick="cloudTransferCode('upload')">Телефон → сайт</button><button onclick="cloudTransferCode('download')">Сайт → телефон</button></div><div id="transferCode" aria-live="polite"></div></section>`;
 }
 let cloudTransferBusy = false;
 async function cloudTransferCode(direction) {
@@ -102,10 +102,12 @@ window.fetch = async function (input, options) {
 };
 async function cloudLogout() {
   const r = await fetch("/auth/logout", { method: "POST", headers: auth });
-  if (r.ok) location.replace("/");
+  if (r.ok) location.replace("/auth/login");
   else toast("Оновіть сторінку та повторіть вихід");
 }
 async function cloudStaffWrite(data) {
+  const [role, location = data.location || ""] = data.role.split("@");
+  data = { ...data, role, location };
   const r = await fetch("/api/staff", {
     method: "POST",
     headers: { ...auth, "Content-Type": "application/json" },

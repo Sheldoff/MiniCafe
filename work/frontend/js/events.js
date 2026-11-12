@@ -1,5 +1,10 @@
 window.addEventListener("popstate", () => {
-  let target = location.hash.slice(1) || "cash";
+  const nextLocation = location.hash.slice(1).split("@")[1] || "";
+  let target = location.hash.slice(1).split("@")[0] || "cash";
+  if (view === "appearance" && target !== "appearance") {
+    target = "server";
+    history.replaceState({ cafePreviousView: "server" }, "", "#server");
+  }
   if (
     [
       "cash",
@@ -10,12 +15,24 @@ window.addEventListener("popstate", () => {
       "calculator",
       "developer",
       "server",
+      "appearance",
+      "locations",
+      "transactions",
+      "staff",
+      "menu-transfer",
     ].includes(target) &&
-    target !== view
+    (target !== view || nextLocation !== activeLocation)
   ) {
+    captureLocationDraft();
+    activeLocation = ["cash", "bar", "delivery"].includes(target)
+      ? data.access_location || nextLocation
+      : nextLocation;
+    if (!allowedView(target)) return;
     view = target;
     render();
   }
+  if (target === "locations" && view === "locations")
+    locationsPage(history.state?.cafeLocationEditor || "", true);
   if (view === "cash") showCashPanel(!!history.state?.cafeCart, true);
   if (view === "menu") {
     if (history.state?.cafeEditor) openProductEditor(true);

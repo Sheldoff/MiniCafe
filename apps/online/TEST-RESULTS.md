@@ -1,5 +1,22 @@
 # Telegram authentication validation — 2026-10-29
 
+## Settings / staff scopes — 3.52 / online 0.19 — 12.11.2026
+
+- Full Android checks.py without skips passed: 85cced61a42246578f33ffb14c4f9822,
+  23 Java suites, API and Chrome/WebKit including theme, navigation and tablets.
+- Final scoped-cash initial render and bundled icon license additionally verified
+  with focused Chrome/WebKit scoped-client tests and original-signed APK rebuild.
+- 21 Node/SQLite tests and full disposable-local-D1 API suite passed; scoped staff
+  tests cover private queue/ledger filtering, cross-location write rejection,
+  unchanged sessions on display-name update and session revocation on deletion.
+- Settings UI verified in Chrome/WebKit: icons, ordering, neighboring toggles,
+  last logout, appearance Back, no drawer close control/theme border, dynamic
+  location options, full identity-row click and cosmetic labels. Screens inspected.
+- Migration 0015 applied and Worker 18a837f8-c778-48e4-9d62-66167eccce2c deployed.
+  Source/online GitHub checks passed; GET-only public/login/auth isolation smoke passed.
+  No physical phone/real Telegram login or production test orders; Windows frozen.
+
+
 ## Online 0.8 / Android 3.40 — 01.11.2026
 
 - Canonical guest cashier flow, full-height layout, visible list beside/below editor,

@@ -1,3 +1,4 @@
+import { hasFulfillment, locationById } from "./locations.js";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { claimPhone } from "./phone.js";
 
@@ -34,7 +35,7 @@ export function cookie(request, name) {
     .find((x) => x.startsWith(name + "="));
   return raw?.slice(name.length + 1) || "";
 }
-function sessionCookie(value, age = 7 * DAY) {
+export function sessionCookie(value, age = 7 * DAY) {
   return `__Host-minicafe_session=${value}; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=${age}`;
 }
 const flowCookie = (value, age = 600) =>
@@ -54,7 +55,7 @@ export function secureJson(value, status = 200, extra = {}) {
 function errorPage(message, status = 400) {
   // Only fixed, server-authored messages go here; provider errors are never reflected.
   return new Response(
-    `<!doctype html><html lang="uk"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>МініКафе · Вхід</title><body style="font:18px system-ui;background:#f5f4ef;color:#173f35;padding:32px;max-width:640px;margin:auto"><h1>МініКафе</h1><p>${message}</p><a href="/">Повернутися до меню</a></body></html>`,
+    `<!doctype html><html lang="uk"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="/brand.svg"><link rel="stylesheet" href="/auth.css"><script src="/theme-boot.js"></script><title>МініКафе · Вхід</title><body><main><img src="/brand.svg" width="48" height="48" alt=""><h1>МініКафе</h1><p>${message}</p><a href="/">Повернутися до меню</a></main></body></html>`,
     {
       status,
       headers: { ...privateHeaders, "Content-Type": "text/html;charset=utf-8" },
@@ -74,13 +75,14 @@ export async function identity(request, env) {
 }
 export async function identityByHash(tokenHash, env) {
   const row = await env.DB.prepare(
-    `SELECT a.telegram_id,a.display_name,a.csrf,a.expires,tp.username,
+    `SELECT a.telegram_id,a.display_name,a.csrf,a.expires,tp.username,sd.location AS staff_location,
     CASE WHEN s.telegram_id IS NOT NULL THEN s.role ELSE p.role END AS role,
     CASE WHEN s.telegram_id IS NOT NULL THEN s.enabled ELSE p.enabled END AS enabled
     FROM auth_sessions a LEFT JOIN staff_access s ON s.telegram_id=a.telegram_id
     LEFT JOIN telegram_profiles tp ON tp.telegram_id=a.telegram_id
     LEFT JOIN session_phone sp ON sp.token_hash=a.token_hash
     LEFT JOIN staff_phone p ON p.phone=sp.phone AND p.claimed_id=a.telegram_id
+    LEFT JOIN staff_details sd ON sd.identifier=CASE WHEN s.telegram_id IS NOT NULL THEN 'id:'||s.telegram_id ELSE 'phone:'||p.phone END
     WHERE a.token_hash=? AND a.expires>?`,
   )
     .bind(tokenHash, timestamp())
@@ -98,6 +100,7 @@ export async function identityByHash(tokenHash, env) {
         name: row.display_name,
         username: row.username || "",
         role,
+        location: role === "admin" ? "" : row.staff_location || "",
         csrf: row.csrf,
       }
     : null;
@@ -110,14 +113,20 @@ export function csrfAllowed(request, user) {
   );
 }
 export function canRead(role, path) {
-  return role === "admin" || path === "state" || path.startsWith("image/");
+  return (
+    role === "admin" ||
+    path === "state" ||
+    path.startsWith("image/") ||
+    (["cash", "service"].includes(role) && path === "card-payments")
+  );
 }
 export function canWrite(role, path, input) {
   if (role === "admin") return true;
-  if (role === "cash") return path === "order";
+  if (role === "cash") return ["order", "card-payment/hide"].includes(path);
   if (role === "service")
     return [
       "order",
+      "card-payment/hide",
       "issue",
       "issue-unit",
       "issue-item",
@@ -139,6 +148,25 @@ export function canWrite(role, path, input) {
 }
 export function filterState(state, user) {
   state.access_role = user.role;
+  state.access_location = user.location || "";
+  if (user.location) {
+    state.locations = [
+      locationById(state.locations || [], user.location),
+    ].filter(Boolean);
+    state.orders = state.orders
+      .map((o) => ({
+        ...o,
+        items: o.items.filter((i) =>
+          user.role === "cash"
+            ? (o.cash_location || "cash") === user.location
+            : i.destinations
+              ? i.destinations.some((d) => d.id === user.location)
+              : (i.location_id ||
+                  (user.role === "bar" ? "bar" : "delivery")) === user.location,
+        ),
+      }))
+      .filter((o) => o.items.length);
+  }
   if (user.role === "admin") return state;
   delete state.additional_expenses;
   delete state.sessions;
@@ -151,8 +179,11 @@ export function filterState(state, user) {
         id: o.id,
         created: o.created,
         guest: o.guest,
+        cash_location: o.cash_location,
+        cash_location_name: o.cash_location_name,
+        cash_location_color: o.cash_location_color,
         items: o.items
-          .filter((i) => i.route === route)
+          .filter((i) => hasFulfillment(i, route))
           .map((i) => {
             const { price, catalog_price, requested_price, ...safe } = i;
             return safe;
@@ -160,13 +191,23 @@ export function filterState(state, user) {
       }))
       .filter((o) => o.items.length);
     const value = state.can_undo_issue[route];
-    state.can_undo_issue = { [route]: value };
+    state.can_undo_issue = {
+      [route]: value,
+      ...Object.fromEntries(
+        Object.entries(state.can_undo_issue).filter(([key]) =>
+          key.startsWith(route + "@"),
+        ),
+      ),
+    };
   } else {
-    // Cash/combined service do not receive finances, history or prior order payments.
+    // Cash/combined service receive only the separately authorized card-payment projection.
     state.orders = state.orders.map((o) => ({
       id: o.id,
       created: o.created,
       guest: o.guest,
+      cash_location: o.cash_location,
+      cash_location_name: o.cash_location_name,
+      cash_location_color: o.cash_location_color,
       items: o.items.map((i) => {
         const { catalog_price, requested_price, ...safe } = i;
         return safe;
@@ -202,9 +243,14 @@ export async function authRoutes(request, env) {
     await env.DB.prepare("DELETE FROM auth_sessions WHERE token_hash=?")
       .bind(await hash(cookie(request, "__Host-minicafe_session")))
       .run();
-    return secureJson({ ok: true }, 200, {
-      "Set-Cookie": sessionCookie("", 0),
-    });
+    const response = secureJson({ ok: true });
+    response.headers.append("Set-Cookie", sessionCookie("", 0));
+    for (const name of ["app", "quick", "code", "oauth"])
+      response.headers.append(
+        "Set-Cookie",
+        `__Host-minicafe_${name}=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0`,
+      );
+    return response;
   }
   if (path === "/auth/login" && request.method === "GET") {
     const asset = await env.ASSETS.fetch(

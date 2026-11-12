@@ -59,7 +59,7 @@ public class GuestApiTest {
       call("POST", "/api/public-settings", access.key("cash"), "{\"enabled\":true}", null, 403);
       call("POST", "/api/public-settings", "owner", "{\"enabled\":true}", null, 200);
       JSONObject menu = call("GET", "/api/public/menu", null, null, null, 200);
-      if (menu.toString().contains("guest_codes") || menu.toString().contains("payment"))
+      if (menu.toString().contains("guest_codes") || menu.has("payments") || menu.has("orders"))
         throw new AssertionError("Public projection");
       call("POST", "/api/public/code", null, draft, "https://evil.example", 403);
       String code = call("POST", "/api/public/code", null, draft, null, 200).getString("code");

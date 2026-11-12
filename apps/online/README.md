@@ -1,6 +1,6 @@
 # MiniCafe Online — Cloudflare
 
-Стан: Telegram-вхід персоналу — https://minicafe.minicafe.workers.dev/admin .
+Стан: Telegram OIDC та одноразові коди бота для входу на іншому пристрої (docs/BRAND-LOGIN-UA.md). Вхід персоналу — https://minicafe.minicafe.workers.dev/admin .
 Worker сам обробляє API, D1 зберігає дані. Телефон і Termux не потрібні.
 Гості бачать публічне меню та отримують тимчасові коди для каси.
 Інструкція: docs/GUEST-CODES-UA.md у корені репозиторію.

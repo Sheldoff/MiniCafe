@@ -6,7 +6,9 @@ function roleView() {
       : "cash";
 }
 function allowedView(v) {
-  if (["developer", "server"].includes(v)) return true;
+  if (["locations", "transactions"].includes(v))
+    return !data.access_role || data.access_role === "admin";
+  if (["developer", "server", "appearance"].includes(v)) return true;
   if (data.access_role === "service")
     return ["cash", "bar", "delivery"].includes(v);
   return !data.access_role || data.access_role === "admin" || v === roleView();
@@ -19,13 +21,33 @@ function availableViews() {
     ["history", "Статистика"],
     ["menu", "Меню й ціни"],
     ["calculator", "Калькулятор"],
-  ].filter(([v]) => allowedView(v));
+  ]
+    .filter(([v]) => allowedView(v))
+    .flatMap(([v, t]) => [
+      ...(data.access_location ? [] : [[v, locationInfo(v)?.name || t, ""]]),
+      ...(data.locations || [])
+        .filter(
+          (l) =>
+            l.kind === v &&
+            (data.access_location ? l.id === data.access_location : l.id !== v),
+        )
+        .map((l) => [v, l.name, l.id]),
+    ]);
 }
-function change(v) {
+function change(v, locationId = "") {
+  const previousView = view;
   if (!allowedView(v)) return;
+  captureLocationDraft();
+  activeLocation = ["cash", "bar", "delivery"].includes(v)
+    ? data.access_location || locationId
+    : locationId;
   if (view === "menu") captureEditorDraft();
   view = v;
-  history.pushState({ cafeCart: false, cafeEditor: false }, "", "#" + v);
+  history.pushState(
+    { cafeCart: false, cafeEditor: false, cafePreviousView: previousView },
+    "",
+    "#" + v + (activeLocation ? "@" + activeLocation : ""),
+  );
   render();
   if (
     v === "menu" &&
@@ -117,6 +139,10 @@ function showCashPanel(open, fromHistory = false) {
 }
 
 function handleAppBack() {
+  if (view === "appearance") {
+    change("server");
+    return true;
+  }
   if (document.querySelector("#orderDialog")) {
     if (
       additionalExpenseBusy ||
@@ -128,6 +154,20 @@ function handleAppBack() {
   }
   if (document.body.classList.contains("drawer-open")) {
     toggleDrawer(false);
+    return true;
+  }
+  if (
+    [
+      "locations",
+      "transactions",
+      "staff",
+      "menu-transfer",
+      "appearance",
+    ].includes(view)
+  ) {
+    if (history.state?.cafePreviousView || history.state?.cafeLocationEditor)
+      history.back();
+    else change("server");
     return true;
   }
   if (["developer", "server"].includes(view)) {
@@ -149,26 +189,25 @@ function handleAppBack() {
 }
 
 function drawerMarkup() {
-  return `<div id="drawerOverlay" hidden onclick="closeDrawerOverlay()"></div><aside id="appDrawer" role="dialog" aria-modal="true" aria-label="Навігація" hidden><div class="drawer-heading"><button id="drawerRefresh" type="button" onclick="refreshInPlace()" aria-label="МініКафе — оновити"><span>МініКафе</span><span class="refresh-spinner" aria-hidden="true"></span></button><button id="themeToggle" type="button" role="switch" aria-checked="false" onclick="toggleCafeTheme()">${themeIcon()}</button><button aria-label="Закрити меню" onclick="toggleDrawer(false)">×</button></div><div class="drawer-links">${availableViews()
+  return `<div id="drawerOverlay" hidden onclick="closeDrawerOverlay()"></div><aside id="appDrawer" role="dialog" aria-modal="true" aria-label="Навігація" hidden><div class="drawer-heading"><button id="drawerRefresh" type="button" onclick="refreshInPlace()" aria-label="МініКафе — оновити"><img class="brand-icon" src="{{BRAND_ICON}}" alt=""><span>МініКафе</span><span class="refresh-spinner" aria-hidden="true"></span></button><button id="themeToggle" type="button" role="switch" aria-checked="false" onclick="toggleCafeTheme()">${themeIcon()}</button></div><div class="drawer-links">${availableViews()
     .map(
-      ([v, t]) =>
-        `<button data-view="${v}" class="${view === v ? "selected" : ""}" onclick="change('${v}');toggleDrawer(false)">${t}</button>`,
+      ([v, t, id]) =>
+        `<button ${drawerLocationColor(id || v)} data-view="${v}" data-location="${id || ""}" class="${view === v && activeLocation === (id || "") ? "selected" : ""}" onclick="change('${v}','${id || ""}');toggleDrawer(false)">${esc(t)}</button>`,
     )
     .join(
       "",
-    )}</div><div class="drawer-tools"><button data-view="developer" onclick="change('developer');toggleDrawer(false)">Розробник</button><button data-native="settings" data-view="server" onclick="openServerSettings()">Сервер</button></div></aside>`;
+    )}</div><div class="drawer-tools"><button data-view="developer" onclick="change('developer');toggleDrawer(false)">Розробник</button><button data-native="settings" data-view="server" onclick="openServerSettings()">Налаштування</button></div></aside>`;
 }
 
 function updateDrawer() {
+  applyLocationTheme();
   let old = document.querySelector("#drawerRoot");
   if (!old) {
     old = document.createElement("div");
     old.id = "drawerRoot";
     document.body.appendChild(old);
   }
-  let signature = availableViews()
-    .map(([v]) => v)
-    .join("|");
+  let signature = JSON.stringify([availableViews(), data.locations]);
   if (!old.innerHTML || old.dataset.signature !== signature) {
     let wasOpen = document.body.classList.contains("drawer-open");
     old.innerHTML = drawerMarkup();
@@ -177,20 +216,26 @@ function updateDrawer() {
   }
   old
     .querySelectorAll("[data-view]")
-    .forEach((b) => b.classList.toggle("selected", b.dataset.view === view));
+    .forEach((b) =>
+      b.classList.toggle(
+        "selected",
+        b.dataset.view === view &&
+          (b.dataset.location || "") === activeLocation,
+      ),
+    );
   syncThemeControl();
   syncRefreshIndicator();
-  for (const [target, route] of [
-    ["bar", "bar"],
-    ["delivery", "instant"],
-  ]) {
-    const button = old.querySelector(`[data-view="${target}"]`);
-    if (!button) continue;
+  for (const button of old.querySelectorAll(
+    '[data-view="bar"],[data-view="delivery"]',
+  )) {
+    const route = button.dataset.view === "bar" ? "bar" : "instant";
+    const destination =
+      button.dataset.location || (route === "bar" ? "bar" : "delivery");
     let count = 0;
     for (const order of data.orders || [])
       for (const item of order.items || []) {
         if (
-          item.route !== route ||
+          !itemAtDestination(item, route, destination) ||
           ["delivered", "cancelled"].includes(item.status)
         )
           continue;
@@ -282,9 +327,7 @@ function toggleDrawer(open, keyboard = false) {
   );
   if (open) {
     if (keyboard)
-      drawer
-        .querySelector('[aria-label="Закрити меню"]')
-        .focus({ preventScroll: true });
+      drawer.querySelector("#themeToggle").focus({ preventScroll: true });
     else document.activeElement?.blur();
   } else document.querySelector("#drawerToggle").focus({ preventScroll: true });
   return drawer.drawerCompletion;
@@ -300,7 +343,13 @@ function render() {
   else if (view === "menu") menu();
   else if (view === "calculator") calculator();
   else if (view === "developer") developerPage();
-  else if (view === "server") serverPage();
+  else if (view === "server") {
+    serverPage();
+    settingsExtras();
+  } else if (view === "locations")
+    locationsPage(history.state?.cafeLocationEditor || "", true);
+  else if (view === "transactions") transactionsPage();
+  else if (view === "appearance") appearancePage();
   else orders();
   revealPage();
 }
@@ -311,8 +360,7 @@ async function openServerSettings() {
   serverOpening = true;
   try {
     await toggleDrawer(false);
-    if (window.CafeNative) location.href = "minicafe://settings";
-    else change("server");
+    change("server");
   } finally {
     serverOpening = false;
   }
@@ -329,7 +377,7 @@ function nativeExternal(event, url) {
 }
 function serverPage() {
   document.querySelector("#main").innerHTML =
-    `<section class="panel developer-panel"><h2>Сервер</h2><p>${esc(location.origin)}</p><p class="muted">Для зміни сервера відкрийте нове посилання або QR-код.</p><button onclick="refreshInPlace()">Перевірити з’єднання</button></section>`;
+    `<section class="panel developer-panel"><h2>Підключення</h2><p>${esc(location.origin)}</p><p class="muted">Для зміни сервера відкрийте нове посилання або QR-код.</p><button onclick="refreshInPlace()">Перевірити з’єднання</button></section>`;
 }
 
 async function copySupportCard() {

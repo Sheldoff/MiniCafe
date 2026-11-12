@@ -87,7 +87,7 @@ const base = process.env.CAFE_CLOUD_TEST_URL || "http://127.0.0.1:8791";
       await p.evaluate(() => change("server"));
       assert.equal(
         await p
-          .getByRole("button", { name: "Меню телефона ↔ сайт", exact: true })
+          .getByRole("button", { name: "Синхронізувати", exact: true })
           .count(),
         0,
       );

@@ -280,3 +280,7 @@ html.cloud-online #toast:empty {
     grid-template-columns: 90px minmax(0, 1fr);
   }
 }
+
+.staff-name {
+  color: var(--text);
+}

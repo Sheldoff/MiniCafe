@@ -1,3 +1,11 @@
+import {
+  validateLocation,
+  applyRouting,
+  inLocation,
+  undoKey,
+  checkLocationChange,
+  availabilityCash,
+} from "./locations.js";
 // Money is integer kopiykas. Reducer works on a private snapshot; DB commit is atomic.
 export const now = () =>
   new Date().toISOString().slice(0, 19).replace("T", " ");
@@ -31,6 +39,16 @@ export function validateProduct(p) {
   integer(p.price, 0, 100000000);
   routeCheck(p.route);
   p.active = p.active ? 1 : 0;
+  if (
+    p.unavailable_at !== undefined &&
+    (!Array.isArray(p.unavailable_at) ||
+      p.unavailable_at.length > 50 ||
+      new Set(p.unavailable_at).size !== p.unavailable_at.length ||
+      p.unavailable_at.some(
+        (id) => typeof id !== "string" || !/^(cash|loc-[a-f0-9]{32})$/.test(id),
+      ))
+  )
+    fail("Некоректна наявність каси");
   if (p.stock != null) integer(p.stock, -1000000, 1000000);
   if (p.stock_estimated !== undefined && typeof p.stock_estimated !== "boolean")
     fail("Некоректний режим залишку");
@@ -133,8 +151,63 @@ export function mutate(d, path, input) {
     changed.add("products");
   } else if (path === "availability") {
     if (typeof input.sold_out !== "boolean") fail("Некоректна наявність");
-    find(p, input.id).sold_out = input.sold_out;
+    const product = find(p, input.id),
+      cash = availabilityCash(
+        d.locations,
+        input.location_id || (product.route === "bar" ? "bar" : "delivery"),
+      );
+    if (cash) {
+      const ids = new Set(product.unavailable_at || []);
+      if (input.sold_out) ids.add(cash);
+      else ids.delete(cash);
+      product.unavailable_at = [...ids];
+    } else product.sold_out = input.sold_out;
     changed.add("products");
+  } else if (path === "location/save") {
+    d.locations ||= [];
+    const row = validateLocation(input, d.locations),
+      index = d.locations.findIndex((l) => l.id === row.id);
+    if (index >= 0 && d.locations[index].kind !== row.kind)
+      checkLocationChange(row.id, d.locations, orders);
+    if (index < 0) d.locations.push(row);
+    else d.locations[index] = row;
+    changed.add("locations");
+  } else if (path === "location/delete") {
+    if (["cash", "bar", "delivery"].includes(input.id))
+      fail("Основні локації видаляти не можна");
+    if (!(d.locations || []).some((l) => l.id === input.id))
+      fail("Локацію не знайдено");
+    checkLocationChange(input.id, d.locations, orders);
+    d.locations = d.locations.filter((l) => l.id !== input.id);
+    changed.add("locations");
+  } else if (path === "settings/update") {
+    if (typeof input.online_payment_enabled !== "boolean")
+      fail("Некоректне налаштування");
+    d.online_payment_enabled = input.online_payment_enabled;
+    changed.add("locations");
+  } else if (path === "expenses/delete") {
+    const old = d.calculator_expenses.find((e) => e.id === input.id);
+    if (old && old.kind !== "additional") fail("Це не додаткові витрати");
+    if (old) {
+      d.calculator_expenses = d.calculator_expenses.filter(
+        (e) => e.id !== input.id,
+      );
+      d.expenses_version++;
+      changed.add("expenses");
+    }
+  } else if (path === "transaction/hide") {
+    const o = find(orders, integer(input.id, 1));
+    if (!(o.payment?.card_amount > 0)) fail("Карткову оплату не знайдено");
+    o.transaction_history_hidden = true;
+    changed.add("orders");
+  } else if (path === "card-payment/hide") {
+    const order = find(orders, integer(input.id, 1));
+    if (order.gift || !order.payment || order.payment.card_amount <= 0)
+      fail("Карткову оплату не знайдено");
+    if (!order.card_history_hidden) {
+      order.card_history_hidden = true;
+      changed.add("orders");
+    }
   } else if (path === "order") {
     const idempotency = requestId(input.request);
     const existing = orders.find((o) => o.request === idempotency);
@@ -149,7 +222,12 @@ export function mutate(d, path, input) {
     const items = input.items.map((row) => {
       const product = find(p, integer(row.id, 1));
       const qty = integer(row.qty, 1, 99);
-      if (!product.active || product.sold_out) fail("Позиція недоступна");
+      if (
+        !product.active ||
+        product.sold_out ||
+        product.unavailable_at?.includes(input.location_id || "cash")
+      )
+        fail("Позиція недоступна на цій касі");
       const price =
         row.unit_price === undefined
           ? product.price
@@ -199,6 +277,7 @@ export function mutate(d, path, input) {
         total,
       },
     });
+    applyRouting(orders[orders.length - 1], input, d.locations || []);
     result = { id };
     ["orders", "products", "sessions", "expenses"].forEach((x) =>
       changed.add(x),
@@ -209,7 +288,10 @@ export function mutate(d, path, input) {
     const units = [];
     const selected = path === "issue" ? o.items : [find(o.items, input.id)];
     for (const i of selected) {
-      if (i.route !== input.route || i.status === "cancelled") {
+      if (
+        !inLocation(i, input.route, input.location_id) ||
+        i.status === "cancelled"
+      ) {
         if (path !== "issue") fail("Позиція іншої видачі");
         continue;
       }
@@ -226,12 +308,12 @@ export function mutate(d, path, input) {
       }
       apply(i, values);
     }
-    remember(d, input.route, o.id, units);
+    remember(d, undoKey(input.route, input.location_id), o.id, units);
     event(o, "Оновлено видачу");
     changed.add("orders");
   } else if (path === "undo-issue") {
     routeCheck(input.route);
-    const stack = d.issue_undo[input.route] || [];
+    const stack = d.issue_undo[undoKey(input.route, input.location_id)] || [];
     let restored = false;
     while (stack.length && !restored) {
       const action = stack.pop(),
@@ -239,7 +321,12 @@ export function mutate(d, path, input) {
       if (!o) continue;
       for (const u of action.units) {
         const i = o.items.find((i) => i.id === u.id);
-        if (!i || i.route !== input.route || i.status === "cancelled") continue;
+        if (
+          !i ||
+          !inLocation(i, input.route, input.location_id) ||
+          i.status === "cancelled"
+        )
+          continue;
         const values = flags(i);
         if (values[u.unit]) {
           values[u.unit] = false;

@@ -2,6 +2,7 @@ let stateETag = "",
   pollFailures = 0,
   pollTimer = null;
 async function post(path, d) {
+  if (data.access_location) d = { ...d, location_id: data.access_location };
   let r = await fetch("/api/" + path, {
     method: "POST",
     headers: { ...auth, "Content-Type": "application/json" },
@@ -197,6 +198,24 @@ async function fetchState() {
     stateETag = r.headers.get("ETag") || "";
     pollFailures = 0;
     data = next;
+    if (!allowedView(view)) view = roleView();
+    if (data.access_location && ["cash", "bar", "delivery"].includes(view))
+      activeLocation = data.access_location;
+    if (
+      view === "cash" &&
+      data.access_location &&
+      renderedCashLocation !== activeLocation
+    )
+      cash();
+    if (
+      activeLocation &&
+      !data.locations?.some((l) => l.id === activeLocation && l.kind === view)
+    ) {
+      activeLocation = "";
+      view = roleView();
+      history.replaceState({}, "", "#" + view);
+      render();
+    }
     if (!allowedView(view)) {
       view = roleView();
       location.hash = view;
@@ -219,6 +238,7 @@ async function fetchState() {
         (changed && view === "history"))
     )
       orders();
+    if (ordersChanged && view === "cash") loadCardPayments();
     if (
       productsChanged &&
       view === "cash" &&

@@ -1,3 +1,4 @@
+import { validateLocation } from "./locations.js";
 import { fail, integer, validateProduct } from "./domain.js";
 
 export function restoreData(before, input) {
@@ -76,6 +77,21 @@ export function restoreData(before, input) {
       maxItem = Math.max(maxItem, i.id);
       if (Number.isSafeInteger(i.product_id) && i.product_id > 0)
         maxHistoricalProduct = Math.max(maxHistoricalProduct, i.product_id);
+      if (
+        i.destinations !== undefined &&
+        (!Array.isArray(i.destinations) ||
+          !i.destinations.length ||
+          i.destinations.length > 50 ||
+          new Set(i.destinations.map((d) => d?.id)).size !==
+            i.destinations.length ||
+          i.destinations.some(
+            (d) =>
+              !d ||
+              !/^(bar|delivery|loc-[a-f0-9]{32})$/.test(d.id) ||
+              !["bar", "instant"].includes(d.route),
+          ))
+      )
+        fail("Некоректні напрямки позиції");
       integer(i.qty, 1, 99);
       integer(i.price, 0, 100000000);
       string(i.name, 100);
@@ -147,6 +163,19 @@ export function restoreData(before, input) {
     integer(d.nextSession, 1, 2147483647),
     ...d.sessions.map((s) => s.id + 1),
   );
+  d.locations = Array.isArray(input.locations)
+    ? input.locations
+    : before.locations || [];
+  if (
+    d.locations.length > 50 ||
+    new Set(d.locations.map((l) => l.id)).size !== d.locations.length
+  )
+    fail("Некоректні локації");
+  d.locations = d.locations.map((l) => validateLocation(l, d.locations));
+  d.online_payment_enabled =
+    typeof input.online_payment_enabled === "boolean"
+      ? input.online_payment_enabled
+      : before.online_payment_enabled !== false;
   d.active_session ||= 0;
   d.issue_undo = {}; // Old undo entries are intentionally invalidated by full database replacement.
   d.versions = Object.fromEntries(
@@ -157,6 +186,8 @@ export function restoreData(before, input) {
   // Keep only documented metadata; imported keys must not change server settings.
   return Object.fromEntries(
     [
+      "locations",
+      "online_payment_enabled",
       "nextProduct",
       "nextOrder",
       "nextItem",

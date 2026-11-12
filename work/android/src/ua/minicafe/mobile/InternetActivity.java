@@ -14,7 +14,7 @@ import org.json.*;
 
 /** Manual Termux integration; no shell access permission is requested. */
 public class InternetActivity extends Activity {
-  private boolean nativeDark;
+  private String nativeAppearance;
   public static final String INSTALL = "pkg update -y && pkg install cloudflared -y";
   public static final String START =
       "termux-wake-lock\n"
@@ -105,11 +105,12 @@ public class InternetActivity extends Activity {
 
   @Override
   public void onCreate(Bundle saved) {
-    nativeDark = CafeUi.applyTheme(this);
+    CafeUi.applyTheme(this);
+    nativeAppearance = CafeUi.appearance(this);
     super.onCreate(saved);
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     root = CafeUi.screen(this, 840);
-    button(root, "← Назад до сервера", () -> finish());
+    button(root, "Назад до сервера", () -> finish());
     fold(
         root,
         "Перше налаштування Termux",
@@ -264,10 +265,10 @@ public class InternetActivity extends Activity {
     Button begin = action("Почати роботу", true, () -> localCash());
     android.graphics.drawable.GradientDrawable beginBackground =
         new android.graphics.drawable.GradientDrawable();
-    beginBackground.setColor(Color.rgb(228, 193, 118));
+    beginBackground.setColor(CafeUi.coffee(this) ? CafeUi.accent(this) : Color.rgb(228, 193, 118));
     beginBackground.setCornerRadius(px(11));
     begin.setBackground(beginBackground);
-    begin.setTextColor(Color.rgb(23, 54, 43));
+    begin.setTextColor((CafeUi.coffee(this) ? CafeUi.onAccent(this) : Color.rgb(23, 54, 43)));
     LinearLayout.LayoutParams beginParams = new LinearLayout.LayoutParams(-1, px(56));
     beginParams.topMargin = px(12);
     sharing.addView(begin, beginParams);
@@ -444,7 +445,7 @@ public class InternetActivity extends Activity {
   @Override
   protected void onResume() {
     super.onResume();
-    if (nativeDark != CafeUi.dark(this)) recreate();
+    if (!CafeUi.appearance(this).equals(nativeAppearance)) recreate();
   }
 
   @Override

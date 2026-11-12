@@ -260,6 +260,19 @@ public final class CafeStore {
   }
 
   private static void validate(JSONObject d) throws Exception {
+    JSONArray locations = d.optJSONArray("locations");
+    if (d.has("locations") && locations == null)
+      throw new IllegalArgumentException("Некоректні локації");
+    if (locations != null) {
+      if (locations.length() > 50) throw new IllegalArgumentException("Забагато локацій");
+      Set<String> ids = new HashSet<>();
+      for (int i = 0; i < locations.length(); i++) {
+        JSONObject row = locations.getJSONObject(i);
+        if (!ids.add(row.getString("id"))) throw new IllegalArgumentException("Повторна локація");
+        validLocation(row, locations);
+      }
+    }
+
     if (!"minicafe-android-1".equals(d.getString("format")))
       throw new IllegalArgumentException("Це не резервна копія сервера Android МініКафе");
     JSONArray ps = d.getJSONArray("products"), os = d.getJSONArray("orders");
@@ -293,6 +306,21 @@ public final class CafeStore {
             || it.getInt("qty") > 99
             || it.getLong("price") < 0) throw new IllegalArgumentException("Некоректна позиція");
         checkRoute(it.getString("route"));
+        if (it.has("destinations")) {
+          JSONArray destinations = it.getJSONArray("destinations");
+          Set<String> uniqueDestinations = new HashSet<>();
+          if (destinations.length() == 0 || destinations.length() > 50)
+            throw new IllegalArgumentException("Некоректні напрямки позиції");
+          for (int n = 0; n < destinations.length(); n++) {
+            JSONObject destination = destinations.getJSONObject(n);
+            String destinationId = destination.getString("id");
+            if (!destinationId.matches("bar|delivery|loc-[a-f0-9]{32}")
+                || !uniqueDestinations.add(destinationId))
+              throw new IllegalArgumentException("Некоректні напрямки позиції");
+            checkRoute(destination.getString("route"));
+          }
+        }
+
         checkStatus(it.getString("status"));
         if (it.has("unit_issued")) {
           JSONArray flags = it.getJSONArray("unit_issued");
@@ -384,6 +412,15 @@ public final class CafeStore {
         || p.getLong("price") > 100000000)
       throw new IllegalArgumentException("Перевірте назву, категорію та ціну");
     checkRoute(p.getString("route"));
+    if (p.has("unavailable_at")) {
+      JSONArray ids = p.getJSONArray("unavailable_at");
+      Set<String> unique = new HashSet<>();
+      if (ids.length() > 50) throw new IllegalArgumentException("Некоректна наявність каси");
+      for (int n = 0; n < ids.length(); n++)
+        if (!ids.getString(n).matches("cash|loc-[a-f0-9]{32}") || !unique.add(ids.getString(n)))
+          throw new IllegalArgumentException("Некоректна наявність каси");
+    }
+
     if (p.has("image") && !p.isNull("image")) checkImage(p.getString("image"));
   }
 
@@ -505,7 +542,7 @@ public final class CafeStore {
             continue;
           }
           if (!"cancelled".equals(it.getString("status"))
-              && route.equals(it.getString("route"))
+              && hasFulfillment(it, route.split("@", 2)[0])
               && unitFlags(it).optBoolean(u.getInt("unit"), false)) return true;
         }
       } else {
@@ -514,7 +551,7 @@ public final class CafeStore {
           JSONObject it = items.getJSONObject(i);
           for (int j = 0; j < ids.length(); j++)
             if (it.getInt("id") == ids.getInt(j)
-                && route.equals(it.getString("route"))
+                && hasFulfillment(it, route.split("@", 2)[0])
                 && "delivered".equals(it.getString("status"))) return true;
         }
       }
@@ -568,14 +605,17 @@ public final class CafeStore {
                 .put("products", data.optLong("products_revision", 0))
                 .put("orders", data.optLong("orders_revision", 0))
                 .put("sessions", data.optLong("sessions_revision", 0))
-                .put("expenses", data.optLong("expenses_revision", 0)))
-        .put(
-            "can_undo_issue",
-            new JSONObject()
-                .put("bar", undoAvailable(data, "bar"))
-                .put("instant", undoAvailable(data, "instant")))
+                .put("expenses", data.optLong("expenses_revision", 0))
+                .put("locations", data.optLong("locations_revision", 0)))
+        .put("can_undo_issue", allUndo(data))
         .put("additional_expenses", additionalExpenses(data))
         .put("expenses_version", data.optLong("expenses_version", 0))
+        .put(
+            "locations",
+            data.optJSONArray("locations") == null
+                ? new JSONArray()
+                : new JSONArray(data.getJSONArray("locations").toString()))
+        .put("online_payment_enabled", data.optBoolean("online_payment_enabled", true))
         .put("products", ps)
         .put("orders", os)
         .put("sessions", new JSONArray(data.getJSONArray("sessions").toString()))
@@ -610,6 +650,48 @@ public final class CafeStore {
 
   public JSONObject statistics(Integer session, String day, int offset) throws Exception {
     return CafeStats.report(reportSnapshot(session, day, offset), session, day, offset);
+  }
+
+  public synchronized JSONObject cardPayments(long before) throws Exception {
+    return cardPayments(before, false);
+  }
+
+  public synchronized JSONObject cardPayments(long before, boolean transactions) throws Exception {
+    if (before < 1) throw new IllegalArgumentException("Некоректна сторінка");
+    List<JSONObject> matching = new ArrayList<>();
+    JSONArray orders = data.getJSONArray("orders");
+    for (int i = 0; i < orders.length(); i++) {
+      JSONObject order = orders.getJSONObject(i), payment = order.optJSONObject("payment");
+      if (order.getLong("id") < before
+          && !order.optBoolean("gift")
+          && !order.optBoolean("stats_cleared")
+          && !order.optBoolean(transactions ? "transaction_history_hidden" : "card_history_hidden")
+          && payment != null
+          && payment.optLong("card_amount") > 0) matching.add(order);
+    }
+    Collections.sort(
+        matching,
+        new Comparator<JSONObject>() {
+          public int compare(JSONObject a, JSONObject b) {
+            return Long.compare(b.optLong("id"), a.optLong("id"));
+          }
+        });
+    JSONArray rows = new JSONArray();
+    for (int i = 0; i < Math.min(50, matching.size()); i++) {
+      JSONObject order = matching.get(i);
+      rows.put(
+          new JSONObject()
+              .put("id", order.getLong("id"))
+              .put("guest", order.optString("guest", ""))
+              .put("created", order.getString("created"))
+              .put("amount", order.getJSONObject("payment").getLong("card_amount")));
+    }
+    if (!transactions)
+      for (int i = 0; i < rows.length(); i++) rows.getJSONObject(i).remove("created");
+    return new JSONObject()
+        .put("payments", rows)
+        .put(
+            "next_before", matching.size() > 50 ? matching.get(49).getLong("id") : JSONObject.NULL);
   }
 
   public JSONObject history(Integer session, String day, int offset, int page) throws Exception {
@@ -744,6 +826,213 @@ public final class CafeStore {
     return integer;
   }
 
+  private static JSONObject location(JSONArray rows, String id) throws Exception {
+    if (rows != null)
+      for (int i = 0; i < rows.length(); i++)
+        if (id.equals(rows.getJSONObject(i).optString("id"))) return rows.getJSONObject(i);
+    if (Arrays.asList("cash", "bar", "delivery").contains(id))
+      return new JSONObject()
+          .put("id", id)
+          .put("kind", id)
+          .put("name", "cash".equals(id) ? "Каса" : "bar".equals(id) ? "Бариста" : "Видача");
+    throw new IllegalArgumentException("Локацію не знайдено");
+  }
+
+  private static JSONObject validLocation(JSONObject input, JSONArray rows) throws Exception {
+    String id = input.getString("id"),
+        name = input.getString("name").trim(),
+        kind = input.getString("kind"),
+        color = input.getString("color");
+    if (!id.matches("loc-[a-f0-9]{32}|cash|bar|delivery")
+        || name.isEmpty()
+        || name.length() > 80
+        || !Arrays.asList("cash", "bar", "delivery").contains(kind)
+        || !color.matches("#[a-fA-F0-9]{6}")
+        || (Arrays.asList("cash", "bar", "delivery").contains(id) && !id.equals(kind)))
+      throw new IllegalArgumentException("Перевірте поля локації");
+    boolean found = false;
+    for (int i = 0; i < rows.length(); i++) {
+      JSONObject old = rows.getJSONObject(i);
+      if (id.equals(old.getString("id"))) {
+        found = true;
+      }
+    }
+    if (!found && rows.length() >= 50) throw new IllegalArgumentException("До 50 локацій");
+    JSONObject row =
+        new JSONObject().put("id", id).put("name", name).put("kind", kind).put("color", color);
+    if (!"cash".equals(kind) && !input.optString("linked_cash").isEmpty()) {
+      String linked = input.getString("linked_cash");
+      if (!"cash".equals(location(rows, linked).getString("kind")))
+        throw new IllegalArgumentException("Оберіть дійсну касу");
+      row.put("linked_cash", linked);
+    }
+    if ("cash".equals(kind)) {
+      if (input.has("targets")) {
+        JSONArray targets = input.getJSONArray("targets");
+        if (targets.length() == 0 || targets.length() > 50)
+          throw new IllegalArgumentException("Оберіть хоча б одну видачу");
+        Set<String> unique = new HashSet<>();
+        for (int i = 0; i < targets.length(); i++) {
+          String target = targets.getString(i);
+          if (!unique.add(target)
+              || target.equals(id)
+              || "cash".equals(location(rows, target).getString("kind")))
+            throw new IllegalArgumentException("Оберіть дійсну видачу");
+        }
+        return row.put("targets", new JSONArray(targets.toString()));
+      }
+      String mode = "single".equals(input.optString("mode")) ? "single" : "split";
+      row.put("mode", mode);
+      String[] keys = {"bar_target", "delivery_target", "single_target"},
+          defaults = {"bar", "delivery", "delivery"};
+      for (int i = 0; i < keys.length; i++) {
+        String target = input.optString(keys[i], defaults[i]);
+        JSONObject to = location(rows, target);
+        String k = to.getString("kind");
+        if ("cash".equals(k) || ("split".equals(mode) && i < 2 && !defaults[i].equals(k)))
+          throw new IllegalArgumentException("Оберіть дійсну видачу");
+        row.put(keys[i], target);
+      }
+    }
+    return row;
+  }
+
+  public static boolean hasFulfillment(JSONObject item, String route) throws Exception {
+    JSONArray targets = item.optJSONArray("destinations");
+    if (targets == null)
+      return route.equals(item.optString("fulfillment_route", item.getString("route")));
+    for (int i = 0; i < targets.length(); i++)
+      if (route.equals(targets.getJSONObject(i).getString("route"))) return true;
+    return false;
+  }
+
+  private static boolean atLocation(JSONObject item, String route, String id) throws Exception {
+    String target = id == null || id.isEmpty() ? ("bar".equals(route) ? "bar" : "delivery") : id;
+    JSONArray targets = item.optJSONArray("destinations");
+    if (targets != null) {
+      for (int i = 0; i < targets.length(); i++) {
+        JSONObject d = targets.getJSONObject(i);
+        if (route.equals(d.getString("route")) && target.equals(d.getString("id"))) return true;
+      }
+      return false;
+    }
+    return hasFulfillment(item, route)
+        && target.equals(item.optString("location_id", "bar".equals(route) ? "bar" : "delivery"));
+  }
+
+  private static void checkLocationChange(String id, JSONArray rows, JSONArray orders)
+      throws Exception {
+    for (int n = 0; n < orders.length(); n++) {
+      JSONObject o = orders.getJSONObject(n);
+      JSONArray items = o.getJSONArray("items");
+      for (int j = 0; j < items.length(); j++) {
+        JSONObject item = items.getJSONObject(j);
+        if (!Arrays.asList("delivered", "cancelled").contains(item.getString("status"))
+            && (id.equals(o.optString("cash_location"))
+                || atLocation(item, "bar", id)
+                || atLocation(item, "instant", id)))
+          throw new IllegalArgumentException("Спочатку завершіть активні замовлення цієї локації");
+      }
+    }
+    for (int i = 0; i < rows.length(); i++) {
+      JSONObject l = rows.getJSONObject(i);
+      if (id.equals(l.getString("id"))) continue;
+      if (id.equals(l.optString("linked_cash")))
+        throw new IllegalArgumentException("Спочатку змініть прив’язану касу видачі");
+      if (!"cash".equals(l.getString("kind"))) continue;
+      JSONArray targets = l.optJSONArray("targets");
+      if (targets == null)
+        targets =
+            "single".equals(l.optString("mode"))
+                ? new JSONArray().put(l.optString("single_target", "delivery"))
+                : new JSONArray()
+                    .put(l.optString("bar_target", "bar"))
+                    .put(l.optString("delivery_target", "delivery"));
+      for (int j = 0; j < targets.length(); j++)
+        if (id.equals(targets.getString(j)))
+          throw new IllegalArgumentException(
+              "Спочатку змініть напрямки кас, які надсилають сюди замовлення");
+    }
+  }
+
+  private static String undoKey(String route, String id) {
+    return id != null && !id.isEmpty() && !id.equals("bar".equals(route) ? "bar" : "delivery")
+        ? route + "@" + id
+        : route;
+  }
+
+  private static void routeOrder(JSONObject order, JSONObject input, JSONArray locations)
+      throws Exception {
+    String id = input.optString("location_id", "cash");
+    JSONObject cash = location(locations, id);
+    if (!"cash".equals(cash.getString("kind")))
+      throw new IllegalArgumentException("Касу не знайдено");
+    if ((locations == null || locations.length() == 0) && !input.has("location_id")) return;
+    order
+        .put("cash_location", id)
+        .put("cash_location_name", cash.optString("name"))
+        .put("cash_location_color", cash.optString("color", "#27634f"));
+    JSONArray items = order.getJSONArray("items");
+    for (int i = 0; i < items.length(); i++) {
+      JSONObject item = items.getJSONObject(i);
+      JSONArray chosen = cash.optJSONArray("targets");
+      if (chosen != null) {
+        JSONArray destinations = new JSONArray();
+        for (int j = 0; j < chosen.length(); j++) {
+          String target = chosen.getString(j);
+          JSONObject to = location(locations, target);
+          if ("cash".equals(to.getString("kind")))
+            throw new IllegalArgumentException("Це не видача");
+          destinations.put(
+              new JSONObject()
+                  .put("id", target)
+                  .put("route", "bar".equals(to.getString("kind")) ? "bar" : "instant"));
+        }
+        item.put("destinations", destinations)
+            .put("location_id", destinations.getJSONObject(0).getString("id"))
+            .put("fulfillment_route", destinations.getJSONObject(0).getString("route"));
+        continue;
+      }
+      String target =
+          "single".equals(cash.optString("mode"))
+              ? cash.optString("single_target", "delivery")
+              : "bar".equals(item.getString("route"))
+                  ? cash.optString("bar_target", "bar")
+                  : cash.optString("delivery_target", "delivery");
+      JSONObject destination = location(locations, target);
+      if ("cash".equals(destination.getString("kind")))
+        throw new IllegalArgumentException("Це не видача");
+      item.put("location_id", target)
+          .put(
+              "fulfillment_route", "bar".equals(destination.getString("kind")) ? "bar" : "instant");
+    }
+  }
+
+  private static JSONObject allUndo(JSONObject source) throws Exception {
+    JSONObject result =
+        new JSONObject()
+            .put("bar", undoAvailable(source, "bar"))
+            .put("instant", undoAvailable(source, "instant"));
+    JSONArray locations = source.optJSONArray("locations");
+    if (locations != null)
+      for (int i = 0; i < locations.length(); i++) {
+        JSONObject l = locations.getJSONObject(i);
+        if (!"cash".equals(l.getString("kind"))) {
+          String key =
+              ("bar".equals(l.getString("kind")) ? "bar" : "instant") + "@" + l.getString("id");
+          result.put(key, undoAvailable(source, key));
+        }
+      }
+    return result;
+  }
+
+  public synchronized byte[] publicImage(int id) throws Exception {
+    if (!data.optBoolean("public_menu_enabled", false)) return null;
+    JSONObject p = find(data.getJSONArray("products"), id);
+    if (p.optInt("active", 1) != 1) return null;
+    return image(id);
+  }
+
   public synchronized JSONObject publicSettings(Boolean enabled) throws Exception {
     if (enabled != null) {
       JSONObject work = new JSONObject(data.toString()).put("public_menu_enabled", enabled);
@@ -771,11 +1060,20 @@ public final class CafeStore {
                 .put("name", p.getString("name"))
                 .put("category", p.getString("category"))
                 .put("route", p.getString("route"))
+                .put(
+                    "image_url",
+                    p.has("image_version")
+                        ? "/api/public/image/"
+                            + p.getInt("id")
+                            + "?v="
+                            + p.getString("image_version")
+                        : "")
                 .put("price", p.getLong("price"))
                 .put("available", !p.optBoolean("sold_out") && limit > 0)
                 .put("limit", limit));
       }
     return new JSONObject()
+        .put("online_payment", false)
         .put("accepting", enabled)
         .put("published", enabled)
         .put("products", rows);
@@ -879,10 +1177,72 @@ public final class CafeStore {
     return new JSONObject().put("codes", rows);
   }
 
+  public synchronized boolean availabilityLocationAllowed(String role, String id) throws Exception {
+    return id == null
+        || id.isEmpty()
+        || Arrays.asList("admin", "service").contains(role)
+        || role.equals(location(data.optJSONArray("locations"), id).getString("kind"));
+  }
+
   public synchronized JSONObject mutate(String path, JSONObject d) throws Exception {
     JSONObject work = new JSONObject(data.toString()), result = new JSONObject().put("ok", true);
     JSONArray ps = work.getJSONArray("products"), orders = work.getJSONArray("orders");
-    if (path.equals("/api/session/start")) {
+    if (path.equals("/api/location/save")) {
+      JSONArray locations = work.optJSONArray("locations");
+      if (locations == null) locations = new JSONArray();
+      JSONObject row = validLocation(d, locations);
+      JSONArray next = new JSONArray();
+      boolean found = false;
+      for (int i = 0; i < locations.length(); i++) {
+        JSONObject old = locations.getJSONObject(i);
+        if (row.getString("id").equals(old.getString("id"))) {
+          if (!row.getString("kind").equals(old.getString("kind")))
+            checkLocationChange(row.getString("id"), locations, orders);
+          next.put(row);
+          found = true;
+        } else next.put(old);
+      }
+      if (!found) next.put(row);
+      work.put("locations", next);
+    } else if (path.equals("/api/location/delete")) {
+      String id = d.getString("id");
+      if (Arrays.asList("cash", "bar", "delivery").contains(id))
+        throw new IllegalArgumentException("Основні локації видаляти не можна");
+      JSONArray locations = work.optJSONArray("locations"), next = new JSONArray();
+      boolean found = false;
+      if (locations != null) {
+        checkLocationChange(id, locations, orders);
+        for (int i = 0; i < locations.length(); i++) {
+          JSONObject l = locations.getJSONObject(i);
+          if (id.equals(l.getString("id"))) found = true;
+          else next.put(l);
+        }
+      }
+      if (!found) throw new IllegalArgumentException("Локацію не знайдено");
+      work.put("locations", next);
+    } else if (path.equals("/api/settings/update")) {
+      if (!(d.get("online_payment_enabled") instanceof Boolean))
+        throw new IllegalArgumentException("Некоректне налаштування");
+      work.put("online_payment_enabled", d.getBoolean("online_payment_enabled"));
+    } else if (path.equals("/api/transaction/hide")) {
+      JSONObject o = find(orders, (int) exactNumber(d, "id", 1, Integer.MAX_VALUE));
+      if (o.optJSONObject("payment") == null
+          || o.getJSONObject("payment").optLong("card_amount") <= 0)
+        throw new IllegalArgumentException("Карткову оплату не знайдено");
+      o.put("transaction_history_hidden", true);
+    } else if (path.equals("/api/expenses/delete")) {
+      JSONArray costs = work.optJSONArray("calculator_expenses"), keep = new JSONArray();
+      if (costs != null)
+        for (int i = 0; i < costs.length(); i++) {
+          JSONObject row = costs.getJSONObject(i);
+          if (d.getString("id").equals(row.getString("id"))) {
+            if (!"additional".equals(row.optString("kind")))
+              throw new IllegalArgumentException("Це не додаткові витрати");
+          } else keep.put(row);
+        }
+      work.put("calculator_expenses", keep)
+          .put("expenses_version", work.optLong("expenses_version", 0) + 1);
+    } else if (path.equals("/api/session/start")) {
       if (work.optInt("active_session", 0) > 0)
         throw new IllegalArgumentException("Спочатку завершіть поточну сесію");
       result.put("id", createSession(work, d.optString("name", "")));
@@ -1098,13 +1458,39 @@ public final class CafeStore {
       }
     } else if (path.equals("/api/availability")) {
       JSONObject product = find(ps, d.getInt("id"));
-      product.put("sold_out", d.getBoolean("sold_out"));
+      String linked = "";
+      {
+        JSONObject source =
+            location(
+                work.optJSONArray("locations"),
+                d.optString(
+                    "location_id", "bar".equals(product.getString("route")) ? "bar" : "delivery"));
+        if ("cash".equals(source.getString("kind")))
+          throw new IllegalArgumentException("Це не видача");
+        linked = source.optString("linked_cash");
+      }
+      if (linked.isEmpty()) product.put("sold_out", d.getBoolean("sold_out"));
+      else {
+        JSONArray old = product.optJSONArray("unavailable_at"), next = new JSONArray();
+        if (old != null)
+          for (int i = 0; i < old.length(); i++)
+            if (!linked.equals(old.getString(i))) next.put(old.getString(i));
+        if (d.getBoolean("sold_out")) next.put(linked);
+        product.put("unavailable_at", next);
+      }
     } else if (path.equals("/api/delete-product")) {
       int id = d.getInt("id");
       JSONArray keep = new JSONArray();
       for (int i = 0; i < ps.length(); i++)
         if (ps.getJSONObject(i).getInt("id") != id) keep.put(ps.getJSONObject(i));
       work.put("products", keep);
+    } else if (path.equals("/api/card-payment/hide")) {
+      JSONObject order = find(orders, (int) exactNumber(d, "id", 1, Integer.MAX_VALUE));
+      JSONObject payment = order.optJSONObject("payment");
+      if (order.optBoolean("gift") || payment == null || payment.optLong("card_amount") <= 0)
+        throw new IllegalArgumentException("Карткову оплату не знайдено");
+      if (order.optBoolean("card_history_hidden")) return result;
+      order.put("card_history_hidden", true);
     } else if (path.equals("/api/order")) {
       String req = d.getString("request");
       if (req.isEmpty() || req.length() > 200)
@@ -1122,6 +1508,11 @@ public final class CafeStore {
       int oid = next(work, "nextOrder");
       for (int i = 0; i < inputs.length(); i++) {
         JSONObject input = inputs.getJSONObject(i), p = find(ps, input.getInt("id"));
+        JSONArray unavailable = p.optJSONArray("unavailable_at");
+        if (unavailable != null)
+          for (int n = 0; n < unavailable.length(); n++)
+            if (unavailable.getString(n).equals(d.optString("location_id", "cash")))
+              throw new IllegalArgumentException("Позиція недоступна на цій касі");
         int qty = input.getInt("qty");
         long requested = p.getLong("price");
         if (input.has("unit_price")) {
@@ -1199,6 +1590,7 @@ public final class CafeStore {
               .put("created", now())
               .put("items", items)
               .put("events", new JSONArray()));
+      routeOrder(orders.getJSONObject(orders.length() - 1), d, work.optJSONArray("locations"));
       result = new JSONObject().put("id", oid);
     } else if (path.equals("/api/issue")) {
       JSONObject o = find(orders, d.getInt("id"));
@@ -1207,7 +1599,8 @@ public final class CafeStore {
       JSONArray items = o.getJSONArray("items"), changes = new JSONArray();
       for (int i = 0; i < items.length(); i++) {
         JSONObject it = items.getJSONObject(i);
-        if (route.equals(it.getString("route")) && !"cancelled".equals(it.getString("status"))) {
+        if (atLocation(it, route, d.optString("location_id"))
+            && !"cancelled".equals(it.getString("status"))) {
           JSONArray flags = unitFlags(it);
           for (int n = 0; n < flags.length(); n++)
             if (!flags.getBoolean(n)) {
@@ -1217,14 +1610,15 @@ public final class CafeStore {
           applyUnits(it, flags);
         }
       }
-      rememberUnits(work, route, o.getInt("id"), changes);
+      rememberUnits(work, undoKey(route, d.optString("location_id")), o.getInt("id"), changes);
       if (changes.length() > 0) event(o, route.equals("bar") ? "Напої видано" : "Їжу видано");
     } else if (path.equals("/api/issue-unit") || path.equals("/api/issue-item")) {
       JSONObject o = find(orders, d.getInt("order"));
       String route = d.getString("route");
       checkRoute(route);
       JSONObject it = find(o.getJSONArray("items"), d.getInt("id"));
-      if (!route.equals(it.getString("route")) || "cancelled".equals(it.getString("status")))
+      if (!atLocation(it, route, d.optString("location_id"))
+          || "cancelled".equals(it.getString("status")))
         throw new IllegalArgumentException("Позиція недоступна для цієї видачі");
       boolean delivered = d.getBoolean("delivered");
       JSONArray flags = unitFlags(it), changes = new JSONArray();
@@ -1240,19 +1634,20 @@ public final class CafeStore {
           changes.put(new JSONObject().put("id", it.getInt("id")).put("unit", n));
         flags.put(n, delivered);
       }
-      rememberUnits(work, route, o.getInt("id"), changes);
+      rememberUnits(work, undoKey(route, d.optString("location_id")), o.getInt("id"), changes);
       applyUnits(it, flags);
       event(o, it.getString("name") + (delivered ? " → Порцію видано" : " → Порцію повернуто"));
     } else if (path.equals("/api/undo-issue")) {
       String route = d.getString("route");
       checkRoute(route);
-      JSONArray history = undoHistory(work, route);
+      String undo = undoKey(route, d.optString("location_id"));
+      JSONArray history = undoHistory(work, undo);
       boolean restored = false;
       for (int n = history.length() - 1; n >= 0 && !restored; n--) {
         JSONObject action = history.getJSONObject(n), o;
         JSONArray keep = new JSONArray();
         for (int j = 0; j < n; j++) keep.put(history.get(j));
-        work.getJSONObject("issue_undo").put(route, keep);
+        work.getJSONObject("issue_undo").put(undo, keep);
         try {
           o = find(orders, action.getInt("order"));
         } catch (IllegalArgumentException e) {
@@ -1267,8 +1662,8 @@ public final class CafeStore {
             } catch (IllegalArgumentException e) {
               continue;
             }
-            if ("cancelled".equals(it.getString("status")) || !route.equals(it.getString("route")))
-              continue;
+            if ("cancelled".equals(it.getString("status"))
+                || !atLocation(it, route, d.optString("location_id"))) continue;
             JSONArray flags = unitFlags(it);
             int index = u.getInt("unit");
             if (flags.optBoolean(index, false)) {
@@ -1283,7 +1678,7 @@ public final class CafeStore {
             JSONObject it = items.getJSONObject(i);
             for (int j = 0; j < ids.length(); j++)
               if (it.getInt("id") == ids.getInt(j)
-                  && route.equals(it.getString("route"))
+                  && atLocation(it, route, d.optString("location_id"))
                   && "delivered".equals(it.getString("status"))) {
                 it.remove("unit_issued");
                 it.put("status", "new");
@@ -1351,12 +1746,16 @@ public final class CafeStore {
         || path.equals("/api/undo-issue")
         || path.equals("/api/order")
         || path.equals("/api/status")
+        || path.equals("/api/transaction/hide")
+        || path.equals("/api/card-payment/hide")
         || path.equals("/api/stats/clear")) domains.add("orders");
     if (path.contains("session") || path.equals("/api/order") || path.equals("/api/stats/clear"))
       domains.add("sessions");
     if (path.contains("expenses")
         || path.equals("/api/calculate-menu")
         || path.equals("/api/stats/clear")) domains.add("expenses");
+    if (path.startsWith("/api/location/") || path.equals("/api/settings/update"))
+      domains.add("locations");
     persist(work, domains.toArray(new String[0]));
     data = work;
     return result;

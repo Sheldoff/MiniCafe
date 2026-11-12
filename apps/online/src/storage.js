@@ -1,10 +1,10 @@
+import { undoKey } from "./locations.js";
 import { fail, pending } from "./domain.js";
 
 export async function load(
   db,
   orderQuery = `SELECT data FROM orders WHERE pending=1 OR id IN (SELECT id FROM orders ORDER BY id DESC LIMIT 30)
-    OR id IN (SELECT json_extract(a.value,'$.order') FROM metadata m,json_each(m.data,'$.issue_undo.bar') a
-    UNION SELECT json_extract(a.value,'$.order') FROM metadata m,json_each(m.data,'$.issue_undo.instant') a)`,
+    OR id IN (SELECT json_extract(a.value,'$.order') FROM metadata m,json_each(m.data,'$.issue_undo') stacks,json_each(stacks.value) a)`,
   bindings = [],
   includeImages = false,
 ) {
@@ -29,6 +29,10 @@ export async function load(
   };
 }
 export function mutationQuery(path, input, meta) {
+  if (["card-payment/hide", "transaction/hide"].includes(path))
+    return ["SELECT data FROM orders WHERE id=?", [input.id]];
+  if (["location/save", "location/delete"].includes(path))
+    return ["SELECT data FROM orders WHERE pending=1", []];
   if (path === "order")
     return ["SELECT data FROM orders WHERE request=?", [input.request]];
   if (["issue", "issue-unit", "issue-item"].includes(path))
@@ -39,7 +43,9 @@ export function mutationQuery(path, input, meta) {
       [input.id],
     ];
   if (path === "undo-issue") {
-    const ids = (meta.issue_undo?.[input.route] || []).map((x) => x.order);
+    const ids = (
+      meta.issue_undo?.[undoKey(input.route, input.location_id)] || []
+    ).map((x) => x.order);
     return [
       "SELECT data FROM orders WHERE id IN (SELECT value FROM json_each(?))",
       [JSON.stringify(ids)],

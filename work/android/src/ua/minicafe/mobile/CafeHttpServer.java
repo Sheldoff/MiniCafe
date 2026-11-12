@@ -73,7 +73,7 @@ public final class CafeHttpServer extends NanoHTTPD {
         String mime =
             path.endsWith(".js")
                 ? "application/javascript"
-                : path.endsWith(".css") ? "text/css" : "text/html";
+                : path.endsWith(".svg") ? "image/svg+xml" : path.endsWith(".css") ? "text/css" : "text/html";
         Response r =
             newFixedLengthResponse(
                 Response.Status.OK, mime + "; charset=utf-8", guestAssets.get(path));
@@ -177,6 +177,18 @@ public final class CafeHttpServer extends NanoHTTPD {
           response.addHeader("Cache-Control", "no-store");
           return response;
         }
+        if (path.equals("/api/transactions")) {
+          String before = s.getParms().get("before");
+          return json(
+              Response.Status.OK,
+              store.cardPayments(before == null ? Long.MAX_VALUE : Long.parseLong(before), true));
+        }
+        if (path.equals("/api/card-payments")) {
+          String before = s.getParms().get("before");
+          return json(
+              Response.Status.OK,
+              store.cardPayments(before == null ? Long.MAX_VALUE : Long.parseLong(before)));
+        }
         if (path.equals("/api/history")) {
           String sid = s.getParms().get("session"),
               day = s.getParms().get("day"),
@@ -238,6 +250,9 @@ public final class CafeHttpServer extends NanoHTTPD {
           return json(Response.Status.OK, new JSONObject().put("ok", true));
         }
         if (!"admin".equals(role) && !"service".equals(role) && path.equals("/api/availability")) {
+          if (!store.availabilityLocationAllowed(role, input.optString("location_id")))
+            return json(
+                Response.Status.FORBIDDEN, new JSONObject().put("error", "Інша локація видачі"));
           String route = "bar".equals(role) ? "bar" : "instant";
           if (!route.equals(store.productRoute(input.getInt("id"))))
             return json(
@@ -284,6 +299,14 @@ public final class CafeHttpServer extends NanoHTTPD {
   }
 
   private Response guestApi(IHTTPSession s, String path, String role) throws Exception {
+    if (s.getMethod() == Method.GET && path.matches("/api/public/image/[0-9]+")) {
+      byte[] image = store.publicImage(Integer.parseInt(path.substring(path.lastIndexOf('/') + 1)));
+      if (image == null)
+        return newFixedLengthResponse(Response.Status.NOT_FOUND, "text/plain", "Not found");
+      return newFixedLengthResponse(
+          Response.Status.OK, "image/jpeg", new ByteArrayInputStream(image), image.length);
+    }
+
     boolean pub = path.equals("/api/public/menu") || path.equals("/api/public/code");
     boolean settings = path.equals("/api/public-settings");
     if (!pub && !settings && !path.equals("/api/guest-code") && !path.equals("/api/guest-codes"))

@@ -1,0 +1,180 @@
+/* Palette overrides are deliberately last. Every legacy literal is also mapped
+   by brand_theme.py, so hover/focus/keyframes cannot leak the old green palette. */
+:root[data-palette="coffee"][data-theme] {
+  --page: #f7f1e6;
+  --surface: #fffdf7;
+  --raised: #f0e3cc;
+  --input-bg: #fffdf7;
+  --text: #38271d;
+  --muted: #705744;
+  --border: #c9b69c;
+  --accent: #78563f;
+  --default-accent: #78563f;
+  --on-accent: #fff4df;
+  --success: #61432f;
+  --success-bg: #f0e3cc;
+  --danger: #923c31;
+  --danger-bg: #fbe9e2;
+  --warning: #745016;
+  --warning-bg: #f6e7bc;
+  --theme-control-bg: var(--raised);
+  --theme-control-text: var(--text);
+  --theme-control-border: var(--border);
+  --amount-pulse: var(--raised);
+  --feedback-add: var(--accent);
+  --feedback-ring: var(--accent);
+  --feedback-remove: var(--danger);
+  --feedback-bg: var(--raised);
+  --feedback-fade: var(--surface);
+  background: var(--page);
+  color: var(--text);
+}
+:root[data-palette="coffee"][data-theme="dark"] {
+  --page: #211914;
+  --surface: #2d211b;
+  --raised: #443125;
+  --input-bg: #261c17;
+  --text: #f3e6ca;
+  --muted: #d1bba0;
+  --border: #94795e;
+  --accent: #d7b88e;
+  --default-accent: #d7b88e;
+  --on-accent: #2c1d14;
+  --success: #ead1aa;
+  --success-bg: #443125;
+  --danger: #ffb9a8;
+  --danger-bg: #4a2822;
+  --warning: #f2d699;
+  --warning-bg: #46351f;
+}
+:root[data-palette="coffee"] body {
+  background: var(--page);
+  color: var(--text);
+}
+.brand-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+header h1,
+#drawerRefresh {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.appearance-options {
+  display: grid;
+  gap: 12px;
+  margin-block: 20px;
+}
+.appearance-options button {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 64px;
+  text-align: left;
+}
+.appearance-swatches {
+  display: flex;
+  gap: 4px;
+}
+.appearance-swatches i {
+  width: 18px;
+  height: 28px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+}
+:root[data-palette="coffee"] header {
+  background: #4b3022;
+  color: #fff4df;
+  border-color: var(--border);
+}
+:root[data-palette="coffee"] :is(input, textarea, select)::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+:root[data-palette="coffee"]
+  :is(input, textarea, select, button, summary):focus-visible {
+  outline-color: var(--accent);
+}
+:root[data-palette="coffee"] input:focus {
+  border-color: var(--accent);
+}
+:root[data-palette="coffee"] .queue-grid .card button.primary {
+  background: var(--source-color) !important;
+  color: var(--source-text) !important;
+  border-color: var(--source-color);
+}
+:root[data-palette="coffee"] button.primary:hover {
+  background: var(--accent) !important;
+  color: var(--on-accent) !important;
+}
+:root[data-palette="coffee"] #toast {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+:root[data-palette="coffee"] .cash-switch button {
+  transition: none;
+  background: transparent !important;
+  color: var(--text);
+}
+:root[data-palette="coffee"] .cash-switch button.selected {
+  color: var(--on-accent) !important;
+}
+:root[data-palette="coffee"] .cash-tab-indicator {
+  background: var(--accent) !important;
+}
+
+:root[data-palette="coffee"][data-location-theme] header {
+  background: var(--location-color);
+  color: var(--location-text);
+}
+
+:root[data-palette="coffee"] .queue-grid .card button.primary:hover {
+  background: var(--source-color) !important;
+  color: var(--source-text) !important;
+}
+:root[data-palette="coffee"]
+  :is(
+    .muted,
+    .tiny,
+    small,
+    .calc-match,
+    .calc-row-total,
+    .calc-value-tools small,
+    .report-explanation,
+    .report-note,
+    .history-id,
+    .saved-note,
+    .comment-toggle,
+    .custom-price-label
+  ) {
+  color: var(--muted);
+}
+:root[data-palette="coffee"] .calc-problem {
+  color: var(--warning);
+}
+:root[data-palette="coffee"] #appDrawer .drawer-tools button:not(.selected) {
+  background: var(--raised);
+  color: var(--text);
+}
+:root[data-palette="coffee"] header :is(h1, small, #connection) {
+  color: inherit;
+}
+:root[data-location-theme] header :is(h1, small, #connection) {
+  color: var(--location-text) !important;
+}
+:root[data-theme="dark"] .calc-suggestions small {
+  color: var(--muted);
+}
+:root[data-palette="coffee"]
+  :is(
+    button.primary,
+    .drawer-links button.selected,
+    .drawer-tools button.selected
+  ) {
+  background: var(--accent) !important;
+  color: var(--on-accent) !important;
+  border-color: var(--accent);
+}

@@ -33,7 +33,9 @@ const { chromium, webkit, base, key, chromeOptions } = require("./helpers.cjs");
   )
     throw Error("details open");
   await p.locator(".history-record summary").first().click();
-  await p.waitForTimeout(350);
+  await p.waitForFunction(
+    () => !document.querySelector(".history-record")?.open,
+  );
   if (
     await p
       .locator(".history-record")

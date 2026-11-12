@@ -1,3 +1,4 @@
+import { locationById } from "./locations.js";
 import {
   identity,
   csrfAllowed,
@@ -7,9 +8,12 @@ import {
   hash,
 } from "./auth.js";
 import { normalizePhone } from "./phone.js";
+import { issueBotCode } from "./bot-login.js";
+import { quickLoginMessage, quickLoginCallback } from "./quick-login.js";
 const roles = ["service", "cash", "bar", "delivery"];
 const keyboard = {
   keyboard: [
+    [{ text: "Код для входу" }],
     [{ text: "Подати заявку" }],
     [{ text: "Подати заявку з номером", request_contact: true }],
     [{ text: "Мій статус" }],
@@ -107,8 +111,9 @@ async function webhook(request, env) {
   const update = await bounded(request);
   if (!update || !Number.isSafeInteger(update.update_id))
     return secureJson({ error: "Invalid update" }, 400);
-  const m = update.message,
-    u = m?.from;
+  const callback = update.callback_query,
+    m = callback?.message || update.message,
+    u = callback?.from || m?.from;
   if (
     !m ||
     m.chat?.type !== "private" ||
@@ -146,6 +151,57 @@ async function webhook(request, env) {
   )
     .bind(id, u.username || null, name, now)
     .run();
+  const text = (m.text || "").trim();
+  if (callback) {
+    if (
+      typeof callback.id !== "string" ||
+      callback.id.length > 128 ||
+      typeof callback.data !== "string"
+    )
+      return ack();
+    const message = await quickLoginCallback(env, id, callback.data);
+    return secureJson({
+      method: "answerCallbackQuery",
+      callback_query_id: callback.id,
+      text: message || "Ця дія вже недоступна.",
+      show_alert: true,
+    });
+  }
+  const quick = await quickLoginMessage(env, id, text);
+  if (quick) return reply(id, quick.text, quick.reply_markup || keyboard);
+  if (
+    text === "/login" ||
+    /^\/start\s+login$/.test(text) ||
+    text === "Код для входу"
+  ) {
+    const code = await issueBotCode(env, id);
+    return reply(
+      id,
+      code
+        ? `Код входу в МініКафе: ${code}\n\nДіє 5 хвилин і лише один раз. Введіть його на своєму ноутбуці чи іншому пристрої на minicafe.minicafe.workers.dev/auth/code. Новий код скасовує попередній. Нікому не передавайте цей код. Якщо ви не входите — не використовуйте його.`
+        : "Вашому Telegram-акаунту ще не надано доступ або його відкликано. Подайте заявку чи зверніться до адміністратора.",
+      {
+        inline_keyboard: [
+          ...(code
+            ? [
+                [
+                  {
+                    text: "Скопіювати код",
+                    copy_text: { text: code.replace(/ /g, "") },
+                  },
+                ],
+              ]
+            : []),
+          [
+            {
+              text: "Ввести код на цьому пристрої",
+              url: "https://minicafe.minicafe.workers.dev/auth/code",
+            },
+          ],
+        ],
+      },
+    );
+  }
   const staff = await env.DB.prepare(
     "SELECT enabled FROM staff_access WHERE telegram_id=?",
   )
@@ -156,13 +212,18 @@ async function webhook(request, env) {
       inline_keyboard: [
         [
           {
+            text: "Отримати код для іншого пристрою",
+            url: `https://t.me/${env.TELEGRAM_BOT_USERNAME}?start=login`,
+          },
+        ],
+        [
+          {
             text: "Відкрити МініКафе",
             url: "https://minicafe.minicafe.workers.dev/admin",
           },
         ],
       ],
     });
-  const text = (m.text || "").trim();
   if (/^\/start(?:\s+apply)?$/.test(text))
     return reply(
       id,
@@ -290,7 +351,22 @@ export async function accessRequests(request, env, ctx) {
   if (!csrfAllowed(request, user))
     return secureJson({ error: "Немає доступу" }, 403);
   const input = await bounded(request, 2048);
+  if (!input || typeof input !== "object" || Array.isArray(input))
+    return secureJson({ error: "Некоректна дія" }, 400);
   const id = String(input?.telegram_id || "");
+  const [grantRole, grantLocation = ""] = String(input.role || "").split("@");
+  input.role = grantRole;
+  if (grantLocation) {
+    const meta = await env.DB.prepare(
+      "SELECT data FROM metadata WHERE id=1",
+    ).first();
+    if (
+      locationById(JSON.parse(meta.data).locations || [], grantLocation)
+        ?.kind !== grantRole
+    )
+      return secureJson({ error: "Некоректна локація" }, 400);
+  }
+
   if (
     !/^\d{1,20}$/.test(id) ||
     admins(env).has(id) ||
@@ -303,6 +379,11 @@ export async function accessRequests(request, env, ctx) {
   const now = timestamp(),
     statements = [];
   if (input.action === "approve") {
+    statements.push(
+      env.DB.prepare(
+        "INSERT INTO staff_details(identifier,location) SELECT 'id:'||telegram_id,? FROM access_requests WHERE telegram_id=? AND status='pending' AND version=? ON CONFLICT(identifier) DO UPDATE SET location=excluded.location",
+      ).bind(grantLocation, id, input.version),
+    );
     statements.push(
       env.DB.prepare(
         `INSERT INTO staff_access SELECT telegram_id,?,1,? FROM access_requests WHERE telegram_id=? AND status='pending' AND version=?

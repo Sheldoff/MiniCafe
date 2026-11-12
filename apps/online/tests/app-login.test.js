@@ -8,6 +8,7 @@ test("APK handoff requires browser CSRF approval, device proof, live rights and 
   const sql = new DatabaseSync(":memory:");
   for (const name of [
     "0003_auth.sql",
+    "0015_staff_details.sql",
     "0004_phone_access.sql",
     "0006_access_requests.sql",
     "0008_app_login.sql",

@@ -1,6 +1,8 @@
 function productUnavailable(p) {
   return (
-    !!p.sold_out || (p.stock != null && !p.stock_estimated && p.stock <= 0)
+    !!p.sold_out ||
+    locallyUnavailable(p) ||
+    (p.stock != null && !p.stock_estimated && p.stock <= 0)
   );
 }
 function pageMenu(delta) {
@@ -27,7 +29,7 @@ function cash() {
   payMode = "mixed";
   mixedAuto = true;
   document.querySelector("#main").innerHTML =
-    `<div class="cash-switch"><button onclick="showCashPanel(false)">Меню</button><button id="cartTab" onclick="showCashPanel(true)">Замовлення</button></div><div class="grid cash-grid"><section class="panel menu-panel"><div id="categories" class="chips"></div><div id="tiles"></div><div id="menuPages"></div></section><section class="panel cart-panel"><input class="guest-name-field" id="guest" aria-label="Ім’я гостя" placeholder="Ім’я гостя"><div id="cart"></div><div class="total" data-gift-hold><span id="totalLabel">Разом</span><b id="sum"></b></div><div class="payment-box"><div class="pay-fields"><label>Готівкою, грн<input data-money id="received" inputmode="decimal" placeholder="0,00" oninput="paymentEdited('cash')"></label><label>Карткою, грн<input data-money id="cardPaid" inputmode="decimal" placeholder="0,00" oninput="paymentEdited('card')"></label></div><div class="paid-line"><span>Внесено разом</span><b id="paidSum">0,00 ₴</b></div><div id="change" role="status" aria-live="polite">До сплати: —</div></div><button id="send" class="primary" onclick="send()">Відправити замовлення</button></section></div>`;
+    `<div class="cash-switch"><button onclick="showCashPanel(false)">Меню</button><button id="cartTab" onclick="showCashPanel(true)">Замовлення</button></div><div class="grid cash-grid"><section class="panel menu-panel"><div id="categories" class="chips"></div><div id="tiles"></div><div id="menuPages"></div></section><section class="panel cart-panel"><input class="guest-name-field" id="guest" aria-label="Ім’я гостя" placeholder="Ім’я гостя"><div id="cart"></div><div class="total" data-gift-hold><span id="totalLabel">Разом</span><b id="sum"></b></div><div class="payment-box"><div class="pay-fields"><label>Готівкою, грн<input data-money id="received" inputmode="decimal" placeholder="0,00" oninput="paymentEdited('cash')"></label><label>Карткою, грн<input data-money id="cardPaid" inputmode="decimal" placeholder="0,00" oninput="paymentEdited('card')"></label></div><div class="paid-line"><span>Внесено разом</span><b id="paidSum">0,00 ₴</b></div><div id="change" role="status" aria-live="polite">До сплати: —</div></div><button id="send" class="primary" onclick="send()">Відправити замовлення</button><section class="card-payment-history" aria-labelledby="cardPaymentHistoryTitle"><h3 id="cardPaymentHistoryTitle">Історія оплат карткою</h3><div id="cardPaymentHistory" aria-live="polite"></div><button id="cardPaymentMore" hidden onclick="loadCardPayments(false)">Показати ще</button></section></section></div>`;
   categoryFilter = "";
   menuPage = 0;
   drawCategories();
@@ -36,6 +38,7 @@ function cash() {
   drawCart();
   showCashPanel(false, true);
   highlightPay();
+  loadCardPayments();
 }
 
 async function toggleItemNote(i) {
@@ -158,6 +161,7 @@ async function send() {
     toast("Перевірте оплату — замовлення залишилося відкритим");
     return;
   }
+  const sentLocation = activeLocation;
   let guest = document.querySelector("#guest").value,
     comment = "";
   busy = true;
@@ -165,6 +169,7 @@ async function send() {
   try {
     let r = await post("order", {
       request: draft,
+      ...(activeLocation ? { location_id: activeLocation } : {}),
       guest,
       comment,
       cash_given: payment.cash,
@@ -177,6 +182,11 @@ async function send() {
         note: p.note || "",
       })),
     });
+    cashLocationDrafts.delete(sentLocation);
+    if (renderedCashLocation !== sentLocation) {
+      toast("Замовлення №" + r.id + " збережено");
+      return;
+    }
     if (view === "cash") {
       if (categoryFilter) {
         categoryFilter = "";
@@ -296,7 +306,10 @@ function cardMarkup(p) {
 function tiles(q) {
   let categories = menuCategories(),
     ps = data.products.filter(
-      (p) => p.active && (!categoryFilter || p.category === categoryFilter),
+      (p) =>
+        p.active &&
+        !locallyUnavailable(p) &&
+        (!categoryFilter || p.category === categoryFilter),
     );
   ps.sort(
     (a, b) =>
@@ -392,7 +405,10 @@ function productFeedback(id, kind) {
   let opacity = Number(getComputedStyle(overlay).opacity) || 0;
   overlay.feedbackAnimation?.cancel();
   overlay.style.opacity = String(opacity);
-  overlay.style.background = kind === "remove-feedback" ? "#d48a64" : "#78aa5d";
+  overlay.style.background =
+    kind === "remove-feedback"
+      ? "var(--feedback-remove, #d48a64)"
+      : "var(--feedback-add, #78aa5d)";
   overlay.feedbackAnimation = overlay.animate(
     [{ opacity }, { opacity: 0.24, offset: 0.35 }, { opacity: 0 }],
     { duration: 750, easing: "cubic-bezier(.25,.1,.25,1)", fill: "forwards" },

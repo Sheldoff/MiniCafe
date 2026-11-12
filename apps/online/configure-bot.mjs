@@ -116,13 +116,49 @@ if (mode === "upload") {
       "Cloudflare secret upload failed. Secret values were not printed.",
     );
   console.log("Verified bot; bot token and webhook secret uploaded securely.");
+} else if (mode === "enable-callbacks") {
+  if (
+    prior.url !== webhook ||
+    prior.has_custom_certificate ||
+    !data.TELEGRAM_WEBHOOK_SECRET
+  )
+    throw Error(
+      "Expected existing MiniCafe webhook and original secret; nothing was changed.",
+    );
+  if (!(prior.allowed_updates || []).includes("callback_query")) {
+    await call("setWebhook", {
+      url: prior.url,
+      secret_token: data.TELEGRAM_WEBHOOK_SECRET,
+      allowed_updates: [
+        ...new Set([
+          ...(prior.allowed_updates || []),
+          "message",
+          "callback_query",
+        ]),
+      ],
+      max_connections: prior.max_connections || 4,
+      ...(prior.ip_address ? { ip_address: prior.ip_address } : {}),
+      drop_pending_updates: false,
+    });
+  }
+  const current = await call("getWebhookInfo");
+  if (
+    current.url !== webhook ||
+    !current.allowed_updates?.includes("callback_query")
+  )
+    throw Error(
+      "Callback delivery verification failed; credentials were not logged.",
+    );
+  console.log(
+    "MiniCafe callback buttons enabled; same webhook URL, IP override, connection limit and original secret retained.",
+  );
 } else if (mode === "register") {
   if (!data.TELEGRAM_WEBHOOK_SECRET)
     throw Error("Upload the secrets before registering the webhook.");
   const webhookOptions = {
     url: webhook,
     secret_token: data.TELEGRAM_WEBHOOK_SECRET,
-    allowed_updates: ["message"],
+    allowed_updates: ["message", "callback_query"],
     max_connections: 4,
     drop_pending_updates: false,
   };
