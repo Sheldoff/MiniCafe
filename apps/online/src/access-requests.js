@@ -1,3 +1,4 @@
+import { locationById } from "./locations.js";
 import {
   identity,
   csrfAllowed,
@@ -350,7 +351,22 @@ export async function accessRequests(request, env, ctx) {
   if (!csrfAllowed(request, user))
     return secureJson({ error: "Немає доступу" }, 403);
   const input = await bounded(request, 2048);
+  if (!input || typeof input !== "object" || Array.isArray(input))
+    return secureJson({ error: "Некоректна дія" }, 400);
   const id = String(input?.telegram_id || "");
+  const [grantRole, grantLocation = ""] = String(input.role || "").split("@");
+  input.role = grantRole;
+  if (grantLocation) {
+    const meta = await env.DB.prepare(
+      "SELECT data FROM metadata WHERE id=1",
+    ).first();
+    if (
+      locationById(JSON.parse(meta.data).locations || [], grantLocation)
+        ?.kind !== grantRole
+    )
+      return secureJson({ error: "Некоректна локація" }, 400);
+  }
+
   if (
     !/^\d{1,20}$/.test(id) ||
     admins(env).has(id) ||
@@ -363,6 +379,11 @@ export async function accessRequests(request, env, ctx) {
   const now = timestamp(),
     statements = [];
   if (input.action === "approve") {
+    statements.push(
+      env.DB.prepare(
+        "INSERT INTO staff_details(identifier,location) SELECT 'id:'||telegram_id,? FROM access_requests WHERE telegram_id=? AND status='pending' AND version=? ON CONFLICT(identifier) DO UPDATE SET location=excluded.location",
+      ).bind(grantLocation, id, input.version),
+    );
     statements.push(
       env.DB.prepare(
         `INSERT INTO staff_access SELECT telegram_id,?,1,? FROM access_requests WHERE telegram_id=? AND status='pending' AND version=?

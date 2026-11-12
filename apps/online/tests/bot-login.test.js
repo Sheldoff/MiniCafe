@@ -10,6 +10,7 @@ test("cross-device bot codes: private webhook, one-use, expiry, CSRF, roles, rev
   sqlite.exec("PRAGMA foreign_keys=ON");
   for (const file of [
     "0003_auth.sql",
+    "0015_staff_details.sql",
     "0004_phone_access.sql",
     "0006_access_requests.sql",
     "0013_bot_login.sql",

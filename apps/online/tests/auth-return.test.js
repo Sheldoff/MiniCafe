@@ -8,6 +8,7 @@ test("APK return route survives browser OAuth and callback replay is rejected", 
   const sqlite = new DatabaseSync(":memory:");
   for (const f of [
     "0003_auth.sql",
+    "0015_staff_details.sql",
     "0004_phone_access.sql",
     "0006_access_requests.sql",
   ])

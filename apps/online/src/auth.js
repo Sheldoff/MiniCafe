@@ -1,4 +1,4 @@
-import { hasFulfillment } from "./locations.js";
+import { hasFulfillment, locationById } from "./locations.js";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { claimPhone } from "./phone.js";
 
@@ -75,13 +75,14 @@ export async function identity(request, env) {
 }
 export async function identityByHash(tokenHash, env) {
   const row = await env.DB.prepare(
-    `SELECT a.telegram_id,a.display_name,a.csrf,a.expires,tp.username,
+    `SELECT a.telegram_id,a.display_name,a.csrf,a.expires,tp.username,sd.location AS staff_location,
     CASE WHEN s.telegram_id IS NOT NULL THEN s.role ELSE p.role END AS role,
     CASE WHEN s.telegram_id IS NOT NULL THEN s.enabled ELSE p.enabled END AS enabled
     FROM auth_sessions a LEFT JOIN staff_access s ON s.telegram_id=a.telegram_id
     LEFT JOIN telegram_profiles tp ON tp.telegram_id=a.telegram_id
     LEFT JOIN session_phone sp ON sp.token_hash=a.token_hash
     LEFT JOIN staff_phone p ON p.phone=sp.phone AND p.claimed_id=a.telegram_id
+    LEFT JOIN staff_details sd ON sd.identifier=CASE WHEN s.telegram_id IS NOT NULL THEN 'id:'||s.telegram_id ELSE 'phone:'||p.phone END
     WHERE a.token_hash=? AND a.expires>?`,
   )
     .bind(tokenHash, timestamp())
@@ -99,6 +100,7 @@ export async function identityByHash(tokenHash, env) {
         name: row.display_name,
         username: row.username || "",
         role,
+        location: role === "admin" ? "" : row.staff_location || "",
         csrf: row.csrf,
       }
     : null;
@@ -146,6 +148,25 @@ export function canWrite(role, path, input) {
 }
 export function filterState(state, user) {
   state.access_role = user.role;
+  state.access_location = user.location || "";
+  if (user.location) {
+    state.locations = [
+      locationById(state.locations || [], user.location),
+    ].filter(Boolean);
+    state.orders = state.orders
+      .map((o) => ({
+        ...o,
+        items: o.items.filter((i) =>
+          user.role === "cash"
+            ? (o.cash_location || "cash") === user.location
+            : i.destinations
+              ? i.destinations.some((d) => d.id === user.location)
+              : (i.location_id ||
+                  (user.role === "bar" ? "bar" : "delivery")) === user.location,
+        ),
+      }))
+      .filter((o) => o.items.length);
+  }
   if (user.role === "admin") return state;
   delete state.additional_expenses;
   delete state.sessions;

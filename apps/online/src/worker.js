@@ -99,6 +99,7 @@ async function handle(request, env, ctx) {
       authenticated: true,
       csrf: user.csrf,
       role: user.role,
+      location: user.location || "",
       name: user.name,
       username: user.username || "",
     }).replace(/</g, "\\u003c");
@@ -141,8 +142,8 @@ async function handle(request, env, ctx) {
       return json({
         staff: (
           await env.DB.prepare(
-            `SELECT s.telegram_id,s.role,s.enabled,s.updated AS updated,NULL AS phone,p.username,p.name FROM staff_access s LEFT JOIN telegram_profiles p ON p.telegram_id=s.telegram_id
-             UNION ALL SELECT s.claimed_id AS telegram_id,s.role,s.enabled,s.updated,s.phone,p.username,p.name FROM staff_phone s LEFT JOIN telegram_profiles p ON p.telegram_id=s.claimed_id
+            `SELECT s.telegram_id,s.role,s.enabled,s.updated AS updated,NULL AS phone,p.username,p.name,d.label,d.location,(SELECT phone FROM access_requests WHERE telegram_id=s.telegram_id) AS contact_phone FROM staff_access s LEFT JOIN telegram_profiles p ON p.telegram_id=s.telegram_id LEFT JOIN staff_details d ON d.identifier='id:'||s.telegram_id
+             UNION ALL SELECT s.claimed_id AS telegram_id,s.role,s.enabled,s.updated,s.phone,p.username,p.name,d.label,d.location,s.phone AS contact_phone FROM staff_phone s LEFT JOIN telegram_profiles p ON p.telegram_id=s.claimed_id LEFT JOIN staff_details d ON d.identifier='phone:'||s.phone
              ORDER BY updated DESC`,
           ).all()
         ).results,
@@ -172,9 +173,26 @@ async function handle(request, env, ctx) {
       typeof input.enabled !== "boolean"
     )
       return json({ error: "Некоректний доступ" }, 400);
+    const identifier = phone ? "phone:" + phone : "id:" + id;
+    if (input.action === "label") {
+      if (typeof input.label !== "string" || input.label.trim().length > 80)
+        return json({ error: "Назва до 80 символів" }, 400);
+      await env.DB.prepare(
+        "INSERT INTO staff_details(identifier,label) VALUES(?,?) ON CONFLICT(identifier) DO UPDATE SET label=excluded.label",
+      )
+        .bind(identifier, input.label.trim())
+        .run();
+      return json({ ok: true });
+    }
+    if (input.location !== undefined && typeof input.location !== "string")
+      return json({ error: "Некоректна локація" }, 400);
+    const scope = input.location || "";
     if (input.action === "delete") {
       if (phone)
         await env.DB.batch([
+          env.DB.prepare("DELETE FROM staff_details WHERE identifier=?").bind(
+            identifier,
+          ),
           env.DB.prepare(
             "DELETE FROM auth_sessions WHERE token_hash IN (SELECT token_hash FROM session_phone WHERE phone=?)",
           ).bind(phone),
@@ -182,6 +200,9 @@ async function handle(request, env, ctx) {
         ]);
       else
         await env.DB.batch([
+          env.DB.prepare("DELETE FROM staff_details WHERE identifier=?").bind(
+            identifier,
+          ),
           env.DB.prepare("DELETE FROM auth_sessions WHERE telegram_id=?").bind(
             id,
           ),
@@ -194,9 +215,21 @@ async function handle(request, env, ctx) {
         ]);
       return json({ ok: true });
     }
+    if (scope) {
+      const meta = await env.DB.prepare(
+        "SELECT data FROM metadata WHERE id=1",
+      ).first();
+      const loc = locationById(JSON.parse(meta.data).locations || [], scope);
+      if (!loc || loc.kind !== input.role)
+        return json({ error: "Некоректна локація доступу" }, 400);
+    }
     if (input.action !== undefined) return json({ error: "Невідома дія" }, 400);
+    const detailStatement = env.DB.prepare(
+      "INSERT INTO staff_details(identifier,location) VALUES(?,?) ON CONFLICT(identifier) DO UPDATE SET location=excluded.location",
+    ).bind(identifier, scope);
     if (phone) {
       await env.DB.batch([
+        detailStatement,
         env.DB.prepare(
           `INSERT INTO staff_phone(phone,role,enabled,updated) VALUES(?,?,?,?)
           ON CONFLICT(phone) DO UPDATE SET role=excluded.role,enabled=excluded.enabled,updated=excluded.updated`,
@@ -213,6 +246,7 @@ async function handle(request, env, ctx) {
       return json({ ok: true });
     }
     await env.DB.batch([
+      detailStatement,
       env.DB.prepare(
         `INSERT INTO staff_access VALUES(?,?,?,?) ON CONFLICT(telegram_id) DO UPDATE SET role=excluded.role,enabled=excluded.enabled,updated=excluded.updated`,
       ).bind(id, input.role, input.enabled ? 1 : 0, new Date().toISOString()),
@@ -247,9 +281,9 @@ async function handle(request, env, ctx) {
         fail("Некоректна сторінка");
       const rows = (
         await env.DB.prepare(
-          "SELECT id,json_extract(data,'$.guest') AS guest,json_extract(data,'$.payment.card_amount') AS amount FROM orders WHERE id<? AND coalesce(json_extract(data,'$.card_history_hidden'),0)=0 AND coalesce(json_extract(data,'$.stats_cleared'),0)=0 AND coalesce(json_extract(data,'$.gift'),0)=0 AND json_extract(data,'$.payment.card_amount')>0 ORDER BY id DESC LIMIT 51",
+          "SELECT id,json_extract(data,'$.guest') AS guest,json_extract(data,'$.payment.card_amount') AS amount FROM orders WHERE id<? AND (?='' OR coalesce(json_extract(data,'$.cash_location'),'cash')=?) AND coalesce(json_extract(data,'$.card_history_hidden'),0)=0 AND coalesce(json_extract(data,'$.stats_cleared'),0)=0 AND coalesce(json_extract(data,'$.gift'),0)=0 AND json_extract(data,'$.payment.card_amount')>0 ORDER BY id DESC LIMIT 51",
         )
-          .bind(before)
+          .bind(before, user.location || "", user.location || "")
           .all()
       ).results;
       return json({
@@ -478,6 +512,26 @@ async function handle(request, env, ctx) {
     fail("Некоректний запит");
   if (!canWrite(user.role, path, input))
     return json({ error: "Недостатньо прав" }, 403);
+  if (user.location) {
+    const wanted =
+      input.location_id ||
+      (user.role === "cash"
+        ? "cash"
+        : user.role === "bar"
+          ? "bar"
+          : "delivery");
+    if (wanted !== user.location) return json({ error: "Інша локація" }, 403);
+    if (path === "card-payment/hide") {
+      const row = await env.DB.prepare("SELECT data FROM orders WHERE id=?")
+        .bind(input.id)
+        .first();
+      if (
+        !row ||
+        (JSON.parse(row.data).cash_location || "cash") !== user.location
+      )
+        return json({ error: "Інша каса" }, 403);
+    }
+  }
   for (let attempt = 0; attempt < 4; attempt++) {
     const meta = await env.DB.prepare(
       "SELECT revision,data FROM metadata WHERE id=1",
@@ -489,6 +543,32 @@ async function handle(request, env, ctx) {
       path === "restore" ? [] : bindings,
     );
     if (before.revision !== meta.revision) continue;
+    if (user.location && ["issue", "issue-unit", "issue-item"].includes(path)) {
+      const order = before.orders.find(
+        (o) => o.id === (input.order ?? input.id),
+      );
+      if (
+        !order ||
+        !order.items.some((i) =>
+          i.destinations
+            ? i.destinations.some((d) => d.id === user.location)
+            : (i.location_id || (user.role === "bar" ? "bar" : "delivery")) ===
+              user.location,
+        )
+      )
+        return json({ error: "Інша локація видачі" }, 403);
+    }
+
+    if (
+      user.location &&
+      path === "order" &&
+      before.orders.some(
+        (o) =>
+          o.request === input.request &&
+          (o.cash_location || "cash") !== user.location,
+      )
+    )
+      return json({ error: "Інша каса" }, 403);
     if (path === "availability" && ["bar", "delivery"].includes(user.role)) {
       if (
         input.location_id &&
