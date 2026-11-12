@@ -150,3 +150,6 @@ Windows 3.36 заморожений; цей cloud-випуск не створю
 Онлайн 0.17.0 / APK 3.50: вхід без коду через QR і кнопку бота. Застосувати 0014, deploy, потім `node configure-bot.mjs enable-callbacks` (лише додає callback_query до наявного webhook, без зміни адреси/токенів). Інструкція: docs/QUICK-LOGIN-UA.md.
 
 Онлайн 0.18.0 / APK 3.51: кавова палітра типова, adaptive launcher icon та повторний Telegram-вхід. Нових міграцій/секретів/змін webhook немає. docs/LOGIN-RETRY-UA.md.
+
+Online 0.19 / APK 3.52: docs/SETTINGS-STAFF-UA.md. Перед deploy застосувати
+0015_staff_details.sql для назв і областей доступу; нових секретів/webhook немає.
