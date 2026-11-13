@@ -145,6 +145,7 @@ def main():
             for test in [
                 "editor-calculator",
                 "menu-prices-design",
+                "cash-live",
                 "cashier",
                 "card-payments",
                 "settings-locations",

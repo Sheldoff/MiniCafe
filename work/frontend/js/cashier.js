@@ -2,7 +2,9 @@ function productUnavailable(p) {
   return (
     !!p.sold_out ||
     locallyUnavailable(p) ||
-    (p.stock != null && !p.stock_estimated && p.stock <= 0)
+    (productCashStock(p) != null &&
+      (!p.stock_estimated || p.stock_by_cash) &&
+      productCashStock(p) <= 0)
   );
 }
 function pageMenu(delta) {
@@ -15,9 +17,9 @@ function step(i, d) {
   if (
     d > 0 &&
     p &&
-    p.stock != null &&
-    !p.stock_estimated &&
-    countProduct(p.id) >= p.stock
+    productCashStock(p) != null &&
+    (!p.stock_estimated || p.stock_by_cash) &&
+    countProduct(p.id) >= productCashStock(p)
   )
     return toast("Недостатній залишок");
   if (cart[i].qty + d <= 0) cart.splice(i, 1);
@@ -260,7 +262,13 @@ function editOrderPrice(index) {
 
 function menuCategories() {
   return [
-    ...new Set(data.products.filter((p) => p.active).map((p) => p.category)),
+    ...new Set(
+      data.products
+        .filter(
+          (p) => p.active && (!p.stock_by_cash || productCashStock(p) > 0),
+        )
+        .map((p) => p.category),
+    ),
   ];
 }
 
@@ -268,6 +276,8 @@ function drawCategories() {
   let host = document.querySelector("#categories"),
     categories = ["", ...menuCategories()],
     signature = JSON.stringify(categories);
+  if (categoryFilter && !categories.includes(categoryFilter))
+    categoryFilter = "";
   if (host.dataset.signature !== signature) {
     host.innerHTML = categories
       .map(
@@ -300,7 +310,7 @@ function countProduct(id) {
 
 function cardMarkup(p) {
   let count = countProduct(p.id);
-  return `<button class="tile ${productUnavailable(p) ? "sold-out" : ""}" data-product="${p.id}" aria-disabled="${!!productUnavailable(p)}" onclick="tileClick(event,${p.id})" oncontextmenu="return false">${productVisual(p)}<span class="product-copy"><b>${esc(p.name)}</b>${p.stock !== undefined && p.stock !== null ? `<span class="stock-estimate">${p.stock_estimated ? "≈ " : ""}${p.stock} шт.</span>` : ""}${productUnavailable(p) ? '<span class="sold-label">Закінчилось</span>' : ""}<span class="tile-price">${money(p.price)}</span><span class="selected-count" ${count > 0 ? "" : "hidden"} aria-label="У замовленні">${count}</span></span></button>`;
+  return `<button class="tile ${productUnavailable(p) ? "sold-out" : ""}" data-product="${p.id}" aria-disabled="${!!productUnavailable(p)}" onclick="tileClick(event,${p.id})" oncontextmenu="return false">${productVisual(p)}<span class="product-copy"><b>${esc(p.name)}</b>${productCashStock(p) !== undefined && productCashStock(p) !== null ? `<span class="stock-estimate">${p.stock_estimated ? "≈ " : ""}${productCashStock(p)} шт.</span>` : ""}${productUnavailable(p) ? '<span class="sold-label">Закінчилось</span>' : ""}<span class="tile-price">${money(p.price)}</span><span class="selected-count" ${count > 0 ? "" : "hidden"} aria-label="У замовленні">${count}</span></span></button>`;
 }
 
 function tiles(q) {
@@ -308,6 +318,7 @@ function tiles(q) {
     ps = data.products.filter(
       (p) =>
         p.active &&
+        (!p.stock_by_cash || productCashStock(p) > 0) &&
         !locallyUnavailable(p) &&
         (!categoryFilter || p.category === categoryFilter),
     );
@@ -364,7 +375,11 @@ function add(id) {
   let p = data.products.find((x) => x.id === id);
   if (!p || !p.active || productUnavailable(p))
     return toast("Ця позиція закінчилась");
-  if (p.stock != null && !p.stock_estimated && countProduct(id) >= p.stock)
+  if (
+    productCashStock(p) != null &&
+    (!p.stock_estimated || p.stock_by_cash) &&
+    countProduct(id) >= productCashStock(p)
+  )
     return toast("Недостатній залишок");
   productFeedback(id, "tap-feedback");
   chosenProducts.add(id);

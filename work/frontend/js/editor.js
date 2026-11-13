@@ -82,7 +82,7 @@ function menu(reset = false) {
   document.querySelector("#main").innerHTML =
     `<div class="grid menu-editor-grid">
 <section class="panel product-form-panel" hidden>
-  <div class="menu-page-heading"><div><h2>Редактор меню</h2><p>Назва, ціна, фото й доступність товару.</p></div><button type="button" id="editorBack" onclick="closeProductEditor()">← До списку</button></div>
+
   <form id="form" onsubmit="saveProduct(event)">
     <input id="pid" type="hidden">
     <div class="editor-fields">
@@ -92,8 +92,8 @@ function menu(reset = false) {
         <label for="proute">Куди передавати</label><select id="proute"><option value="bar">Передати бариста</option><option value="instant" selected>Передати на видачу їжі</option></select>
       </fieldset>
       <fieldset class="editor-section"><legend>Ціна й наявність</legend>
-        <div class="editor-price-stock"><div><label for="pprice">Ціна, грн</label><input data-money id="pprice" type="number" min="0" step="0.01" required></div><div><label for="pstock">Кількість, необов’язково</label><input id="pstock" type="number" min="0" max="1000000" step="1" inputmode="numeric" placeholder="Кількість"></div></div>
-        <label class="stock-mode"><input id="pestimated" type="checkbox" onchange="document.querySelector('#pstock').min=this.checked?'-1000000':'0'">Орієнтовна кількість</label><p class="editor-field-hint">З галочкою залишок може бути від’ємним. Порожня кількість — без обмеження залишку.</p>
+        <div class="editor-price-stock"><div><label for="pprice">Ціна, грн</label><input data-money id="pprice" type="number" min="0" step="0.01" required></div><div><label for="pstock">Кількість, необов’язково</label><input id="pstock" oninput="redistributeCashStock()" type="number" min="0" max="1000000" step="1" inputmode="numeric" placeholder="Кількість"></div></div>
+        <label class="stock-mode"><input id="pestimated" type="checkbox" onchange="document.querySelector('#pstock').min=this.checked?'-1000000':'0'">Орієнтовна кількість</label><p class="editor-field-hint">З галочкою залишок може бути від’ємним. Порожня кількість — без обмеження залишку.</p><div id="cashStockAllocation"></div>
       </fieldset>
     </div>
     <aside class="editor-media">
@@ -111,6 +111,7 @@ function menu(reset = false) {
   <div id="editorProducts">${editorProductRows("")}</div>
 </section></div>`;
 
+  renderCashStock();
   restoreEditorDraft();
   decorateMoneyFields();
 }
@@ -264,6 +265,11 @@ function editProduct(id) {
   document.querySelector("#pestimated").checked = !!p.stock_estimated;
   document.querySelector("#pstock").min = p.stock_estimated ? "-1000000" : "0";
   updateActiveToggle();
+  document.querySelector("#form").dataset.stockBasis = JSON.stringify({
+    stock: p.stock ?? null,
+    stock_by_cash: p.stock_by_cash || null,
+  });
+  renderCashStock(p.stock_by_cash);
   picturePreview(p.image_version ? imageUrl(p) : null);
   suggestCategories(p.category);
   openProductEditor();
@@ -286,6 +292,9 @@ async function saveProduct(e) {
     document.querySelector("#pstock").value.trim() === ""
       ? null
       : Number(document.querySelector("#pstock").value);
+  d.stock_by_cash = editorCashStockValues();
+  if (d.id && savingForm.dataset.stockBasis)
+    d.stock_basis = JSON.parse(savingForm.dataset.stockBasis);
   d.stock_estimated = document.querySelector("#pestimated").checked;
   if (imageDraft !== undefined) d.image = imageDraft;
   let saveButton =
@@ -337,6 +346,8 @@ function captureEditorDraft() {
   if (!form) return;
   editorDraft = {
     fields: {},
+    cashStock: editorCashStockValues(),
+    stockBasis: form.dataset.stockBasis || "",
     active: document.querySelector("#pactive").checked,
     hasImageDraft: imageDraft !== undefined,
     estimated: document.querySelector("#pestimated").checked,
@@ -362,6 +373,9 @@ function restoreEditorDraft() {
     ? "-1000000"
     : "0";
   updateActiveToggle();
+  document.querySelector("#form").dataset.stockBasis =
+    editorDraft.stockBasis || "";
+  renderCashStock(editorDraft.cashStock);
   imageDraft = editorDraft.hasImageDraft ? editorDraft.imageDraft : undefined;
   let preview = document.querySelector("#picturePreview");
   preview.innerHTML = editorDraft.preview;

@@ -208,7 +208,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
       assert.equal(order.cash_location, cashId);
       assert.deepEqual(
         order.items[0].destinations.map((d) => d.id),
-        ["bar", delivery],
+        ["bar"],
       );
       assert.equal(order.cash_location_color, "#eecc44");
       await p.screenshot({
@@ -248,17 +248,13 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
         ),
       });
       await p.evaluate((id) => change("delivery", id), delivery);
-      await p.locator(`[data-order="${order.id}"]`).waitFor();
+      assert.equal(await p.locator(`[data-order="${order.id}"]`).count(), 0);
+      await p.evaluate(() => change("bar"));
       await p.locator(`[data-order="${order.id}"] > .primary`).click();
       await p
         .locator(`[data-order="${order.id}"]`)
         .waitFor({ state: "detached" });
-      await p.evaluate(() => change("bar"));
-      assert.equal(await p.locator(`[data-order="${order.id}"]`).count(), 0);
-      await p.evaluate((id) => change("delivery", id), delivery);
       await p.locator(".undo-issue").click();
-      await p.locator(`[data-order="${order.id}"]`).waitFor();
-      await p.evaluate(() => change("bar"));
       await p.locator(`[data-order="${order.id}"]`).waitFor();
       await p.evaluate(() => change("transactions"));
       await p.locator(`[data-transaction="${order.id}"]`).waitFor();
@@ -270,7 +266,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
       await p.locator("#editorToggle").click();
       assert.equal(await p.locator(".product-list-panel").isVisible(), false);
       await p.locator("#pname").fill("Збережена чернетка");
-      await p.locator("#editorBack").click();
+      await p.locator("[data-close-editor]").click();
       await p.locator(".product-list-panel").waitFor();
       await p.locator("#editorToggle").click();
       assert.equal(

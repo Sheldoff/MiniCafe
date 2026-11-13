@@ -24,11 +24,27 @@ function locationInfo(id = activeLocation || view) {
 function locationName() {
   return locationInfo()?.name || "";
 }
+function itemDestinations(item) {
+  const matching = (item.destinations || []).filter(
+    (d) => d.route === item.route,
+  );
+  if (matching.length) return matching;
+  return [
+    {
+      route: item.route,
+      id:
+        (!item.destinations &&
+          (!item.fulfillment_route || item.fulfillment_route === item.route) &&
+          item.location_id) ||
+        (item.route === "bar" ? "bar" : "delivery"),
+    },
+  ];
+}
 function itemAtDestination(item, route, id) {
-  return item.destinations
-    ? item.destinations.some((d) => d.route === route && d.id === id)
-    : (item.fulfillment_route || item.route) === route &&
-        (item.location_id || (route === "bar" ? "bar" : "delivery")) === id;
+  return itemDestinations(item).some((d) => d.route === route && d.id === id);
+}
+function locationKindIcon(kind) {
+  return `<span class="location-kind-icon" aria-hidden="true">${settingsIconSvgs[kind === "cash" ? "wallet" : kind === "bar" ? "coffee" : "utensils"]}</span>`;
 }
 function itemAtLocation(item, route) {
   return itemAtDestination(
@@ -222,7 +238,7 @@ function locationsPage(id = "", fromHistory = false) {
   const host = document.querySelector("#main"),
     rows = allLocations();
   if (!id) {
-    host.innerHTML = `<section class="panel settings-page"><h2>Локації</h2><button class="primary" onclick="locationsPage('new')">Створити локацію</button><div class="location-list">${rows.map((l) => `<div class="location-list-row"><button class="location-open" aria-label="Редагувати ${esc(l.name)}" onclick="locationsPage('${l.id}')"><span class="location-color" style="background:${l.color}"></span><b class="grow">${esc(l.name)}</b>${["cash", "bar", "delivery"].includes(l.id) ? "<small>Основна</small>" : ""}</button>${["cash", "bar", "delivery"].includes(l.id) ? "" : `<button class="danger" aria-label="Видалити ${esc(l.name)}" onclick="deleteLocation('${l.id}',this)">×</button>`}</div>`).join("")}</div><p id="locationError" role="status"></p></section>`;
+    host.innerHTML = `<section class="panel settings-page"><div class="locations-heading"><h2>Локації</h2><button class="primary" onclick="locationsPage('new')">Створити локацію</button></div><div class="location-list">${rows.map((l) => `<div class="location-list-row"><button class="location-open" aria-label="Редагувати ${esc(l.name)}" onclick="locationsPage('${l.id}')">${locationKindIcon(l.kind)}<b class="grow">${esc(l.name)}</b><span class="location-color" style="background:${l.color}"></span>${["cash", "bar", "delivery"].includes(l.id) ? "<small>Основна</small>" : ""}</button>${["cash", "bar", "delivery"].includes(l.id) ? "" : `<button class="danger" aria-label="Видалити ${esc(l.name)}" onclick="deleteLocation('${l.id}',this)">×</button>`}</div>`).join("")}</div><p id="locationError" role="status"></p></section>`;
     return;
   }
   const saved = rows.find((l) => l.id === id),
@@ -234,7 +250,7 @@ function locationsPage(id = "", fromHistory = false) {
         : [editing.bar_target || "bar", editing.delivery_target || "delivery"]),
     basic = ["cash", "bar", "delivery"].includes(id),
     colors = [...new Set(rows.map((l) => l.color))];
-  host.innerHTML = `<section class="panel settings-page"><h2>${saved ? "Редагувати локацію" : "Створити локацію"}</h2><form id="locationForm"><label>Функціонал і група в меню<select id="locationKind" ${basic ? "disabled" : ""}><option value="cash">Каса</option><option value="bar">Бариста</option><option value="delivery">Видача</option></select></label><label>Назва в бічному меню<input id="locationName" maxlength="80" required value="${esc(editing.name)}"></label><div id="locationCashRules"><fieldset><legend>Куди відправляти замовлення</legend><p class="muted">Оберіть потрібних бариста та видачі. Це спільне замовлення: відмітки виконання синхронні.</p><div id="locationTargets">${rows
+  host.innerHTML = `<section class="panel settings-page"><h2>${saved ? "Редагувати локацію" : "Створити локацію"}</h2><form id="locationForm"><label>Функціонал і група в меню<select id="locationKind" ${basic ? "disabled" : ""}><option value="cash">Каса</option><option value="bar">Бариста</option><option value="delivery">Видача</option></select></label><label>Назва в бічному меню<input id="locationName" maxlength="80" required value="${esc(editing.name)}"></label><div id="locationCashRules"><fieldset><legend>Куди відправляти замовлення</legend><p class="muted">Оберіть потрібних бариста та видачі. Напої йдуть тільки бариста, їжа — тільки на видачу. Якщо обрано кілька черг одного типу, відмітки виконання спільні. Якщо відповідної черги не обрано, використовується основна.</p><div id="locationTargets">${rows
     .filter((l) => l.kind !== "cash" && l.id !== id)
     .map(
       (l) =>

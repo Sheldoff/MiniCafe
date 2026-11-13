@@ -231,7 +231,9 @@ function updateDrawer() {
     const route = button.dataset.view === "bar" ? "bar" : "instant";
     const destination =
       button.dataset.location || (route === "bar" ? "bar" : "delivery");
-    let count = 0;
+    const counts = new Map(),
+      sourceOrders = new Map(),
+      sourceInfo = new Map();
     for (const order of data.orders || [])
       for (const item of order.items || []) {
         if (
@@ -239,19 +241,67 @@ function updateDrawer() {
           ["delivered", "cancelled"].includes(item.status)
         )
           continue;
-        count += Array.isArray(item.unit_issued)
+        const id = route === "bar" ? order.cash_location || "cash" : "all";
+        const n = Array.isArray(item.unit_issued)
           ? item.unit_issued.filter((v) => !v).length
           : item.qty;
+        counts.set(id, (counts.get(id) || 0) + n);
+        sourceInfo.set(id, {
+          name: order.cash_location_name || "Каса",
+          color: order.cash_location_color,
+        });
+        if (n) {
+          if (!sourceOrders.has(id)) sourceOrders.set(id, new Set());
+          sourceOrders.get(id).add(order.id);
+        }
       }
-    let badge = button.querySelector(".drawer-unit-count");
-    if (count) {
-      if (!badge) {
-        badge = document.createElement("span");
+    button
+      .querySelectorAll(".drawer-unit-count,.drawer-counts")
+      .forEach((e) => e.remove());
+    const badges = document.createElement("span");
+    badges.className = "drawer-counts";
+    const sourceOrder = cashStockLocations().map((l) => l.id);
+    for (const [id, n] of [...counts].sort((a, b) => {
+      const ai = sourceOrder.indexOf(a[0]),
+        bi = sourceOrder.indexOf(b[0]);
+      return (
+        (ai < 0 ? 51 : ai) - (bi < 0 ? 51 : bi) || a[0].localeCompare(b[0])
+      );
+    }))
+      if (n) {
+        const badge = document.createElement("span");
         badge.className = "drawer-unit-count";
-        button.appendChild(badge);
+        const cash =
+          id === "all"
+            ? null
+            : (data.locations || []).find(
+                (l) => l.id === id && l.kind === "cash",
+              ) ||
+              (id === "cash"
+                ? {
+                    ...locationInfo(id),
+                    name: sourceInfo.get(id)?.name || "Каса",
+                  }
+                : sourceInfo.get(id));
+        badge.dataset.cash = id;
+        badge.textContent = n;
+        badge.title =
+          id === "all"
+            ? "Порцій у черзі: " + n
+            : (cash?.name || "Каса") +
+              ": " +
+              sourceOrders.get(id).size +
+              " замовлень · " +
+              n +
+              " порцій";
+        badge.setAttribute("aria-label", badge.title);
+        if (cash?.color) {
+          badge.style.backgroundColor = cash.color;
+          badge.style.color = locationTextColor(cash.color);
+        }
+        badges.appendChild(badge);
       }
-      badge.textContent = count;
-    } else badge?.remove();
+    if (badges.children.length) button.appendChild(badges);
   }
   let h = document.querySelector("header");
   if (!document.querySelector("#drawerToggle")) {
