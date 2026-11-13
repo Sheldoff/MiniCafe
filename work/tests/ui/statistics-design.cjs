@@ -26,7 +26,9 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
       await page.goto(
         url + (online ? "/admin#history" : "/?key=" + key + "#history"),
       );
-      await page.waitForFunction(() => hasServerState);
+      await page.waitForFunction(
+        () => typeof hasServerState !== "undefined" && hasServerState,
+      );
       await page.locator(".stats-tabs button").nth(1).click();
       await page.locator("#reportDocument").waitFor();
       await page.waitForFunction(
