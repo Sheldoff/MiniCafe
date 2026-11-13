@@ -283,6 +283,7 @@ public final class CafeStore {
       int id = p.getInt("id");
       if (id < 1 || !ids.add(id)) throw new IllegalArgumentException("Повторні номери товарів");
       checkProduct(p);
+      validateCashStock(p, locations == null ? new JSONArray() : locations);
       maxP = Math.max(maxP, id);
     }
     ids.clear();
@@ -421,7 +422,101 @@ public final class CafeStore {
           throw new IllegalArgumentException("Некоректна наявність каси");
     }
 
+    validateCashStock(p, null);
     if (p.has("image") && !p.isNull("image")) checkImage(p.getString("image"));
+  }
+
+  private static void checkStockBasis(JSONObject p, JSONObject basis) throws Exception {
+    if (basis == null) return;
+    boolean same =
+        (p.isNull("stock") && basis.isNull("stock"))
+            || (!p.isNull("stock")
+                && !basis.isNull("stock")
+                && p.getLong("stock") == basis.getLong("stock"));
+    JSONObject a = p.optJSONObject("stock_by_cash"), b = basis.optJSONObject("stock_by_cash");
+    if (a == null || b == null) same &= a == b;
+    else {
+      same &= a.length() == b.length();
+      for (Iterator<String> it = a.keys(); it.hasNext(); ) {
+        String id = it.next();
+        same &= b.has(id) && a.getLong(id) == b.optLong(id, -1);
+      }
+    }
+    if (!same)
+      throw new IllegalArgumentException(
+          "Залишок змінився. Закрийте й відкрийте товар повторно перед розподілом.");
+  }
+
+  private static List<String> cashIds(JSONArray rows) throws Exception {
+    List<String> ids = new ArrayList<>();
+    ids.add("cash");
+    if (rows != null)
+      for (int i = 0; i < rows.length(); i++) {
+        JSONObject l = rows.getJSONObject(i);
+        if ("cash".equals(l.getString("kind")) && !"cash".equals(l.getString("id")))
+          ids.add(l.getString("id"));
+      }
+    return ids;
+  }
+
+  private static void validateCashStock(JSONObject p, JSONArray rows) throws Exception {
+    if (!p.has("stock_by_cash")) return;
+    JSONObject map = p.getJSONObject("stock_by_cash");
+    long total = exactNumber(p, "stock", 0, 1000000), sum = 0;
+    if (map.length() > 51) throw new IllegalArgumentException("Забагато кас");
+    for (Iterator<String> it = map.keys(); it.hasNext(); ) {
+      String id = it.next();
+      if (!id.matches("cash|loc-[a-f0-9]{32}")
+          || (rows != null && !"cash".equals(location(rows, id).getString("kind"))))
+        throw new IllegalArgumentException("Перевірте касу");
+      sum += exactNumber(map, id, 0, 1000000);
+    }
+    if (sum != total)
+      throw new IllegalArgumentException("Сума по касах має дорівнювати загальному залишку");
+  }
+
+  private static Long stockForCash(JSONObject p, String id) throws Exception {
+    JSONObject map = p.optJSONObject("stock_by_cash");
+    if (map != null) return map.optLong(id, 0);
+    return p.has("stock") && !p.isNull("stock") ? p.getLong("stock") : null;
+  }
+
+  private static void reconcileCashStock(JSONObject p, JSONArray rows) throws Exception {
+    JSONObject old = p.optJSONObject("stock_by_cash");
+    if (old == null) return;
+    if (!p.has("stock") || p.isNull("stock") || p.getLong("stock") < 0) {
+      p.remove("stock_by_cash");
+      return;
+    }
+    List<String> ids = cashIds(rows);
+    JSONObject next = new JSONObject();
+    long remaining = p.getLong("stock");
+    for (String id : ids) {
+      long n = Math.min(remaining, Math.max(0, old.optLong(id, 0)));
+      next.put(id, n);
+      remaining -= n;
+    }
+    String last = ids.get(ids.size() - 1);
+    next.put(last, next.getLong(last) + remaining);
+    p.put("stock_by_cash", next);
+  }
+
+  private static void changeStock(JSONObject p, String id, long delta, JSONArray rows)
+      throws Exception {
+    JSONObject map = p.optJSONObject("stock_by_cash");
+    if (map != null) {
+      String target = id;
+      if (delta > 0 && !cashIds(rows).contains(id)) target = "cash";
+      long n = map.optLong(target, 0) + delta;
+      if (n < 0) throw new IllegalArgumentException("Недостатній залишок на цій касі");
+      map.put(target, n);
+    }
+    if (p.has("stock") && !p.isNull("stock")) {
+      long n = p.getLong("stock") + delta;
+      if (!p.optBoolean("stock_estimated", false) && n < 0)
+        throw new IllegalArgumentException("Недостатній залишок");
+      p.put("stock", n);
+    }
   }
 
   private static void checkRoute(String route) {
@@ -542,7 +637,8 @@ public final class CafeStore {
             continue;
           }
           if (!"cancelled".equals(it.getString("status"))
-              && hasFulfillment(it, route.split("@", 2)[0])
+              && atLocation(
+                  it, route.split("@", 2)[0], route.contains("@") ? route.split("@", 2)[1] : "")
               && unitFlags(it).optBoolean(u.getInt("unit"), false)) return true;
         }
       } else {
@@ -551,7 +647,8 @@ public final class CafeStore {
           JSONObject it = items.getJSONObject(i);
           for (int j = 0; j < ids.length(); j++)
             if (it.getInt("id") == ids.getInt(j)
-                && hasFulfillment(it, route.split("@", 2)[0])
+                && atLocation(
+                    it, route.split("@", 2)[0], route.contains("@") ? route.split("@", 2)[1] : "")
                 && "delivered".equals(it.getString("status"))) return true;
         }
       }
@@ -640,6 +737,7 @@ public final class CafeStore {
       if (session != null) find(data.getJSONArray("sessions"), session);
       JSONObject snap =
           new JSONObject()
+              .put("active_session", data.optInt("active_session", 0))
               .put("sessions", new JSONArray(data.getJSONArray("sessions").toString()))
               .put("orders", new JSONArray(data.getJSONArray("orders").toString()));
       JSONArray costs = data.optJSONArray("calculator_expenses");
@@ -650,6 +748,14 @@ public final class CafeStore {
 
   public JSONObject statistics(Integer session, String day, int offset) throws Exception {
     return CafeStats.report(reportSnapshot(session, day, offset), session, day, offset);
+  }
+
+  public JSONObject statistics(Integer session, String day, int offset, boolean live)
+      throws Exception {
+    JSONObject snap = reportSnapshot(session, day, offset),
+        result = CafeStats.report(snap, session, day, offset);
+    if (live) result.put("live", CafeStats.live(snap, session));
+    return result;
   }
 
   public synchronized JSONObject cardPayments(long before) throws Exception {
@@ -897,27 +1003,39 @@ public final class CafeStore {
     return row;
   }
 
+  public static JSONArray itemDestinations(JSONObject item) throws Exception {
+    String route = item.getString("route");
+    JSONArray targets = item.optJSONArray("destinations"), result = new JSONArray();
+    if (targets != null)
+      for (int i = 0; i < targets.length(); i++) {
+        JSONObject target = targets.getJSONObject(i);
+        if (route.equals(target.optString("route"))) result.put(target);
+      }
+    if (result.length() == 0) {
+      String id =
+          targets == null && route.equals(item.optString("fulfillment_route", route))
+              ? item.optString("location_id")
+              : "";
+      result.put(
+          new JSONObject()
+              .put("id", id.isEmpty() ? ("bar".equals(route) ? "bar" : "delivery") : id)
+              .put("route", route));
+    }
+    return result;
+  }
+
   public static boolean hasFulfillment(JSONObject item, String route) throws Exception {
-    JSONArray targets = item.optJSONArray("destinations");
-    if (targets == null)
-      return route.equals(item.optString("fulfillment_route", item.getString("route")));
-    for (int i = 0; i < targets.length(); i++)
-      if (route.equals(targets.getJSONObject(i).getString("route"))) return true;
-    return false;
+    return route.equals(item.getString("route"));
   }
 
   private static boolean atLocation(JSONObject item, String route, String id) throws Exception {
     String target = id == null || id.isEmpty() ? ("bar".equals(route) ? "bar" : "delivery") : id;
-    JSONArray targets = item.optJSONArray("destinations");
-    if (targets != null) {
-      for (int i = 0; i < targets.length(); i++) {
-        JSONObject d = targets.getJSONObject(i);
-        if (route.equals(d.getString("route")) && target.equals(d.getString("id"))) return true;
-      }
-      return false;
+    JSONArray destinations = itemDestinations(item);
+    for (int i = 0; i < destinations.length(); i++) {
+      JSONObject d = destinations.getJSONObject(i);
+      if (route.equals(d.getString("route")) && target.equals(d.getString("id"))) return true;
     }
-    return hasFulfillment(item, route)
-        && target.equals(item.optString("location_id", "bar".equals(route) ? "bar" : "delivery"));
+    return false;
   }
 
   private static void checkLocationChange(String id, JSONArray rows, JSONArray orders)
@@ -975,36 +1093,26 @@ public final class CafeStore {
     JSONArray items = order.getJSONArray("items");
     for (int i = 0; i < items.length(); i++) {
       JSONObject item = items.getJSONObject(i);
-      JSONArray chosen = cash.optJSONArray("targets");
-      if (chosen != null) {
-        JSONArray destinations = new JSONArray();
-        for (int j = 0; j < chosen.length(); j++) {
-          String target = chosen.getString(j);
-          JSONObject to = location(locations, target);
-          if ("cash".equals(to.getString("kind")))
-            throw new IllegalArgumentException("Це не видача");
-          destinations.put(
-              new JSONObject()
-                  .put("id", target)
-                  .put("route", "bar".equals(to.getString("kind")) ? "bar" : "instant"));
-        }
-        item.put("destinations", destinations)
-            .put("location_id", destinations.getJSONObject(0).getString("id"))
-            .put("fulfillment_route", destinations.getJSONObject(0).getString("route"));
-        continue;
+      String route = item.getString("route"), kind = "bar".equals(route) ? "bar" : "delivery";
+      JSONArray chosen = cash.optJSONArray("targets"), destinations = new JSONArray();
+      if (chosen == null)
+        chosen =
+            new JSONArray()
+                .put(
+                    "single".equals(cash.optString("mode"))
+                        ? cash.optString("single_target", "delivery")
+                        : cash.optString(
+                            "bar".equals(route) ? "bar_target" : "delivery_target", kind));
+      for (int j = 0; j < chosen.length(); j++) {
+        String target = chosen.getString(j);
+        if (kind.equals(location(locations, target).getString("kind")))
+          destinations.put(new JSONObject().put("id", target).put("route", route));
       }
-      String target =
-          "single".equals(cash.optString("mode"))
-              ? cash.optString("single_target", "delivery")
-              : "bar".equals(item.getString("route"))
-                  ? cash.optString("bar_target", "bar")
-                  : cash.optString("delivery_target", "delivery");
-      JSONObject destination = location(locations, target);
-      if ("cash".equals(destination.getString("kind")))
-        throw new IllegalArgumentException("Це не видача");
-      item.put("location_id", target)
-          .put(
-              "fulfillment_route", "bar".equals(destination.getString("kind")) ? "bar" : "instant");
+      if (destinations.length() == 0)
+        destinations.put(new JSONObject().put("id", kind).put("route", route));
+      item.put("destinations", destinations)
+          .put("location_id", destinations.getJSONObject(0).getString("id"))
+          .put("fulfillment_route", route);
     }
   }
 
@@ -1049,10 +1157,12 @@ public final class CafeStore {
     if (enabled)
       for (int i = 0; i < ps.length(); i++) {
         JSONObject p = ps.getJSONObject(i);
-        if (p.optInt("active", 1) != 1) continue;
+        if (p.optInt("active", 1) != 1 || (p.has("stock_by_cash") && stockForCash(p, "cash") <= 0))
+          continue;
         int limit =
-            p.has("stock") && !p.isNull("stock") && !p.optBoolean("stock_estimated")
-                ? (int) Math.max(0, Math.min(99, p.getLong("stock")))
+            stockForCash(p, "cash") != null
+                    && (!p.optBoolean("stock_estimated") || p.has("stock_by_cash"))
+                ? (int) Math.max(0, Math.min(99, stockForCash(p, "cash")))
                 : 99;
         rows.put(
             new JSONObject()
@@ -1386,6 +1496,7 @@ public final class CafeStore {
         if (!touched.add(product.getInt("id")))
           throw new IllegalArgumentException("Позицію вказано двічі");
         product.put("price", price).put("stock", stock);
+        reconcileCashStock(product, work.optJSONArray("locations"));
         checkProduct(product);
         ids.put(product.getInt("id"));
       }
@@ -1426,6 +1537,7 @@ public final class CafeStore {
         p = new JSONObject().put("id", next(work, "nextProduct"));
         ps.put(p);
       }
+      if (d.optInt("id", 0) > 0) checkStockBasis(p, d.optJSONObject("stock_basis"));
       p.put("name", d.getString("name").trim())
           .put("category", d.getString("category").trim())
           .put("price", d.getLong("price"))
@@ -1456,6 +1568,17 @@ public final class CafeStore {
           p.put("stock", stock);
         }
       }
+      if (d.has("stock_by_cash")) {
+        if (d.isNull("stock_by_cash")) p.remove("stock_by_cash");
+        else {
+          p.put("stock_by_cash", new JSONObject(d.getJSONObject("stock_by_cash").toString()));
+          validateCashStock(
+              p,
+              work.optJSONArray("locations") == null
+                  ? new JSONArray()
+                  : work.getJSONArray("locations"));
+        }
+      } else reconcileCashStock(p, work.optJSONArray("locations"));
     } else if (path.equals("/api/availability")) {
       JSONObject product = find(ps, d.getInt("id"));
       String linked = "";
@@ -1542,11 +1665,7 @@ public final class CafeStore {
                 .put("route", p.getString("route"))
                 .put("status", "new")
                 .put("note", shortText(input.optString("note", ""), 300)));
-        if (p.has("stock") && !p.isNull("stock")) {
-          if (!p.optBoolean("stock_estimated", false) && p.getLong("stock") < qty)
-            throw new IllegalArgumentException("Недостатній залишок");
-          p.put("stock", p.getLong("stock") - qty);
-        }
+        changeStock(p, d.optString("location_id", "cash"), -qty, work.optJSONArray("locations"));
       }
       long total = 0;
       for (int i = 0; i < items.length(); i++) {
@@ -1707,14 +1826,11 @@ public final class CafeStore {
                 if (product.getInt("id") == it.optInt("product_id", 0)
                     && product.has("stock")
                     && !product.isNull("stock")) {
-                  if (!status.equals("cancelled")
-                      && !product.optBoolean("stock_estimated", false)
-                      && product.getLong("stock") < it.getInt("qty"))
-                    throw new IllegalArgumentException("Недостатній залишок");
-                  product.put(
-                      "stock",
-                      product.getLong("stock")
-                          + (status.equals("cancelled") ? it.getInt("qty") : -it.getInt("qty")));
+                  changeStock(
+                      product,
+                      o.optString("cash_location", "cash"),
+                      status.equals("cancelled") ? it.getInt("qty") : -it.getInt("qty"),
+                      work.optJSONArray("locations"));
                 }
               }
             }
@@ -1735,8 +1851,12 @@ public final class CafeStore {
       }
       if (!found) throw new IllegalArgumentException("Позицію не знайдено");
     } else throw new IllegalArgumentException("Невідома дія");
+    if (path.startsWith("/api/location/"))
+      for (int i = 0; i < ps.length(); i++)
+        reconcileCashStock(ps.getJSONObject(i), work.optJSONArray("locations"));
     List<String> domains = new ArrayList<>();
-    if (path.equals("/api/product")
+    if (path.startsWith("/api/location/")
+        || path.equals("/api/product")
         || path.equals("/api/delete-product")
         || path.equals("/api/availability")
         || ((path.equals("/api/order") || path.equals("/api/status"))

@@ -1,4 +1,4 @@
-import { hasFulfillment, locationById } from "./locations.js";
+import { hasFulfillment, locationById, inLocation } from "./locations.js";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { claimPhone } from "./phone.js";
 
@@ -159,15 +159,32 @@ export function filterState(state, user) {
         items: o.items.filter((i) =>
           user.role === "cash"
             ? (o.cash_location || "cash") === user.location
-            : i.destinations
-              ? i.destinations.some((d) => d.id === user.location)
-              : (i.location_id ||
-                  (user.role === "bar" ? "bar" : "delivery")) === user.location,
+            : inLocation(
+                i,
+                user.role === "bar" ? "bar" : "instant",
+                user.location,
+              ),
         ),
       }))
       .filter((o) => o.items.length);
   }
   if (user.role === "admin") return state;
+  if (user.location) {
+    const cash =
+      user.role === "cash"
+        ? user.location
+        : locationById(state.locations || [], user.location)?.linked_cash ||
+          "cash";
+    state.products = state.products.map((p) =>
+      p.stock_by_cash
+        ? {
+            ...p,
+            stock: p.stock_by_cash[cash] || 0,
+            stock_by_cash: { [cash]: p.stock_by_cash[cash] || 0 },
+          }
+        : p,
+    );
+  }
   delete state.additional_expenses;
   delete state.sessions;
   delete state.active_session;

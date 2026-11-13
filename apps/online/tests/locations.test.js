@@ -46,11 +46,10 @@ test("split location routing preserves catalog types, snapshots destinations and
   cash.single_target = delivery.id;
   const second = { items: [{ route: "bar" }, { route: "instant" }] };
   applyRouting(second, { location_id: cash.id }, locations);
-  assert.ok(
-    second.items.every(
-      (i) => i.location_id === delivery.id && i.fulfillment_route === "instant",
-    ),
-  );
+  assert.equal(second.items[0].location_id, "bar");
+  assert.equal(second.items[0].fulfillment_route, "bar");
+  assert.equal(second.items[1].location_id, delivery.id);
+  assert.ok(!inLocation(second.items[0], "instant", delivery.id));
   assert.equal(order.items[0].location_id, bar.id);
   for (const extra of [
     { color: "red" },

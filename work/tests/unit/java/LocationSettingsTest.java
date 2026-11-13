@@ -67,8 +67,10 @@ public class LocationSettingsTest {
     JSONArray items = o.getJSONArray("items");
     for (int i = 0; i < items.length(); i++) {
       JSONObject item = items.getJSONObject(i);
-      check(item.getString("location_id").equals(destination), "Wrong target");
-      check(item.getString("fulfillment_route").equals("instant"), "Whole order not routed");
+      check(item.getString("location_id").equals(i == 0 ? "bar" : destination), "Wrong target");
+      check(
+          item.getString("fulfillment_route").equals(item.getString("route")),
+          "Cross-route duplicate");
     }
     check(items.getJSONObject(0).getString("route").equals("bar"), "Catalog type changed");
     try {
@@ -87,7 +89,7 @@ public class LocationSettingsTest {
         "/api/issue",
         new JSONObject().put("id", id).put("route", "instant").put("location_id", destination));
     check(
-        order(s, id).getJSONArray("items").getJSONObject(0).getString("status").equals("delivered"),
+        order(s, id).getJSONArray("items").getJSONObject(1).getString("status").equals("delivered"),
         "Issue failed");
     check(
         s.state().getJSONObject("can_undo_issue").getBoolean("instant@" + destination),
@@ -127,11 +129,7 @@ public class LocationSettingsTest {
         splitItems.getJSONObject(1).getString("location_id").equals(destination),
         "Split food target wrong");
     check(
-        order(s, id)
-            .getJSONArray("items")
-            .getJSONObject(0)
-            .getString("location_id")
-            .equals(destination),
+        order(s, id).getJSONArray("items").getJSONObject(0).getString("location_id").equals("bar"),
         "Existing order rerouted after config edit");
     JSONObject payment = order(s, id).getJSONObject("payment");
     check(
@@ -183,8 +181,7 @@ public class LocationSettingsTest {
     s.mutate("/api/location/save", loc("bar", "Бариста головний", "bar").put("color", "#eecc44"));
     s.mutate(
         "/api/location/save",
-        loc(cash, "Спільна каса", "cash")
-            .put("targets", new JSONArray().put(bar).put(destination)));
+        loc(cash, "Спільна каса", "cash").put("targets", new JSONArray().put(bar).put("bar")));
     int joint =
         s.mutate(
                 "/api/order",
@@ -209,7 +206,7 @@ public class LocationSettingsTest {
       JSONArray rows = projection.getJSONArray("orders");
       for (int n = 0; n < rows.length(); n++)
         if (rows.getJSONObject(n).getInt("id") == joint) present = true;
-      check(present, "Shared order absent for role " + role);
+      check(present == role.equals("bar"), "Incorrect role projection " + role);
     }
     s.mutate(
         "/api/issue-unit",
@@ -229,7 +226,7 @@ public class LocationSettingsTest {
         "Shared unit not issued");
     s.mutate(
         "/api/issue",
-        new JSONObject().put("id", joint).put("route", "instant").put("location_id", destination));
+        new JSONObject().put("id", joint).put("route", "bar").put("location_id", "bar"));
     check(
         order(s, joint)
             .getJSONArray("items")
@@ -240,9 +237,7 @@ public class LocationSettingsTest {
     check(
         order(s, joint).getJSONObject("payment").toString().equals(originalPayment.toString()),
         "Shared issue changed finances");
-    s.mutate(
-        "/api/undo-issue",
-        new JSONObject().put("route", "instant").put("location_id", destination));
+    s.mutate("/api/undo-issue", new JSONObject().put("route", "bar").put("location_id", "bar"));
     JSONArray issued =
         order(s, joint).getJSONArray("items").getJSONObject(0).getJSONArray("unit_issued");
     check(issued.getBoolean(0) && !issued.getBoolean(1), "Shared undo restored wrong units");
@@ -272,7 +267,8 @@ public class LocationSettingsTest {
             == 2,
         "Destinations lost on restore");
     System.out.println(
-        "PASS locations/settings: whole-order routing, catalog preservation, scoped issue/undo,"
-            + " names, transaction hiding, expense deletion, permissions and persistence");
+        "PASS locations/settings: type-safe routing, shared same-type destinations, catalog"
+            + " preservation, scoped issue/undo, names, transaction hiding, expense deletion,"
+            + " permissions and persistence");
   }
 }

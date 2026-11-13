@@ -215,4 +215,101 @@ public final class CafeStats {
                 + " коштів не реєструються автоматично. Кількості страв і напоїв не включають"
                 + " скасовані позиції.");
   }
+
+  public static JSONObject live(JSONObject data, Integer session) throws Exception {
+    JSONArray orders = data.getJSONArray("orders"), chosen = new JSONArray();
+    long start = Long.MAX_VALUE, end = 0;
+    for (int n = 0; n < orders.length(); n++) {
+      JSONObject o = orders.getJSONObject(n);
+      if (o.optBoolean("stats_cleared") || session == null || o.optInt("session_id") != session)
+        continue;
+      chosen.put(o);
+      long at = utc(o.getString("created"));
+      start = Math.min(start, at);
+      end = Math.max(end, at);
+    }
+    if (session != null && session == data.optInt("active_session", 0))
+      end = System.currentTimeMillis();
+    long interval = 31536000;
+    for (long n : new long[] {900, 3600, 21600, 86400, 604800, 2592000})
+      if (chosen.length() == 0 || (double) (end - start) / (n * 1000) <= 48) {
+        interval = n;
+        break;
+      }
+    Map<Long, JSONObject> buckets = new TreeMap<>();
+    Map<String, JSONObject> cashiers = new LinkedHashMap<>();
+    SimpleDateFormat iso = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
+    iso.setTimeZone(TimeZone.getTimeZone("UTC"));
+    long pendingUnits = 0, pendingOrders = 0, oldest = Long.MAX_VALUE;
+    for (int n = 0; n < chosen.length(); n++) {
+      JSONObject o = chosen.getJSONObject(n);
+      long at = utc(o.getString("created")),
+          key = at / (interval * 1000) * interval * 1000,
+          amount = total(o);
+      JSONObject bucket = buckets.get(key);
+      if (bucket == null)
+        bucket =
+            new JSONObject()
+                .put("time", iso.format(new Date(key)))
+                .put("revenue", 0L)
+                .put("orders", 0L);
+      bucket
+          .put("revenue", bucket.getLong("revenue") + amount)
+          .put("orders", bucket.getLong("orders") + 1);
+      buckets.put(key, bucket);
+      String id = o.optString("cash_location", "cash");
+      JSONObject cash = cashiers.get(id);
+      if (cash == null)
+        cash =
+            new JSONObject()
+                .put("id", id)
+                .put("name", o.optString("cash_location_name", "Каса"))
+                .put("revenue", 0L)
+                .put("orders", 0L)
+                .put("pending_units", 0L);
+      cash.put("revenue", cash.getLong("revenue") + amount)
+          .put("orders", cash.getLong("orders") + 1);
+      JSONArray items = o.getJSONArray("items");
+      long pending = 0;
+      for (int j = 0; j < items.length(); j++) {
+        JSONObject it = items.getJSONObject(j);
+        if (Arrays.asList("delivered", "cancelled").contains(it.getString("status"))) continue;
+        JSONArray flags = it.optJSONArray("unit_issued");
+        int qty = it.getInt("qty");
+        if (flags != null && flags.length() == qty) {
+          for (int k = 0; k < qty; k++) if (!flags.getBoolean(k)) pending++;
+        } else pending += qty;
+      }
+      if (pending > 0) {
+        pendingOrders++;
+        pendingUnits += pending;
+        oldest = Math.min(oldest, at);
+      }
+      cash.put("pending_units", cash.getLong("pending_units") + pending);
+      cashiers.put(id, cash);
+    }
+    JSONArray timeline = new JSONArray(), sources = new JSONArray();
+    if (chosen.length() > 0)
+      for (long at = start / (interval * 1000) * interval * 1000; at <= end; at += interval * 1000)
+        timeline.put(
+            buckets.containsKey(at)
+                ? buckets.get(at)
+                : new JSONObject()
+                    .put("time", iso.format(new Date(at)))
+                    .put("revenue", 0L)
+                    .put("orders", 0L));
+    for (JSONObject cash : cashiers.values()) sources.put(cash);
+    return new JSONObject()
+        .put("generated_at", iso.format(new Date()))
+        .put("interval_seconds", interval)
+        .put("timeline", timeline)
+        .put("cashiers", sources)
+        .put("pending_units", pendingUnits)
+        .put("pending_orders", pendingOrders)
+        .put(
+            "oldest_wait_seconds",
+            oldest == Long.MAX_VALUE
+                ? 0
+                : Math.max(0, (System.currentTimeMillis() - oldest) / 1000));
+  }
 }

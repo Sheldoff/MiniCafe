@@ -234,14 +234,11 @@ test("cashier card history: narrow roles, pagination, card portion only, persist
   let locatedOrder = JSON.parse(
     sql.prepare("SELECT data FROM orders WHERE id=?").get(located).data,
   );
-  assert.ok(
-    locatedOrder.items.every(
-      (i) => i.location_id === delivery && i.fulfillment_route === "instant",
-    ),
-  );
+  assert.equal(locatedOrder.items[0].location_id, "bar");
+  assert.equal(locatedOrder.items[1].location_id, delivery);
   assert.equal(locatedOrder.items[0].route, "bar");
   const barState = await (await call("state", "4")).json();
-  assert.ok(!barState.orders.some((o) => o.id === located));
+  assert.ok(barState.orders.some((o) => o.id === located));
   assert.equal(
     (
       await call("issue-unit", "5", {
@@ -267,7 +264,8 @@ test("cashier card history: narrow roles, pagination, card portion only, persist
   locatedOrder = JSON.parse(
     sql.prepare("SELECT data FROM orders WHERE id=?").get(located).data,
   );
-  assert.ok(locatedOrder.items.every((i) => i.status === "delivered"));
+  assert.equal(locatedOrder.items[0].status, "new");
+  assert.equal(locatedOrder.items[1].status, "delivered");
   assert.equal(
     (await call("undo-issue", "5", { route: "instant", location_id: delivery }))
       .status,
@@ -411,7 +409,7 @@ test("cashier card history: narrow roles, pagination, card portion only, persist
     name: "Спільна каса",
     kind: "cash",
     color: "#eecc44",
-    targets: [bar, delivery],
+    targets: [bar, "bar"],
   });
   assert.equal(
     (
@@ -455,7 +453,7 @@ test("cashier card history: narrow roles, pagination, card portion only, persist
   assert.equal(joint.items[0].destinations.length, 2);
   assert.equal(joint.cash_location_name, "Спільна каса");
   assert.equal(joint.cash_location_color, "#eecc44");
-  for (const role of ["4", "5"]) {
+  for (const role of ["4"]) {
     const projection = (await (await call("state", role)).json()).orders.find(
       (o) => o.id === jointId,
     );
@@ -488,18 +486,17 @@ test("cashier card history: narrow roles, pagination, card portion only, persist
     ).status,
     200,
   );
-  assert.equal(
-    (await (await call("state", "5")).json()).orders.find(
+  assert.ok(
+    !(await (await call("state", "5")).json()).orders.some(
       (o) => o.id === jointId,
-    ).items[0].unit_issued[0],
-    true,
+    ),
   );
   assert.equal(
     (
-      await call("issue", "5", {
+      await call("issue", "4", {
         id: jointId,
-        route: "instant",
-        location_id: delivery,
+        route: "bar",
+        location_id: "bar",
       })
     ).status,
     200,
@@ -507,7 +504,7 @@ test("cashier card history: narrow roles, pagination, card portion only, persist
   assert.equal(getJoint().items[0].status, "delivered");
   assert.deepEqual(getJoint().payment, joint.payment);
   assert.equal(
-    (await call("undo-issue", "5", { route: "instant", location_id: delivery }))
+    (await call("undo-issue", "4", { route: "bar", location_id: "bar" }))
       .status,
     200,
   );
