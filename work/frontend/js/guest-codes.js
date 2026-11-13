@@ -80,7 +80,9 @@ function cloudEnterGuestCode() {
         if (
           !p ||
           productUnavailable(p) ||
-          (p.stock != null && !p.stock_estimated && item.qty > p.stock)
+          (productCashStock(p) != null &&
+            (!p.stock_estimated || p.stock_by_cash) &&
+            item.qty > productCashStock(p))
         )
           throw Error("Наявність змінилася. Перевірте меню.");
         return { ...p, qty: item.qty, note: "" };

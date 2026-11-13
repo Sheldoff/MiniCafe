@@ -40,6 +40,7 @@ function statisticsHeading(current) {
 }
 
 async function statistics() {
+  clearTimeout(liveStatsTimer);
   if (!hasServerState) return;
   let sessions = data.sessions || [],
     current = data.active_session || 0;
@@ -54,7 +55,7 @@ async function statistics() {
   ++historyRequest;
   if (!document.querySelector("#statisticsContent"))
     document.querySelector("#main").innerHTML =
-      `<div class="stats-top">${statisticsHeading(current)}</div><div class="stats-select"><label class="stats-period">Період<select aria-label="Період статистики" onchange="statsFilter(this.value)"></select></label><div class="stats-tabs" role="group" aria-label="Вигляд статистики"><button onclick="statsTabChange('orders')">Замовлення</button><button onclick="statsTabChange('report')">Звіт</button></div></div><div id="statisticsContent"><div class="stats-initial" aria-label="Завантаження статистики"></div></div>`;
+      `<div class="stats-top">${statisticsHeading(current)}</div><div class="stats-select"><label class="stats-period">Період<select aria-label="Період статистики" onchange="statsFilter(this.value)"></select></label><div class="stats-tabs" role="group" aria-label="Вигляд статистики"><button onclick="statsTabChange('orders')">Замовлення</button><button onclick="statsTabChange('report')">Звіт</button><button onclick="statsTabChange('online')">Онлайн</button></div></div><div id="statisticsContent"><div class="stats-initial" aria-label="Завантаження статистики"></div></div>`;
   let header = document.querySelector(".stats-top");
   if (header.dataset.current !== String(current)) {
     header.innerHTML = statisticsHeading(current);
@@ -75,14 +76,19 @@ async function statistics() {
     select.dataset.signature = signature;
   }
   select.value = statsSelection;
+  select.disabled = statsTab === "online";
   document.querySelectorAll(".stats-tabs button").forEach((button, i) => {
-    let selected = i === (statsTab === "report" ? 1 : 0);
+    let selected = ["orders", "report", "online"][i] === statsTab;
     button.classList.toggle("selected", selected);
     button.setAttribute("aria-pressed", String(selected));
   });
   let content = document.querySelector("#statisticsContent");
   content.classList.add("stats-loading");
   content.setAttribute("aria-busy", "true");
+  if (statsTab === "online") {
+    liveStatistics(current, serial);
+    return;
+  }
   if (statsTab === "orders") {
     historyCompact();
     return;
@@ -319,6 +325,9 @@ function replaceStatistics(html) {
     return;
   }
   box.dataset.markup = html;
+  const expandedPanels = [".live-data", ".stats-maintenance"].filter(
+    (selector) => same && box.querySelector(selector)?.open,
+  );
   let previousRows = same
     ? new Map(
         [...box.querySelectorAll(".history-record[data-history-order]")].map(
@@ -334,6 +343,9 @@ function replaceStatistics(html) {
   box.querySelectorAll(".stats-content-ghost").forEach((e) => e.remove());
   let ghost = old && !same ? cleanGhost(old.cloneNode(true)) : null;
   box.innerHTML = '<div class="stats-pane">' + html + "</div>";
+  expandedPanels.forEach((selector) =>
+    box.querySelector(selector)?.setAttribute("open", ""),
+  );
   box.querySelectorAll(".history-record[data-history-order]").forEach((e) => {
     if (expandedHistory.includes(e.dataset.historyOrder)) e.open = true;
     if (same) {

@@ -1,4 +1,4 @@
-import { locationById } from "./locations.js";
+import { locationById, inLocation } from "./locations.js";
 import { paymentRoutes, syncMono } from "./mono-payments.js";
 import { mutate, report, selected, undoAvailable, fail } from "./domain.js";
 import { load, commit, mutationQuery, prepareImages } from "./storage.js";
@@ -550,10 +550,7 @@ async function handle(request, env, ctx) {
       if (
         !order ||
         !order.items.some((i) =>
-          i.destinations
-            ? i.destinations.some((d) => d.id === user.location)
-            : (i.location_id || (user.role === "bar" ? "bar" : "delivery")) ===
-              user.location,
+          inLocation(i, user.role === "bar" ? "bar" : "instant", user.location),
         )
       )
         return json({ error: "Інша локація видачі" }, 403);

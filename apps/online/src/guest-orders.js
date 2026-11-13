@@ -1,3 +1,4 @@
+import { stockForCash } from "./cash-stock.js";
 import { monoEnabled, createPayment } from "./mono-payments.js";
 import {
   identity,
@@ -41,7 +42,9 @@ async function body(request) {
 const available = (p) =>
   !!p.active &&
   !p.sold_out &&
-  (p.stock == null || p.stock_estimated || p.stock > 0);
+  (p.stock_by_cash
+    ? stockForCash(p) > 0
+    : p.stock == null || p.stock_estimated || p.stock > 0);
 export function validateGuestName(value) {
   if (typeof value !== "string") fail("Вкажіть ім’я та прізвище");
   const name = value.trim().replace(/\s+/g, " "),
@@ -58,7 +61,7 @@ export function validateGuestName(value) {
 export function publicProducts(rows) {
   return rows
     .map((r) => JSON.parse(r.data))
-    .filter((p) => p.active)
+    .filter((p) => p.active && (!p.stock_by_cash || stockForCash(p) > 0))
     .map((p) => ({
       id: p.id,
       name: p.name,
@@ -73,8 +76,8 @@ export function publicProducts(rows) {
       price: p.price,
       available: available(p),
       limit:
-        p.stock != null && !p.stock_estimated
-          ? Math.max(0, Math.min(99, p.stock))
+        stockForCash(p) != null && (!p.stock_estimated || p.stock_by_cash)
+          ? Math.max(0, Math.min(99, stockForCash(p)))
           : 99,
     }));
 }

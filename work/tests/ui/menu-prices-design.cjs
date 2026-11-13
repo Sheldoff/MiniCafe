@@ -116,7 +116,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
                   ),
                 });
               if (stage === "editor") {
-                await page.locator("#editorBack").click();
+                await page.locator("[data-close-editor]").click();
                 await page
                   .locator(".product-form-panel")
                   .waitFor({ state: "hidden" });

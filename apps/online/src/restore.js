@@ -1,3 +1,4 @@
+import { validateCashStock } from "./cash-stock.js";
 import { validateLocation } from "./locations.js";
 import { fail, integer, validateProduct } from "./domain.js";
 
@@ -172,6 +173,7 @@ export function restoreData(before, input) {
   )
     fail("Некоректні локації");
   d.locations = d.locations.map((l) => validateLocation(l, d.locations));
+  for (const p of d.products) validateCashStock(p, d.locations);
   d.online_payment_enabled =
     typeof input.online_payment_enabled === "boolean"
       ? input.online_payment_enabled

@@ -73,7 +73,9 @@ public final class CafeHttpServer extends NanoHTTPD {
         String mime =
             path.endsWith(".js")
                 ? "application/javascript"
-                : path.endsWith(".svg") ? "image/svg+xml" : path.endsWith(".css") ? "text/css" : "text/html";
+                : path.endsWith(".svg")
+                    ? "image/svg+xml"
+                    : path.endsWith(".css") ? "text/css" : "text/html";
         Response r =
             newFixedLengthResponse(
                 Response.Status.OK, mime + "; charset=utf-8", guestAssets.get(path));
@@ -151,7 +153,8 @@ public final class CafeHttpServer extends NanoHTTPD {
               store.statistics(
                   sid == null ? null : Integer.valueOf(sid),
                   day,
-                  zone == null ? 0 : Integer.parseInt(zone)));
+                  zone == null ? 0 : Integer.parseInt(zone),
+                  "1".equals(s.getParms().get("live"))));
         }
         if (path.equals("/api/report.pdf")) {
           if (pdfFont == null)

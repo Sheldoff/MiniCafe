@@ -1,9 +1,22 @@
 const kinds = ["cash", "bar", "delivery"];
-export const fulfillmentRoute = (i) => i.fulfillment_route || i.route;
-export const hasFulfillment = (i, route) =>
-  i.destinations
-    ? i.destinations.some((d) => d.route === route)
-    : fulfillmentRoute(i) === route;
+// Catalog route remains authoritative, including older cross-routed snapshots.
+export const fulfillmentRoute = (i) => i.route;
+export function itemDestinations(i) {
+  const route = i.route;
+  const matching = (i.destinations || []).filter((d) => d.route === route);
+  if (matching.length) return matching;
+  return [
+    {
+      id:
+        (!i.destinations &&
+          (!i.fulfillment_route || i.fulfillment_route === route) &&
+          i.location_id) ||
+        (route === "bar" ? "bar" : "delivery"),
+      route,
+    },
+  ];
+}
+export const hasFulfillment = (i, route) => i.route === route;
 export const baseLocation = (route) => (route === "bar" ? "bar" : "delivery");
 export const undoKey = (route, id) =>
   id && id !== baseLocation(route) ? route + "@" + id : route;
@@ -86,36 +99,30 @@ export function applyRouting(order, input, locations = []) {
   order.cash_location_name = cash.name;
   order.cash_location_color = cash.color || "#27634f";
   for (const item of order.items) {
-    if (cash.targets) {
-      item.destinations = cash.targets.map((target) => {
-        const l = locationById(locations, target);
-        if (!l || l.kind === "cash") throw Error("Локацію видачі не знайдено");
-        return { id: target, route: l.kind === "bar" ? "bar" : "instant" };
-      });
-      item.location_id = item.destinations[0].id;
-      item.fulfillment_route = item.destinations[0].route;
-      continue;
-    }
-    const target =
+    const kind = item.route === "bar" ? "bar" : "delivery";
+    let targets = cash.targets || [
       cash.mode === "single"
         ? cash.single_target || "delivery"
         : item.route === "bar"
           ? cash.bar_target || "bar"
-          : cash.delivery_target || "delivery";
-    const destination = locationById(locations, target);
-    if (!destination || destination.kind === "cash")
-      throw Error("Локацію видачі не знайдено");
-    item.location_id = target;
-    item.fulfillment_route = destination.kind === "bar" ? "bar" : "instant";
+          : cash.delivery_target || "delivery",
+    ];
+    targets = targets.filter(
+      (target) => locationById(locations, target)?.kind === kind,
+    );
+    if (!targets.length) targets = [baseLocation(item.route)];
+    item.destinations = targets.map((target) => ({
+      id: target,
+      route: item.route,
+    }));
+    item.location_id = targets[0];
+    item.fulfillment_route = item.route;
   }
 }
 export const inLocation = (item, route, id) =>
-  item.destinations
-    ? item.destinations.some(
-        (d) => d.route === route && d.id === (id || baseLocation(route)),
-      )
-    : fulfillmentRoute(item) === route &&
-      (item.location_id || baseLocation(route)) === (id || baseLocation(route));
+  itemDestinations(item).some(
+    (d) => d.route === route && d.id === (id || baseLocation(route)),
+  );
 
 export function checkLocationChange(id, rows, orders) {
   if (
@@ -124,11 +131,7 @@ export function checkLocationChange(id, rows, orders) {
         (i) =>
           !["delivered", "cancelled"].includes(i.status) &&
           (o.cash_location === id ||
-            (
-              i.destinations || [
-                { id: i.location_id || baseLocation(fulfillmentRoute(i)) },
-              ]
-            ).some((d) => d.id === id)),
+            itemDestinations(i).some((d) => d.id === id)),
       ),
     )
   )

@@ -1,3 +1,10 @@
+import { liveSession } from "./live-stats.js";
+import {
+  validateCashStock,
+  reconcileCashStock,
+  changeStock,
+  checkStockBasis,
+} from "./cash-stock.js";
 import {
   validateLocation,
   applyRouting,
@@ -52,6 +59,7 @@ export function validateProduct(p) {
   if (p.stock != null) integer(p.stock, -1000000, 1000000);
   if (p.stock_estimated !== undefined && typeof p.stock_estimated !== "boolean")
     fail("Некоректний режим залишку");
+  validateCashStock(p);
   return p;
 }
 export function flags(i) {
@@ -102,7 +110,12 @@ export function undoAvailable(d, route) {
         o.id === a.order &&
         a.units.some((u) => {
           const i = o.items.find((i) => i.id === u.id);
-          return i && i.status !== "cancelled" && flags(i)[u.unit];
+          return (
+            i &&
+            inLocation(i, route.split("@")[0], route.split("@")[1]) &&
+            i.status !== "cancelled" &&
+            flags(i)[u.unit]
+          );
         }),
     ),
   );
@@ -116,6 +129,7 @@ export function mutate(d, path, input) {
     let product = input.id
       ? find(p, integer(input.id, 1))
       : { id: d.nextProduct++, sold_out: false };
+    if (input.id) checkStockBasis(product, input.stock_basis);
     if (!input.id) p.push(product);
     Object.assign(
       product,
@@ -142,6 +156,13 @@ export function mutate(d, path, input) {
           1000000,
         );
     }
+    if ("stock_by_cash" in input) {
+      if (input.stock_by_cash === null) delete product.stock_by_cash;
+      else {
+        product.stock_by_cash = structuredClone(input.stock_by_cash);
+        validateCashStock(product, d.locations || []);
+      }
+    } else reconcileCashStock(product, d.locations || []);
     if ("image" in input) product.image = input.image;
     result.id = product.id;
     changed.add("products");
@@ -171,6 +192,8 @@ export function mutate(d, path, input) {
       checkLocationChange(row.id, d.locations, orders);
     if (index < 0) d.locations.push(row);
     else d.locations[index] = row;
+    for (const product of p) reconcileCashStock(product, d.locations || []);
+    changed.add("products");
     changed.add("locations");
   } else if (path === "location/delete") {
     if (["cash", "bar", "delivery"].includes(input.id))
@@ -179,6 +202,8 @@ export function mutate(d, path, input) {
       fail("Локацію не знайдено");
     checkLocationChange(input.id, d.locations, orders);
     d.locations = d.locations.filter((l) => l.id !== input.id);
+    for (const product of p) reconcileCashStock(product, d.locations || []);
+    changed.add("products");
     changed.add("locations");
   } else if (path === "settings/update") {
     if (typeof input.online_payment_enabled !== "boolean")
@@ -232,11 +257,12 @@ export function mutate(d, path, input) {
         row.unit_price === undefined
           ? product.price
           : integer(row.unit_price, 0, 100000000);
-      if (product.stock != null) {
-        if (!product.stock_estimated && product.stock < qty)
-          fail("Недостатній залишок");
-        product.stock -= qty;
-      }
+      changeStock(
+        product,
+        input.location_id || "cash",
+        -qty,
+        d.locations || [],
+      );
       return {
         id: d.nextItem++,
         order_id: id,
@@ -355,13 +381,12 @@ export function mutate(d, path, input) {
       (i.status === "cancelled" || input.status === "cancelled") &&
       product?.stock != null
     ) {
-      if (
-        input.status !== "cancelled" &&
-        !product.stock_estimated &&
-        product.stock < i.qty
-      )
-        fail("Недостатній залишок");
-      product.stock += input.status === "cancelled" ? i.qty : -i.qty;
+      changeStock(
+        product,
+        o.cash_location || "cash",
+        input.status === "cancelled" ? i.qty : -i.qty,
+        d.locations || [],
+      );
       changed.add("products");
     }
     delete i.unit_issued;
@@ -452,6 +477,7 @@ export function mutate(d, path, input) {
       if (touched.has(product.id)) fail("Повторна позиція");
       touched.add(product.id);
       Object.assign(product, { price, stock });
+      reconcileCashStock(product, d.locations || []);
       result.ids.push(product.id);
     }
     if (input.calculation_id !== undefined || input.cost !== undefined) {
@@ -598,6 +624,8 @@ export function report(d, params) {
         Date.parse(r.first_order.replace(" ", "T") + "Z")) /
       1000
     : 0;
+  if (params.get("live") === "1")
+    r.live = liveSession(orders, sid === d.active_session);
   r.categories = [...category.values()];
   r.drinks = [...drinks.values()];
   r.food = [...food.values()];

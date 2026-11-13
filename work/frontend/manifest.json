@@ -12,7 +12,8 @@
     "css/coffee.css",
     "css/settings-controls.css",
     "css/statistics.css",
-    "css/menu-prices.css"
+    "css/menu-prices.css",
+    "css/cash-live.css"
   ],
   "scripts": [
     "js/state.js",
@@ -23,7 +24,9 @@
     "js/payments.js",
     "js/card-payments.js",
     "js/serving.js",
+    "js/cash-stock.js",
     "js/editor.js",
+    "js/live-statistics.js",
     "js/statistics.js",
     "js/calculator.js",
     "js/motion.js",
