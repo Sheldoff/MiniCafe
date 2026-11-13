@@ -11,7 +11,8 @@
     "css/location-controls.css",
     "css/coffee.css",
     "css/settings-controls.css",
-    "css/statistics.css"
+    "css/statistics.css",
+    "css/menu-prices.css"
   ],
   "scripts": [
     "js/state.js",

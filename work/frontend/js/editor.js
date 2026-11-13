@@ -80,22 +80,67 @@ function menu(reset = false) {
   imageLoading = false;
   imageDraft = undefined;
   document.querySelector("#main").innerHTML =
-    `<div class="grid menu-editor-grid"><section class="panel product-form-panel" hidden><div class="row"><h2 class="grow">Редактор меню</h2><button type="button" id="editorBack" onclick="closeProductEditor()">← До списку</button></div><p class="muted">Додавайте товари, змінюйте ціни та доступність.</p><form id="form" onsubmit="saveProduct(event)"><input id="pid" type="hidden"><label>Назва</label><input id="pname" required><label>Категорія</label><input id="pcategory" required value="Їжа" autocomplete="off" oninput="suggestCategories(this.value)" onfocus="suggestCategories(this.value)"><div id="categorySuggestions" class="category-suggestions"></div><label>Обробка</label><select id="proute"><option value="bar">Передати бариста</option><option value="instant" selected>Передати на видачу їжі</option></select><label>Ціна, грн</label><input data-money id="pprice" type="number" min="0" step="0.01" required><label for="pstock">Кількість, необов’язково</label><input id="pstock" type="number" min="0" max="1000000" step="1" inputmode="numeric" placeholder="Кількість"><label class="stock-mode"><input id="pestimated" type="checkbox" onchange="document.querySelector('#pstock').min=this.checked?'-1000000':'0'">Орієнтовна кількість</label><small class="muted">З галочкою залишок може бути від’ємним.</small><label>Зображення товару</label><div class="image-editor"><div id="picturePreview" class="image-preview">Зображення ще не додано</div><input id="pimage" aria-label="Зображення товару" type="file" accept="image/*" style="display:none" onchange="choosePicture(this)"><div class="row photo-actions"><button type="button" class="primary" onclick="document.querySelector('#pimage').value='';document.querySelector('#pimage').click()">Обрати фото</button><button type="submit">Зберегти фото</button><button type="button" onclick="removePicture()">Прибрати</button></div></div><input id="pactive" type="checkbox" checked hidden><button id="activeToggle" type="button" class="active-toggle" aria-pressed="true" onclick="toggleProductActive()">● Показувати товар у меню</button><div class="row editor-save-actions"><button class="primary">Зберегти</button><button type="button" data-close-editor onclick="closeProductEditor()">Закрити редактор</button></div></form></section><section class="panel product-list-panel"><div class="row" style="margin:0 0 10px"><h2 class="grow" style="margin:0">Товари</h2><button id="editorToggle" onclick="toggleProductEditor()" aria-expanded="false">＋ Новий товар</button></div><input id="productSearch" type="search" placeholder="Пошук за назвою" aria-label="Пошук товарів" oninput="filterEditorProducts(this.value)"><div id="editorProducts">${editorProductRows("")}</div></section></div>`;
+    `<div class="grid menu-editor-grid">
+<section class="panel product-form-panel" hidden>
+  <div class="menu-page-heading"><div><h2>Редактор меню</h2><p>Назва, ціна, фото й доступність товару.</p></div><button type="button" id="editorBack" onclick="closeProductEditor()">← До списку</button></div>
+  <form id="form" onsubmit="saveProduct(event)">
+    <input id="pid" type="hidden">
+    <div class="editor-fields">
+      <fieldset class="editor-section"><legend>Основні дані</legend>
+        <label for="pname">Назва товару</label><input id="pname" required>
+        <label for="pcategory">Категорія</label><input id="pcategory" required value="Їжа" autocomplete="off" oninput="suggestCategories(this.value)" onfocus="suggestCategories(this.value)"><div id="categorySuggestions" class="category-suggestions"></div>
+        <label for="proute">Куди передавати</label><select id="proute"><option value="bar">Передати бариста</option><option value="instant" selected>Передати на видачу їжі</option></select>
+      </fieldset>
+      <fieldset class="editor-section"><legend>Ціна й наявність</legend>
+        <div class="editor-price-stock"><div><label for="pprice">Ціна, грн</label><input data-money id="pprice" type="number" min="0" step="0.01" required></div><div><label for="pstock">Кількість, необов’язково</label><input id="pstock" type="number" min="0" max="1000000" step="1" inputmode="numeric" placeholder="Кількість"></div></div>
+        <label class="stock-mode"><input id="pestimated" type="checkbox" onchange="document.querySelector('#pstock').min=this.checked?'-1000000':'0'">Орієнтовна кількість</label><p class="editor-field-hint">З галочкою залишок може бути від’ємним. Порожня кількість — без обмеження залишку.</p>
+      </fieldset>
+    </div>
+    <aside class="editor-media">
+      <fieldset class="editor-section"><legend>Фото й видимість</legend>
+        <div class="image-editor"><div id="picturePreview" class="image-preview">Зображення ще не додано</div><input id="pimage" aria-label="Зображення товару" type="file" accept="image/*" style="display:none" onchange="choosePicture(this)"><div class="row photo-actions"><button type="button" class="primary" onclick="document.querySelector('#pimage').value='';document.querySelector('#pimage').click()">Обрати фото</button><button type="button" onclick="removePicture()">Прибрати</button></div></div>
+        <p class="editor-field-hint">Фото збережеться разом із товаром.</p><input id="pactive" type="checkbox" checked hidden><button id="activeToggle" type="button" class="active-toggle" aria-pressed="true" onclick="toggleProductActive()">● Показувати товар у меню</button>
+      </fieldset>
+    </aside>
+    <div class="row editor-save-actions"><button class="primary">Зберегти</button><button type="button" data-close-editor onclick="closeProductEditor()">Закрити редактор</button></div>
+  </form>
+</section>
+<section class="panel product-list-panel">
+  <div class="menu-page-heading"><div><h2>Меню й ціни</h2><p>Натисніть на товар, щоб змінити його дані.</p></div><button class="primary" id="editorToggle" onclick="toggleProductEditor()" aria-expanded="false">＋ Новий товар</button></div>
+  <div class="menu-catalog-toolbar"><label for="productSearch">Знайти товар<input id="productSearch" type="search" placeholder="Пошук за назвою" aria-label="Пошук товарів" oninput="filterEditorProducts(this.value)"></label><span id="editorProductCount">${editorProductCount("")}</span></div>
+  <div id="editorProducts">${editorProductRows("")}</div>
+</section></div>`;
+
   restoreEditorDraft();
   decorateMoneyFields();
 }
 
-function editorProductRows(q) {
-  let ps = data.products.filter((p) =>
+function editorMatchingProducts(q) {
+  return data.products.filter((p) =>
     p.name.toLocaleLowerCase("uk").includes(q.trim().toLocaleLowerCase("uk")),
   );
+}
+function editorProductCount(q) {
+  return q.trim()
+    ? editorMatchingProducts(q).length +
+        " з " +
+        data.products.length +
+        " позицій"
+    : data.products.length + " позицій";
+}
+function editorProductRows(q) {
   return (
-    ps
+    editorMatchingProducts(q)
       .map(
-        (p) =>
-          `<div class="editor-product" data-product-id="${p.id}" role="button" tabindex="0" aria-label="Редагувати ${esc(p.name)}" onclick="editProduct(${p.id})" onkeydown="if(event.target===this&&(event.key==='Enter'||event.key===' ')){event.preventDefault();editProduct(${p.id})}">${p.image_version ? `<img class="product-thumb" loading="lazy" src="${esc(imageUrl(p))}" alt="">` : '<span class="editor-placeholder">' + (p.route === "bar" ? "☕" : "🥐") + "</span>"}<span class="grow"><b>${esc(p.name)}</b><small>${esc(p.category)} · ${money(p.price)}${p.active ? "" : " · Приховано"}</small></span><button class="remove" onclick="event.stopPropagation();deleteProduct(${p.id})">Видалити</button></div>`,
+        (
+          p,
+        ) => `<div class="editor-product" data-product-id="${p.id}" role="button" tabindex="0" aria-label="Редагувати ${esc(p.name)}" onclick="editProduct(${p.id})" onkeydown="if(event.target===this&&(event.key==='Enter'||event.key===' ')){event.preventDefault();editProduct(${p.id})}">
+    <div class="editor-product-info">${p.image_version ? `<img class="product-thumb" loading="lazy" src="${esc(imageUrl(p))}" alt="">` : '<span class="editor-placeholder" aria-hidden="true">' + (p.route === "bar" ? "☕" : "🥐") + "</span>"}<span class="grow"><b class="editor-product-name">${esc(p.name)}</b><small>${esc(p.category)}</small></span><strong class="editor-price">${money(p.price)}</strong></div>
+    <div class="editor-product-footer"><span class="editor-product-state${p.active ? "" : " is-hidden"}">${p.active ? "● У меню" : "○ Приховано"}</span><button type="button" class="remove" aria-label="Видалити ${esc(p.name)}" onclick="event.stopPropagation();deleteProduct(${p.id})">Видалити</button></div>
+  </div>`,
       )
-      .join("") || '<p class="muted">Нічого не знайдено</p>'
+      .join("") ||
+    '<div class="menu-catalog-empty"><b>Нічого не знайдено</b><p>Спробуйте іншу назву або додайте новий товар.</p></div>'
   );
 }
 
@@ -170,6 +215,8 @@ function closeProductEditor(fromHistory = false) {
 }
 
 function filterEditorProducts(q) {
+  const count = document.querySelector("#editorProductCount");
+  if (count) count.textContent = editorProductCount(q);
   animateList(
     document.querySelector("#editorProducts"),
     () => {

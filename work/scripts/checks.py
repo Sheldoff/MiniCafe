@@ -144,6 +144,7 @@ def main():
             run(["node", ROOT / "apps/online/tests/guest-ui.cjs"], env={**env, "CAFE_LOCAL_GUEST": "1"})
             for test in [
                 "editor-calculator",
+                "menu-prices-design",
                 "cashier",
                 "card-payments",
                 "settings-locations",

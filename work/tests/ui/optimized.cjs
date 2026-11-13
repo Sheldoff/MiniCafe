@@ -112,6 +112,9 @@ const { chromium, webkit, base, key, chromeOptions } = require("./helpers.cjs");
     });
     await p.waitForTimeout(200);
     assert(responses.length > count);
+    // Restore real page visibility before later navigation. Keeping the mock
+    // "visible" value makes WebKit poll the document while it is unloading.
+    await p.evaluate(() => delete document.visibilityState);
     await p.evaluate(() => change("calculator"));
     await p.locator("#calcCost").fill("100");
     await p.locator("#calcName-0").fill("Тест їжі " + name);
