@@ -66,7 +66,7 @@
     "private_password_file_separate": "work/android/signing.local.json",
     "certificate_fingerprint_file": "work/android/signing-cert.sha256"
   },
-  "validation_limit": "3.55 / online 0.22: validation in progress; see docs/CASH-STOCK-LIVE-UA.md. Previous 3.54 evidence preserved in Git history.",
+  "validation_limit": "Android 3.55: full checks.py without skips passed (ee9d8f1d9e8f4b0384f33bc6420fc566, 24 Java suites, local API contracts and Chrome/WebKit). New cash-live UI passed in both Android and online: partitions/remainders/zero hiding, shared same-type queues and no cross-type duplicates, bar portion badges, SVG empties, current-session graphs/auto refresh/stale data/revoked access, four themes and 320/390/768/1440 px. Original signing certificate verified, code 67. Online 0.22: 24 unit tests, local D1 API/CAS/security/stock/live/refund/backup tests, Java-D1 interop and Chrome/WebKit cashier/editor/Cyrillic PDF passed. GitHub source and online checks passed. Worker b15f147e-0329-451b-8ead-605c2b2821c2; public read-only smoke / 200, /admin 302, /api/ping 200. No physical phones or production test orders/restore; Windows frozen. Source archive/private-value scan and final checksums verified during release packaging.",
   "development_tracks": {
     "policy": "docs/PROJECT-TRACKS-UA.md",
     "local_android": {
