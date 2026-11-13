@@ -35,6 +35,10 @@ function statsTabChange(tab) {
   statistics();
 }
 
+function statisticsHeading(current) {
+  return `<div class="stats-heading"><h2>Статистика</h2><p class="stats-session"><span class="stats-status-dot" aria-hidden="true"></span>${current ? "Відкрита сесія №" + current : "Немає відкритої сесії"}</p></div>${current ? '<button class="stats-end-session" onclick="endSession()">Завершити сесію</button>' : ""}`;
+}
+
 async function statistics() {
   if (!hasServerState) return;
   let sessions = data.sessions || [],
@@ -50,20 +54,10 @@ async function statistics() {
   ++historyRequest;
   if (!document.querySelector("#statisticsContent"))
     document.querySelector("#main").innerHTML =
-      `<div class="stats-top"><div><h2>Статистика</h2><p class="muted">${current ? "Відкрита сесія №" + current : "Немає відкритої сесії"}</p></div>${current ? `<button class="remove" onclick="endSession()">Завершити сесію</button>` : ""}</div><div class="stats-select"><select aria-label="Період статистики" onchange="statsFilter(this.value)"><option value="${today}" ${statsSelection === today ? "selected" : ""}>Сьогодні · ${localDay()}</option>${[
-        ...sessions,
-      ]
-        .reverse()
-        .map(
-          (s) =>
-            `<option value="${s.id}" ${String(s.id) === statsSelection ? "selected" : ""}>${esc(s.name)} · ${s.legacy ? "історія" : s.ended ? "завершена" : "відкрита"}</option>`,
-        )
-        .join(
-          "",
-        )}</select><div class="stats-tabs"><button class="${statsTab === "orders" ? "selected" : ""}" onclick="statsTabChange('orders')">Замовлення</button><button class="${statsTab === "report" ? "selected" : ""}" onclick="statsTabChange('report')">Звіт</button></div></div><div id="statisticsContent"><div class="stats-initial" aria-label="Завантаження статистики"></div></div>`;
+      `<div class="stats-top">${statisticsHeading(current)}</div><div class="stats-select"><label class="stats-period">Період<select aria-label="Період статистики" onchange="statsFilter(this.value)"></select></label><div class="stats-tabs" role="group" aria-label="Вигляд статистики"><button onclick="statsTabChange('orders')">Замовлення</button><button onclick="statsTabChange('report')">Звіт</button></div></div><div id="statisticsContent"><div class="stats-initial" aria-label="Завантаження статистики"></div></div>`;
   let header = document.querySelector(".stats-top");
   if (header.dataset.current !== String(current)) {
-    header.innerHTML = `<div><h2>Статистика</h2><p class="muted">${current ? "Відкрита сесія №" + current : "Немає відкритої сесії"}</p></div>${current ? '<button class="remove" onclick="endSession()">Завершити сесію</button>' : ""}`;
+    header.innerHTML = statisticsHeading(current);
     header.dataset.current = String(current);
   }
   let select = document.querySelector(".stats-select select"),
@@ -81,14 +75,11 @@ async function statistics() {
     select.dataset.signature = signature;
   }
   select.value = statsSelection;
-  document
-    .querySelectorAll(".stats-tabs button")
-    .forEach((button, i) =>
-      button.classList.toggle(
-        "selected",
-        i === (statsTab === "report" ? 1 : 0),
-      ),
-    );
+  document.querySelectorAll(".stats-tabs button").forEach((button, i) => {
+    let selected = i === (statsTab === "report" ? 1 : 0);
+    button.classList.toggle("selected", selected);
+    button.setAttribute("aria-pressed", String(selected));
+  });
   let content = document.querySelector("#statisticsContent");
   content.classList.add("stats-loading");
   content.setAttribute("aria-busy", "true");
@@ -107,8 +98,9 @@ async function statistics() {
       return;
     statsCurrent = report;
     replaceStatistics(
-      reportMarkup(report) +
-        `<div class="report-actions"><button class="primary" onclick="exportStatistics()">Завантажити статистику PDF</button><button class="remove" onclick="clearStatistics()">Повністю очистити статистику</button></div>`,
+      `<div class="report-actions"><p>Підсумки обраного періоду</p><button class="primary" aria-label="Завантажити статистику PDF" onclick="exportStatistics()">${settingsIconSvgs.download}Завантажити PDF</button></div>` +
+        reportMarkup(report) +
+        `<details class="stats-maintenance"><summary>Керування історією</summary><p class="muted">Очищення видалить усю статистику, а не лише обраний період.</p><button class="remove" onclick="clearStatistics()">Повністю очистити статистику</button></details>`,
     );
   } catch (e) {
     if (serial === statsRequest && view === "history" && statsTab === "report")
@@ -147,7 +139,7 @@ async function historyCompact() {
 
 function renderHistoryCompact(orders, total, hasNext) {
   replaceStatistics(
-    `<div class="history-compact">${orders.length ? orders.map((o) => `<details class="history-record" data-history-order="${o.id}"><summary><span class="history-id">№${o.id}</span><span class="grow"><b>${esc(o.guest || "Гість")}${o.gift ? " · 🎁" : ""}</b><small>${new Date(o.created.replace(" ", "T") + "Z").toLocaleString("uk-UA", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</small></span><b>${money(o.items.reduce((s, i) => s + i.price * i.qty, 0))}</b></summary><div class="history-body">${o.payment ? `<p class="tiny">Готівка: ${money(o.payment.cash_amount)} · Картка: ${money(o.payment.card_amount)} · Решта: ${money(o.payment.change)}</p>` : '<p class="tiny">Тип оплати до оновлення не записувався</p>'}${o.comment ? `<div class="order-note">${esc(o.comment)}</div>` : ""}${o.items.map((i) => `<div class="history-item"><span class="grow">${i.qty} × ${esc(i.name)}<small>${i.route === "bar" ? "Напій" : "Їжа"} · ${labels[i.status]}${i.note ? " · " + esc(i.note) : ""}</small></span><b>${money(i.price * i.qty)}</b>${!["delivered", "cancelled"].includes(i.status) ? `<button class="remove" onclick="cancelItem(${i.id})">Скасувати</button>` : `<button class="tiny" onclick="setItemStatus(${i.id},'new')">Повернути</button>`}</div>`).join("")}</div></details>`).join("") : '<div class="panel">За цей період замовлень немає</div>'}</div><div class="row page-controls"><button onclick="historyPage--;historyCompact()" ${historyPage === 0 ? "disabled" : ""}>← Назад</button><span>Сторінка ${historyPage + 1} · Усього ${total}</span><button onclick="historyPage++;historyCompact()" ${hasNext ? "" : "disabled"}>Далі →</button></div>`,
+    `<div class="stats-history-heading"><h3>Історія замовлень</h3><span>${total} усього</span></div><div class="history-compact">${orders.length ? orders.map((o) => `<details class="history-record" data-history-order="${o.id}"><summary><span class="history-id">№${o.id}</span><span class="grow"><b>${esc(o.guest || "Гість")}${o.gift ? " · 🎁" : ""}</b><small>${new Date(o.created.replace(" ", "T") + "Z").toLocaleString("uk-UA", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</small></span><b>${money(o.items.reduce((s, i) => s + i.price * i.qty, 0))}</b></summary><div class="history-body">${o.payment ? `<p class="tiny">Готівка: ${money(o.payment.cash_amount)} · Картка: ${money(o.payment.card_amount)} · Решта: ${money(o.payment.change)}</p>` : '<p class="tiny">Тип оплати до оновлення не записувався</p>'}${o.comment ? `<div class="order-note">${esc(o.comment)}</div>` : ""}${o.items.map((i) => `<div class="history-item"><span class="grow">${i.qty} × ${esc(i.name)}<small>${i.route === "bar" ? "Напій" : "Їжа"} · ${labels[i.status]}${i.note ? " · " + esc(i.note) : ""}</small></span><b>${money(i.price * i.qty)}</b>${!["delivered", "cancelled"].includes(i.status) ? `<button class="remove" onclick="cancelItem(${i.id})">Скасувати</button>` : `<button class="tiny" onclick="setItemStatus(${i.id},'new')">Повернути</button>`}</div>`).join("")}</div></details>`).join("") : '<div class="panel">За цей період замовлень немає</div>'}</div><div class="row page-controls" role="navigation" aria-label="Сторінки історії"><button onclick="historyPage--;historyCompact()" ${historyPage === 0 ? "disabled" : ""}>← Назад</button><span>Сторінка ${historyPage + 1} · Усього ${total}</span><button onclick="historyPage++;historyCompact()" ${hasNext ? "" : "disabled"}>Далі →</button></div>`,
   );
 }
 

@@ -1,0 +1,506 @@
+/* Shared statistics workspace: use theme tokens for every state. */
+.stats-top,
+.stats-select,
+#statisticsContent {
+  width: 100%;
+  max-width: 1120px;
+  margin-inline: auto;
+}
+.stats-top {
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.stats-heading h2 {
+  font-size: 26px;
+  letter-spacing: -0.6px;
+}
+.stats-session {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 13px;
+  margin: 7px 0 0;
+}
+.stats-status-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.stats-top .stats-end-session {
+  min-height: 44px;
+  font-size: 13px;
+  padding: 10px 16px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.stats-select {
+  display: flex;
+  align-items: end;
+  gap: 24px;
+  padding: 16px;
+  margin-bottom: 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+.stats-period {
+  flex: 1;
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.stats-select select {
+  width: 100%;
+  max-width: none;
+  min-height: 46px;
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--input-bg);
+}
+.stats-tabs {
+  flex-shrink: 0;
+  padding: 4px;
+  gap: 4px;
+  border-radius: 12px;
+  background: var(--page);
+  border: 1px solid var(--border);
+}
+.stats-tabs button {
+  min-height: 44px;
+  min-width: 112px;
+  margin: 0;
+  padding: 10px 18px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid transparent;
+  border-radius: 9px;
+  font-weight: 600;
+}
+.stats-tabs button.selected {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+.stats-select button:focus-visible,
+.stats-top button:focus-visible,
+#statisticsContent button:focus-visible,
+#statisticsContent summary:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+.report-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 16px;
+}
+.report-actions p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+.report-actions button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  margin: 0;
+  font-size: 14px;
+  padding: 10px 18px;
+}
+.report-actions svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+#reportDocument {
+  max-width: none;
+  margin: 0;
+  padding: 24px;
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+#reportDocument > h2 {
+  margin: 0 0 22px;
+  font-size: 20px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+#reportDocument .report-group {
+  margin: 24px 0 0;
+}
+#reportDocument .report-group h3,
+#reportDocument .report-breakdown h3 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--text);
+  letter-spacing: 0;
+  text-transform: none;
+}
+#reportDocument .metrics {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+#reportDocument .metric {
+  padding: 16px;
+  background: var(--page);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+#reportDocument .metric > span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+#reportDocument .metric > b {
+  display: block;
+  margin-top: 8px;
+  font-size: 23px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+  color: var(--text);
+}
+#reportDocument .metric small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+}
+#reportDocument .report-finances {
+  margin-top: 0;
+}
+#reportDocument .report-finances .balance-metric {
+  grid-row: 1;
+  grid-column: 1 / -1;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  padding: 20px;
+}
+#reportDocument .balance-metric > span,
+#reportDocument .balance-values span,
+#reportDocument .balance-values b {
+  color: var(--on-accent);
+}
+#reportDocument .balance-values {
+  gap: 20px;
+  margin-top: 16px;
+}
+#reportDocument .balance-values > div + div {
+  border-left: 1px solid currentColor;
+  padding-left: 20px;
+}
+#reportDocument .balance-values span {
+  font-size: 13px;
+}
+#reportDocument .balance-values b {
+  display: block;
+  font-size: 30px;
+  margin-top: 6px;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+#reportDocument .report-negative .balance-metric {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+#reportDocument .report-negative .balance-metric span,
+#reportDocument .report-negative .balance-metric b {
+  color: var(--danger);
+}
+#reportDocument .expense-add {
+  min-height: 44px;
+  padding: 10px 16px;
+  margin: 12px 0 0;
+  font-size: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+#reportDocument .report-times {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 16px;
+  background: var(--page);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+#reportDocument .report-times p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+#reportDocument .report-times b {
+  display: block;
+  color: var(--text);
+  font-weight: 600;
+}
+#reportDocument .report-breakdown {
+  margin-top: 26px;
+}
+#reportDocument .report-table {
+  font-size: 14px;
+  table-layout: fixed;
+}
+#reportDocument .report-table th {
+  color: var(--muted);
+  background: var(--page);
+  font-size: 12px;
+  font-weight: 600;
+}
+#reportDocument .report-table td,
+#reportDocument .report-table th {
+  padding: 13px 12px;
+  border-color: var(--border);
+  overflow-wrap: anywhere;
+}
+#reportDocument .report-table th:first-child {
+  width: 55%;
+}
+#reportDocument .report-table td:not(:first-child) {
+  font-variant-numeric: tabular-nums;
+}
+#reportDocument .report-total-row {
+  font-weight: 650;
+  background: var(--page);
+}
+#reportDocument .report-explanation {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 13px;
+}
+#reportDocument .report-explanation summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--text);
+}
+.stats-maintenance {
+  margin-top: 20px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.stats-maintenance summary {
+  padding: 14px 0;
+  min-height: 48px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--muted);
+}
+.stats-maintenance p {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+.stats-maintenance button {
+  min-height: 44px;
+  margin-bottom: 16px;
+}
+.stats-history-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 14px;
+}
+.stats-history-heading h3 {
+  font-size: 16px;
+  margin: 0;
+  color: var(--text);
+}
+.stats-history-heading > span {
+  font-size: 13px;
+  color: var(--muted);
+}
+#statisticsContent .history-compact {
+  max-width: none;
+}
+#statisticsContent .history-record {
+  background: var(--surface);
+  border-color: var(--border);
+  border-radius: 12px;
+  margin-bottom: 10px;
+}
+#statisticsContent .history-record summary {
+  min-height: 72px;
+  padding: 14px 18px;
+  gap: 16px;
+}
+#statisticsContent .history-id {
+  min-width: 46px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+#statisticsContent .history-record small {
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--muted);
+}
+#statisticsContent .history-record summary > b {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+#statisticsContent .history-item {
+  align-items: center;
+  padding-block: 12px;
+  gap: 12px;
+}
+#statisticsContent .history-item button {
+  min-height: 44px;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+#statisticsContent .page-controls {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+}
+#statisticsContent .page-controls button {
+  min-height: 44px;
+  min-width: 100px;
+  margin: 0;
+}
+#statisticsContent .page-controls span {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+@media (max-width: 600px) {
+  .stats-heading h2 {
+    font-size: 23px;
+  }
+  .stats-top {
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .stats-top .stats-end-session {
+    padding-inline: 12px;
+    font-size: 12px;
+  }
+  .stats-select {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding: 12px;
+    margin-bottom: 18px;
+  }
+  .stats-tabs button {
+    flex: 1;
+    min-width: 0;
+  }
+  .report-actions {
+    align-items: stretch;
+  }
+  .report-actions p {
+    align-self: center;
+    max-width: 125px;
+    font-size: 12px;
+  }
+  .report-actions button {
+    padding-inline: 14px;
+    font-size: 13px;
+  }
+  #reportDocument {
+    padding: 16px;
+  }
+  #reportDocument > h2 {
+    font-size: 18px;
+    margin-bottom: 18px;
+  }
+  #reportDocument .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  #reportDocument .metric {
+    padding: 12px;
+  }
+  #reportDocument .metric > b {
+    font-size: 20px;
+  }
+  #reportDocument .balance-metric {
+    padding: 16px;
+  }
+  #reportDocument .balance-values {
+    gap: 12px;
+  }
+  #reportDocument .balance-values > div + div {
+    padding-left: 12px;
+  }
+  #reportDocument .balance-values b {
+    font-size: 24px;
+  }
+  #reportDocument .report-times {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  #reportDocument .report-table th:first-child {
+    width: 48%;
+  }
+  #reportDocument .report-table td,
+  #reportDocument .report-table th {
+    padding: 12px 5px;
+    font-size: 12px;
+  }
+  #statisticsContent .history-record summary {
+    padding: 12px;
+    gap: 10px;
+  }
+  #statisticsContent .history-item {
+    flex-wrap: wrap;
+  }
+  #statisticsContent .history-item .grow {
+    flex-basis: 60%;
+  }
+  #statisticsContent .page-controls {
+    flex-wrap: wrap;
+  }
+  #statisticsContent .page-controls span {
+    order: -1;
+    flex-basis: 100%;
+  }
+  #statisticsContent .page-controls button {
+    flex: 1;
+  }
+}
+#reportDocument .report-note {
+  color: var(--muted);
+  line-height: 1.6;
+}
+#statisticsContent .stats-maintenance button.remove,
+#statisticsContent .history-item button.remove {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+#statisticsContent .stats-maintenance p {
+  color: var(--text);
+}
+#reportDocument .report-finances .metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}

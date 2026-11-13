@@ -153,3 +153,8 @@ Windows 3.36 заморожений; цей cloud-випуск не створю
 
 Online 0.19 / APK 3.52: docs/SETTINGS-STAFF-UA.md. Перед deploy застосувати
 0015_staff_details.sql для назв і областей доступу; нових секретів/webhook немає.
+
+
+## Статистика: онлайн 0.20 / APK 3.53
+
+Спільне оформлення статистики описане в [STATISTICS-DESIGN-UA.md](../../docs/STATISTICS-DESIGN-UA.md). Міграцій і нових секретів немає. Зібрати UI через `python build.py`, перевірити локальний звіт/PDF і виконати `./cf.ps1 whoami`, потім `./cf.ps1 deploy` з приватною авторизацією цього проєкту. Workflow source-checks лише перевіряє код; автоматичного deploy немає.
