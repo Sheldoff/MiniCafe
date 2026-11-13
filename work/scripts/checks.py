@@ -151,6 +151,7 @@ def main():
                 "coffee",
                 "interaction",
                 "statistics",
+                "statistics-design",
                 "optimized",
                 "theme",
                 "network-motion",

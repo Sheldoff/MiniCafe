@@ -108,7 +108,7 @@ function durationText(sec) {
 }
 
 function tableReport(title, rows, total) {
-  return `<h3>${title}</h3><table class="report-table"><thead><tr><th>Назва</th><th>Кількість</th><th>Сума</th></tr></thead><tbody>${rows.length ? rows.map((p) => `<tr><td>${esc(p.name)}</td><td>${p.qty}</td><td>${money(p.amount)}</td></tr>`).join("") : '<tr><td colspan="3">Немає позицій</td></tr>'}${total === undefined ? "" : `<tr class="report-total-row"><td colspan="2">Разом</td><td>${money(total)}</td></tr>`}</tbody></table>`;
+  return `<section class="report-breakdown"><h3>${title}</h3><table class="report-table"><thead><tr><th>Назва</th><th>Кількість</th><th>Сума</th></tr></thead><tbody>${rows.length ? rows.map((p) => `<tr><td>${esc(p.name)}</td><td>${p.qty}</td><td>${money(p.amount)}</td></tr>`).join("") : '<tr><td colspan="3">Немає позицій</td></tr>'}${total === undefined ? "" : `<tr class="report-total-row"><td colspan="2">Разом</td><td>${money(total)}</td></tr>`}</tbody></table></section>`;
 }
 
 async function startSession() {

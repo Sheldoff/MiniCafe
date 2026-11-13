@@ -41,7 +41,9 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
       await p.goto(
         url + (online ? "/admin#server" : "/?key=" + key + "#server"),
       );
-      await p.waitForFunction(() => hasServerState);
+      await p.waitForFunction(
+        () => typeof hasServerState !== "undefined" && hasServerState,
+      );
       await p.locator("#settingsExtras").waitFor();
       assert.equal(
         await p.locator('.drawer-tools [data-view="server"]').innerText(),

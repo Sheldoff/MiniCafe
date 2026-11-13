@@ -10,7 +10,8 @@
     "css/settings.css",
     "css/location-controls.css",
     "css/coffee.css",
-    "css/settings-controls.css"
+    "css/settings-controls.css",
+    "css/statistics.css"
   ],
   "scripts": [
     "js/state.js",
