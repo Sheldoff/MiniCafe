@@ -64,7 +64,7 @@
     "private_password_file_separate": "work/android/signing.local.json",
     "certificate_fingerprint_file": "work/android/signing-cert.sha256"
   },
-  "validation_limit": "3.53 / online 0.20: validation in progress; see docs/STATISTICS-DESIGN-UA.md. Previous 3.52 validation preserved in Git history.",
+  "validation_limit": "Android 3.53: full checks.py without skips passed (be0d31b3e6ea4a27b332ee5551133e39, 23 Java suites, disposable local API, Chrome/WebKit including statistics responsive themes/contrast). APK original signing certificate verified; code 65. Online 0.20: 21 unit tests, Chrome/WebKit Cyrillic PDF download and statistics layout/theme checks, full Coffee contrast checks passed locally; GitHub source/online checks passed. Worker ca097927-e14b-4c8b-b705-38b14ba2c3b1; public read-only smoke / 200, /admin 302, /api/ping 200. No physical phones or production test orders. Windows frozen. Source archive/privacy and final SHA-256 verified during release packaging.",
   "development_tracks": {
     "policy": "docs/PROJECT-TRACKS-UA.md",
     "local_android": {

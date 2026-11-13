@@ -114,6 +114,11 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
           .getAttribute("aria-pressed"),
         "true",
       );
+      // Theme checks must inspect rendered detail bodies. Closed <details>
+      // may keep stale computed backgrounds until their contents are opened.
+      await page.locator(".history-record").evaluateAll((records) => {
+        for (const record of records) record.open = true;
+      });
       for (const palette of ["coffee", "standard"])
         for (const mode of ["light", "dark"]) {
           await page.evaluate(
@@ -131,7 +136,6 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
           );
         }
       if (await page.locator(".history-record").count()) {
-        await page.locator(".history-record summary").first().click();
         await page.waitForFunction(
           () => document.querySelector(".history-record").open,
         );
