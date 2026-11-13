@@ -65,7 +65,7 @@
     "private_password_file_separate": "work/android/signing.local.json",
     "certificate_fingerprint_file": "work/android/signing-cert.sha256"
   },
-  "validation_limit": "3.54 / online 0.21: validation in progress; see docs/MENU-DESIGN-UA.md. Previous 3.53 validation preserved in Git history.",
+  "validation_limit": "Android 3.54: full checks.py without skips passed (6de2f01ff2a34379b837f879c65148ec, 23 Java suites, disposable local API and Chrome/WebKit). New menu/editor matrix passed in both local Android and online: four palette/theme combinations, 320/390/768/1440 widths, contrast, touch targets, keyboard, search/count, delete isolation and preserved drafts/catalog. APK original signing certificate verified; code 66. Online 0.21: 21 unit tests and local guest/editor/cashier/PDF Chrome/WebKit scenarios passed. GitHub source/online checks passed. Worker bd4abe6b-0c7f-43f9-9212-adb0eba7a961; public read-only smoke / 200, /admin 302, /api/ping 200. No physical phones or production test orders; Windows frozen. Source archive/privacy and SHA-256 verified during release packaging.",
   "development_tracks": {
     "policy": "docs/PROJECT-TRACKS-UA.md",
     "local_android": {
