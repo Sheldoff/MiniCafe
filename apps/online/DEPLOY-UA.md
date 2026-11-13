@@ -158,3 +158,8 @@ Online 0.19 / APK 3.52: docs/SETTINGS-STAFF-UA.md. Перед deploy засто�
 ## Статистика: онлайн 0.20 / APK 3.53
 
 Спільне оформлення статистики описане в [STATISTICS-DESIGN-UA.md](../../docs/STATISTICS-DESIGN-UA.md). Міграцій і нових секретів немає. Зібрати UI через `python build.py`, перевірити локальний звіт/PDF і виконати `./cf.ps1 whoami`, потім `./cf.ps1 deploy` з приватною авторизацією цього проєкту. Workflow source-checks лише перевіряє код; автоматичного deploy немає.
+
+
+## Меню й ціни: онлайн 0.21 / APK 3.54
+
+Спільний дизайн каталогу й редактора: [MENU-DESIGN-UA.md](../../docs/MENU-DESIGN-UA.md). Міграцій і нових секретів немає. Зібрати `python build.py`, перевірити локальний UI та виконати `./cf.ps1 whoami`, потім `./cf.ps1 deploy` через приватну авторизацію проєкту. GitHub Actions лише перевіряє код.

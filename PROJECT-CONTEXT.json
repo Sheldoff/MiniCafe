@@ -1,7 +1,7 @@
 {
   "application": "МініКафе",
-  "version": "3.53",
-  "android_version_code": 65,
+  "version": "3.54",
+  "android_version_code": 66,
   "purpose": "Каса, окремі черги напоїв і їжі, гнучке меню, статистика/PDF, калькулятор, резервні копії",
   "entry_document": "START-HERE-UA.md",
   "human_prompt": "NEXT-CHAT-PROMPT-UA.txt",
@@ -26,6 +26,7 @@
     "delivery": "Тільки видача їжі"
   },
   "latest_requested_changes": [
+    "Menu and prices design: responsive photo cards with clear price/visibility/delete action, labeled search/results count, full-page grouped editor with photo preview and single save, themed accessible controls; shared online/APK",
     "Statistics workspace: grouped labeled period and accessible tabs, top PDF action, highlighted gross/net balance, responsive themed metrics/tables/history, separate destructive history maintenance; shared online and APK",
     "Settings ordering, Lucide SVG navigation icons, appearance Back and neutral drawer borders; scoped staff location permissions and cosmetic labels independent of identity, single delete/revoke action",
     "Coffee default with one-time browser/native migration and preserved later choices; full-bleed adaptive launcher icon; fresh Telegram re-login after logout/bfcache and Android reauth, spent-link recovery without accepting replay",
@@ -64,14 +65,14 @@
     "private_password_file_separate": "work/android/signing.local.json",
     "certificate_fingerprint_file": "work/android/signing-cert.sha256"
   },
-  "validation_limit": "Android 3.53: full checks.py without skips passed (be0d31b3e6ea4a27b332ee5551133e39, 23 Java suites, disposable local API, Chrome/WebKit including statistics responsive themes/contrast). APK original signing certificate verified; code 65. Online 0.20: 21 unit tests, Chrome/WebKit Cyrillic PDF download and statistics layout/theme checks, full Coffee contrast checks passed locally; GitHub source/online checks passed. Worker ca097927-e14b-4c8b-b705-38b14ba2c3b1; public read-only smoke / 200, /admin 302, /api/ping 200. No physical phones or production test orders. Windows frozen. Source archive/privacy and final SHA-256 verified during release packaging.",
+  "validation_limit": "3.54 / online 0.21: validation in progress; see docs/MENU-DESIGN-UA.md. Previous 3.53 validation preserved in Git history.",
   "development_tracks": {
     "policy": "docs/PROJECT-TRACKS-UA.md",
     "local_android": {
       "status": "active",
       "entry": "apps/local-android/README.md",
       "sources": "work/android",
-      "version": "3.53"
+      "version": "3.54"
     },
     "online": {
       "status": "telegram_auth_deployed",
@@ -82,7 +83,7 @@
       "sources": "apps/online/src",
       "database": "D1 minicafe-db",
       "deploy_docs": "apps/online/DEPLOY-UA.md",
-      "version": "0.20.0"
+      "version": "0.21.0"
     },
     "windows": {
       "status": "frozen",

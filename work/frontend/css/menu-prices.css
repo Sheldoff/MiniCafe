@@ -1,0 +1,444 @@
+/* Menu management shares the statistics workspace width and theme tokens. */
+#main .menu-editor-grid {
+  width: 100%;
+  max-width: 1120px;
+  margin-inline: auto;
+  grid-template-columns: minmax(0, 1fr);
+}
+#main .menu-editor-grid .product-list-panel,
+#main .menu-editor-grid .product-form-panel {
+  padding: 24px !important;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--text);
+}
+.menu-page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.menu-page-heading > div {
+  min-width: 0;
+}
+#main .menu-page-heading h2 {
+  font-size: 26px;
+  letter-spacing: -0.6px;
+  line-height: 1.3;
+  margin: 0;
+  color: var(--text);
+}
+#main .menu-page-heading p {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 7px 0 0;
+  color: var(--muted);
+}
+#main .menu-page-heading button {
+  margin: 0;
+  padding: 11px 16px;
+  min-height: 46px;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+.menu-catalog-toolbar {
+  display: flex;
+  align-items: end;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 16px;
+  background: var(--page);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 18px;
+}
+#main .menu-catalog-toolbar label {
+  display: grid;
+  gap: 7px;
+  flex: 1;
+  max-width: 560px;
+  margin: 0;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+#main #productSearch {
+  margin: 0;
+  min-height: 46px;
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-size: 15px;
+}
+#main #editorProductCount {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--muted);
+  padding-bottom: 13px;
+  font-variant-numeric: tabular-nums;
+}
+#main #editorProducts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 14px;
+  padding: 3px;
+  scroll-padding: 4px;
+}
+#main .editor-product {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: var(--text);
+  background: var(--surface);
+  cursor: pointer;
+  min-width: 0;
+}
+#main .editor-product:hover {
+  background: var(--page);
+  border-color: var(--accent);
+}
+#main .editor-product:active {
+  background: var(--raised);
+}
+#main .editor-product:focus-visible,
+#main .menu-editor-grid :is(button, input, select):focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.editor-product-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+#main .editor-product .product-thumb,
+#main .editor-product .editor-placeholder {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+  object-fit: contain;
+  background: var(--page);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 4px;
+}
+#main .editor-placeholder {
+  font-size: 28px;
+}
+#main .editor-product .grow {
+  flex: 1;
+  min-width: 0;
+}
+#main .editor-product .editor-product-name {
+  display: block;
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--text);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+#main .editor-product small {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 5px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+#main .editor-price {
+  color: var(--accent);
+  font-size: 17px;
+  line-height: 1.4;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.editor-product-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+#main .editor-product-state {
+  font-size: 12px;
+  color: var(--text);
+  background: var(--page);
+  border-radius: 8px;
+  padding: 7px 10px;
+}
+#main .editor-product-state.is-hidden {
+  color: var(--muted);
+  background: var(--raised);
+}
+#main .editor-product button.remove {
+  background: var(--surface);
+  color: var(--danger, #8b3d2f);
+  border: 1px solid var(--border);
+  min-height: 44px;
+  min-width: 90px;
+  padding: 9px 14px;
+  margin: 0;
+  font-size: 13px;
+}
+#main .editor-product button.remove:hover {
+  background: var(--danger-bg, #fbe8e3);
+  border-color: var(--danger, #8b3d2f);
+}
+.menu-catalog-empty {
+  grid-column: 1 / -1;
+  padding: 36px 20px;
+  text-align: center;
+  background: var(--page);
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+}
+#main .menu-catalog-empty b {
+  font-size: 16px;
+  color: var(--text);
+}
+#main .menu-catalog-empty p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+  margin: 8px 0 0;
+}
+#main .menu-editor-grid #form {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 20px;
+}
+.editor-fields,
+.editor-media {
+  min-width: 0;
+}
+.editor-fields {
+  display: grid;
+  gap: 20px;
+  align-content: start;
+}
+#main .editor-section {
+  margin: 0;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--page);
+}
+#main .editor-section legend {
+  font-size: 14px;
+  font-weight: 650;
+  padding: 0 7px;
+  color: var(--text);
+}
+#main .editor-section label:not(.stock-mode) {
+  display: block;
+  margin: 14px 0 7px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+#main .editor-section input:not([type="checkbox"]):not([type="file"]),
+#main .editor-section select {
+  min-height: 46px;
+  width: 100%;
+  margin: 0;
+  font-size: 15px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+}
+#main .editor-section .money-control {
+  display: block;
+  width: 100%;
+}
+.editor-price-stock {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.editor-price-stock > div {
+  min-width: 0;
+}
+#main .editor-section .stock-mode {
+  min-height: 44px;
+  font-size: 14px;
+  margin: 14px 0 4px;
+  color: var(--text);
+}
+#main .editor-field-hint {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 8px 0 0;
+}
+#main .editor-section .image-editor {
+  margin: 8px 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+#main .editor-section .image-preview {
+  display: grid;
+  place-items: center;
+  height: 240px !important;
+  min-height: 180px;
+  max-height: none;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  color: var(--muted);
+  background: var(--input-bg);
+  font-size: 13px;
+  text-align: center;
+}
+#main .editor-section .image-preview img {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 214px;
+  object-fit: contain;
+  padding: 0;
+}
+#main .editor-section .photo-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+#main .editor-section .photo-actions button {
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  font-size: 13px;
+  margin: 0;
+  padding: 10px;
+}
+#main .editor-section #activeToggle {
+  width: 100%;
+  min-height: 48px;
+  margin: 18px 0 0;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  line-height: 1.4;
+  padding: 12px;
+  font-size: 13px;
+}
+#main .editor-section #activeToggle[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--raised);
+  color: var(--text);
+}
+#main .menu-editor-grid .editor-save-actions {
+  grid-column: 1 / -1;
+  margin-top: 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  gap: 12px;
+}
+#main .editor-save-actions button {
+  min-height: 48px;
+  font-size: 14px;
+  margin: 0;
+}
+#main .editor-section .category-suggestions button {
+  min-height: 44px;
+  font-size: 13px;
+  padding: 10px 14px;
+}
+@media (max-width: 850px) {
+  #main .menu-editor-grid #form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  #main .editor-section .image-preview {
+    height: 220px !important;
+  }
+  #main .editor-section .image-preview img {
+    max-height: 194px;
+  }
+}
+@media (max-width: 700px) {
+  #main .menu-editor-grid .product-list-panel,
+  #main .menu-editor-grid .product-form-panel {
+    padding: 16px !important;
+  }
+  #main #editorProducts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  #main .menu-page-heading h2 {
+    font-size: 23px;
+  }
+  .menu-page-heading {
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .menu-catalog-toolbar {
+    padding: 12px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  #main .menu-catalog-toolbar label {
+    flex-basis: 100%;
+    max-width: none;
+  }
+  #main #editorProductCount {
+    padding: 0;
+    font-size: 12px;
+  }
+  #main .editor-product {
+    padding: 14px;
+    gap: 12px;
+  }
+  .editor-product-info {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  #main .editor-product .product-thumb,
+  #main .editor-product .editor-placeholder {
+    width: 52px;
+    height: 52px;
+    flex-basis: 52px;
+  }
+  #main .editor-price {
+    font-size: 16px;
+  }
+  #main .editor-section {
+    padding: 14px;
+  }
+}
+@media (max-width: 480px) {
+  .menu-page-heading {
+    flex-wrap: wrap;
+  }
+  .product-list-panel .menu-page-heading > div {
+    flex-basis: 100%;
+  }
+  #main #editorToggle {
+    width: 100%;
+  }
+  .editor-price-stock {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  #main .editor-product-info .grow {
+    flex-basis: calc(100% - 76px);
+  }
+  #main .editor-price {
+    margin-left: 64px;
+  }
+  #main .editor-save-actions button {
+    padding-inline: 10px;
+    font-size: 13px;
+  }
+}
