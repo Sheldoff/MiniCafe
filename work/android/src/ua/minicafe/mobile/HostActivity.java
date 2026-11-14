@@ -523,7 +523,7 @@ public class HostActivity extends Activity {
                             })
                         .setNegativeButton("Ні", null)
                         .show());
-        stop.setTextColor(CafeUi.dark(this) ? Color.rgb(255, 185, 168) : Color.rgb(154, 63, 49));
+        stop.setTextColor(CafeUi.mono(this) ? CafeUi.text(this) : CafeUi.dark(this) ? Color.rgb(255, 185, 168) : Color.rgb(154, 63, 49));
         root.addView(
             text(
                 "Тримайте серверний телефон на зарядці та дозвольте фонову роботу. Перед видаленням"
