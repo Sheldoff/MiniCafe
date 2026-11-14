@@ -69,7 +69,7 @@
     "private_password_file_separate": "work/android/signing.local.json",
     "certificate_fingerprint_file": "work/android/signing-cert.sha256"
   },
-  "validation_limit": "3.58: full verification in progress.",
+  "validation_limit": "Android 3.58/code 70: full checks.py without skips passed (bb6f64abd4bb436899497247fc86dc17, 26 Java suites, local API and Chrome/WebKit); original signing certificate verified. Interactive analytics math, price/payment projections, minute timeline, modal rename, PDF placement, extra-location deletion and existing UI regressions passed. Online 0.25: 26 unit tests, full disposable D1 API pipeline, Chrome/WebKit and Cyrillic PDF, interactive cash-workspace UI and Java-D1 backup interop passed. GitHub source/online checks passed. Worker b506d487-4cc8-4a1e-99f9-9514a99bad86; public GET / 200, /admin 302, /api/ping 200. No physical phones or production test orders/restore; Windows frozen. Private value/archive scans and SHA-256 verified during packaging.",
   "development_tracks": {
     "policy": "docs/PROJECT-TRACKS-UA.md",
     "local_android": {
