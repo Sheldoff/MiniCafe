@@ -51,7 +51,8 @@ export function mutationQuery(path, input, meta) {
       [JSON.stringify(ids)],
     ];
   }
-  if (path === "stats/clear") return ["SELECT data FROM orders", []];
+  if (["stats/clear", "transaction/clear"].includes(path))
+    return ["SELECT data FROM orders", []];
   return ["SELECT data FROM orders WHERE 0", []];
 }
 export async function commit(

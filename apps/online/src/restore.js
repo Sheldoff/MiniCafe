@@ -179,6 +179,17 @@ export function restoreData(before, input) {
       ? input.online_payment_enabled
       : before.online_payment_enabled !== false;
   d.next_guest_number = integer(d.next_guest_number ?? 1, 1, 1000000001);
+  d.next_guest_numbers ||= {};
+  if (
+    typeof d.next_guest_numbers !== "object" ||
+    Array.isArray(d.next_guest_numbers) ||
+    Object.keys(d.next_guest_numbers).length > 1000
+  )
+    fail("Некоректні лічильники кас");
+  for (const [id, number] of Object.entries(d.next_guest_numbers)) {
+    if (!/^(cash|loc-[a-f0-9]{32})$/.test(id)) fail("Некоректна каса");
+    integer(number, 1, 1000000001);
+  }
   d.active_session ||= 0;
   d.issue_undo = {}; // Old undo entries are intentionally invalidated by full database replacement.
   d.versions = Object.fromEntries(
@@ -192,6 +203,7 @@ export function restoreData(before, input) {
       "locations",
       "online_payment_enabled",
       "next_guest_number",
+      "next_guest_numbers",
       "nextProduct",
       "nextOrder",
       "nextItem",

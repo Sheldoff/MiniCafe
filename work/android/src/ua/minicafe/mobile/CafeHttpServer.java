@@ -190,7 +190,7 @@ public final class CafeHttpServer extends NanoHTTPD {
           String before = s.getParms().get("before");
           return json(
               Response.Status.OK,
-              store.cardPayments(before == null ? Long.MAX_VALUE : Long.parseLong(before)));
+              store.cardPayments(before == null ? Long.MAX_VALUE : Long.parseLong(before),false,s.getParms().containsKey("location_id")?s.getParms().get("location_id"):""));
         }
         if (path.equals("/api/history")) {
           String sid = s.getParms().get("session"),

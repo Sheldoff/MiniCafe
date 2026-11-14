@@ -81,7 +81,10 @@ function session(d, name = "") {
   const id = d.nextSession++;
   d.sessions.push({
     id,
-    name: text(name, 100) || `Сесія №${id}`,
+    name:
+      text(name, 100) ||
+      "Сесія " +
+        new Date().toLocaleDateString("uk-UA", { timeZone: "Europe/Kyiv" }),
     started: now(),
     ended: null,
   });
@@ -221,6 +224,10 @@ export function mutate(d, path, input) {
       d.expenses_version++;
       changed.add("expenses");
     }
+  } else if (path === "transaction/clear") {
+    for (const o of orders)
+      if (o.payment?.card_amount > 0) o.transaction_history_hidden = true;
+    changed.add("orders");
   } else if (path === "transaction/hide") {
     const o = find(orders, integer(input.id, 1));
     if (!(o.payment?.card_amount > 0)) fail("Карткову оплату не знайдено");
@@ -284,6 +291,8 @@ export function mutate(d, path, input) {
       card = integer(input.card_amount);
     if (input.gift && (cash || card)) fail("Подарунок має нульову оплату");
     if (cash + card < total) fail("Недостатня оплата", total - cash - card);
+    const cashId = input.location_id || "cash",
+      cashier = locationById(d.locations || [], cashId);
     let guest = text(input.guest || "", 100);
     if (
       !guest &&
@@ -292,9 +301,16 @@ export function mutate(d, path, input) {
     )
       fail("Вкажіть ім’я гостя");
     if (!guest) {
-      const number = integer(d.next_guest_number ?? 1, 1, 1000000000);
-      guest = "Гість №" + number;
-      d.next_guest_number = number + 1;
+      d.next_guest_numbers ||= {};
+      const number = integer(
+        d.next_guest_numbers[cashId] ??
+          (cashId === "cash" ? (d.next_guest_number ?? 1) : 1),
+        1,
+        1000000000,
+      );
+      guest = (cashier?.guest_prefix ?? "Гість №") + number;
+      d.next_guest_numbers[cashId] = number + 1;
+      if (cashId === "cash") d.next_guest_number = number + 1;
     }
     const sid = d.active_session || session(d);
     orders.push({
@@ -409,6 +425,9 @@ export function mutate(d, path, input) {
   } else if (path === "session/end") {
     if (d.active_session) find(d.sessions, d.active_session).ended = now();
     d.active_session = 0;
+    changed.add("sessions");
+  } else if (path === "session/rename") {
+    find(d.sessions, integer(input.id, 1)).name = text(input.name, 100, true);
     changed.add("sessions");
   } else if (path === "session/start") {
     if (d.active_session) fail("Спочатку завершіть сесію");

@@ -46,6 +46,7 @@ try {
     active_session: 0,
     issue_undo: {},
     next_guest_number: 1,
+    next_guest_numbers: {},
   });
   for (const p of fixture.products) {
     delete p.stock;
@@ -100,6 +101,52 @@ try {
   await post("order", sale("after-restore"));
   assert.equal((await read("backup")).orders.at(-1).guest, "Гість №7");
   await post("location/save", { ...loc, guest_name_required: "false" }, 400);
+  const extraCash = "loc-" + "ce".repeat(16);
+  await post("location/save", {
+    ...loc,
+    id: extraCash,
+    name: "Низ",
+    guest_prefix: "низ ",
+    guest_name_required: false,
+  });
+  const makeExtra = (request, guest = "") =>
+    post("order", { ...sale(request, guest), location_id: extraCash });
+  await Promise.all([makeExtra("own-one"), makeExtra("own-two")]);
+  await makeExtra("own-name", "Олена");
+  await makeExtra("own-one");
+  const own = await read("card-payments?location_id=" + extraCash);
+  assert.deepEqual(
+    own.payments.map((p) => p.guest).sort(),
+    ["низ 1", "низ 2", "Олена"].sort(),
+  );
+  assert(
+    !(await read("card-payments?location_id=cash")).payments.some((p) =>
+      p.guest.startsWith("низ "),
+    ),
+  );
+  const scoped = {
+    ...owner,
+    Cookie: "__Host-minicafe_session=" + "3".repeat(64),
+    "X-CSRF-Token": "4".repeat(64),
+  };
+  await post(
+    "session/rename",
+    { id: (await read("state")).active_session, name: "Нова назва" },
+    403,
+    scoped,
+  );
+  const sid = (await read("state")).active_session;
+  await post("session/rename", { id: sid, name: "Ранкова зміна" });
+  const stats = await read("stats?session=" + sid + "&live=1");
+  assert.equal(stats.title, "Ранкова зміна");
+  assert(stats.live.events.some((e) => e.cash_location === extraCash));
+  await post("transaction/clear", {});
+  assert.equal((await read("transactions")).payments.length, 0);
+  assert.equal((await read("stats?session=" + sid)).revenue, stats.revenue);
+  assert.equal(
+    (await read("card-payments?location_id=" + extraCash)).payments.length,
+    3,
+  );
   console.log(
     "PASS local D1 anonymous numbering: concurrent/retried requests, names, failures, required setting, state and backup",
   );

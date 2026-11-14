@@ -113,6 +113,8 @@ test("local disposable DB: payment idempotency, fail closed, atomic queue, repla
   await assert.rejects(
     createPayment(env, { payment_request: token }, "Інший Гість", items),
   );
+  sql.exec("UPDATE mono_payments SET data=json_set(data,'$.history_hidden',1)");
+  assert.equal((await create(token)).reference, first.reference);
   const row = sql.prepare("SELECT * FROM mono_payments").get();
   const poll = async (tx) => {
     sql.exec("UPDATE mono_sync SET next_poll=0");
@@ -316,5 +318,39 @@ test("admin bank history includes completed and expired requests, stable pages, 
     sql.prepare("SELECT * FROM mono_payments ORDER BY id").all(),
     before,
   );
+  const writeHistory = (action, input = {}, id = "1", csrf = "c".repeat(64)) =>
+    paymentRoutes(
+      new Request("https://cafe.test/api/payments/history/" + action, {
+        method: "POST",
+        headers: {
+          Origin: "https://cafe.test",
+          Cookie: "__Host-minicafe_session=" + id.repeat(64),
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrf,
+        },
+        body: JSON.stringify(input),
+      }),
+      env,
+    );
+  assert.equal((await writeHistory("clear", {}, "2")).status, 403);
+  assert.equal((await writeHistory("clear", {}, "1", "wrong")).status, 403);
+  assert.equal(
+    (await writeHistory("hide", { reference: first.payments[0].reference }))
+      .status,
+    200,
+  );
+  assert.equal((await (await request()).json()).payments.length, 50);
+  assert.equal((await writeHistory("clear")).status, 200);
+  assert.equal((await (await request()).json()).payments.length, 0);
+  const hidden = sql.prepare("SELECT * FROM mono_payments ORDER BY id").all();
+  assert.equal(hidden.length, before.length);
+  for (let n = 0; n < hidden.length; n++) {
+    const data = JSON.parse(hidden[n].data);
+    delete data.history_hidden;
+    assert.deepEqual(
+      { ...hidden[n], data: JSON.stringify(data) },
+      { ...before[n] },
+    );
+  }
   sql.close();
 });
