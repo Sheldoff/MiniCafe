@@ -243,7 +243,7 @@ export async function paymentRoutes(request, env) {
     }
     if (
       path.endsWith("/hide") &&
-      !/^MC-[A-F0-9]{16}$/.test(input.reference || "")
+      !/^MC-[A-F0-9]{16}$/.test(input?.reference || "")
     )
       return json({ error: "Некоректний код" }, 400);
     await env.DB.prepare(

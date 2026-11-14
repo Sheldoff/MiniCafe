@@ -332,6 +332,7 @@ test("admin bank history includes completed and expired requests, stable pages, 
       }),
       env,
     );
+  assert.equal((await writeHistory("hide", null)).status, 400);
   assert.equal((await writeHistory("clear", {}, "2")).status, 403);
   assert.equal((await writeHistory("clear", {}, "1", "wrong")).status, 403);
   assert.equal(
