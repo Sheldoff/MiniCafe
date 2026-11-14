@@ -169,6 +169,15 @@ export function filterState(state, user) {
       .filter((o) => o.items.length);
   }
   if (user.role === "admin") return state;
+  if (["bar", "delivery"].includes(user.role)) {
+    delete state.next_guest_numbers;
+    delete state.next_guest_number;
+  } else if (user.location) {
+    const number = state.next_guest_numbers?.[user.location] ??
+      (user.location === "cash" ? state.next_guest_number || 1 : 1);
+    state.next_guest_numbers = { [user.location]: number };
+    state.next_guest_number = number;
+  }
   if (user.location) {
     const cash =
       user.role === "cash"

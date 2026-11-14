@@ -1,3 +1,4 @@
+import {filterState} from "../src/auth.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { mutate, report } from "../src/domain.js";
@@ -92,6 +93,11 @@ test("independent cash numbering preserves exact prefixes, names/retries/backup;
       (e) => e.cash_location === two && e.items[0].name === "Кава",
     ),
   );
+  const scoped=filterState({...structuredClone(d),can_undo_issue:{}},{role:"cash",location:two});
+  assert.deepEqual(scoped.next_guest_numbers,{[two]:d.next_guest_numbers[two]});
+  assert.equal(scoped.next_guest_number,d.next_guest_numbers[two]);
+  const bar=filterState({...structuredClone(d),can_undo_issue:{}},{role:"bar"});
+  assert(!("next_guest_numbers" in bar));assert(!("next_guest_number" in bar));
   assert.throws(() =>
     restoreData(d, { ...structuredClone(d), next_guest_numbers: { cash: -1 } }),
   );
