@@ -306,6 +306,7 @@ async function handle(request, env, ctx) {
           {
             locations: d.locations || [],
             online_payment_enabled: d.online_payment_enabled !== false,
+            next_guest_number: d.next_guest_number || 1,
             versions: d.versions,
             products: d.products,
             orders: d.orders

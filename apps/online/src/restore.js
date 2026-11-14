@@ -178,6 +178,7 @@ export function restoreData(before, input) {
     typeof input.online_payment_enabled === "boolean"
       ? input.online_payment_enabled
       : before.online_payment_enabled !== false;
+  d.next_guest_number = integer(d.next_guest_number ?? 1, 1, 1000000001);
   d.active_session ||= 0;
   d.issue_undo = {}; // Old undo entries are intentionally invalidated by full database replacement.
   d.versions = Object.fromEntries(
@@ -190,6 +191,7 @@ export function restoreData(before, input) {
     [
       "locations",
       "online_payment_enabled",
+      "next_guest_number",
       "nextProduct",
       "nextOrder",
       "nextItem",

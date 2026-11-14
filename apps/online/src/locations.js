@@ -55,6 +55,12 @@ export function validateLocation(input, rows = []) {
     out.linked_cash = input.linked_cash;
   }
   if (kind === "cash") {
+    if (
+      input.guest_name_required !== undefined &&
+      typeof input.guest_name_required !== "boolean"
+    )
+      throw Error("Некоректне налаштування імені гостя");
+    out.guest_name_required = input.guest_name_required === true;
     if (input.targets !== undefined) {
       if (
         !Array.isArray(input.targets) ||
