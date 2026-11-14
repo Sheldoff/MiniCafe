@@ -105,6 +105,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
       await page.waitForFunction(() =>
         data.locations.some((l) => l.id === "cash" && l.guest_name_required),
       );
+      await page.locator("#locationForm").waitFor({ state: "detached" });
       await page.evaluate((pid) => {
         change("cash");
         add(pid);

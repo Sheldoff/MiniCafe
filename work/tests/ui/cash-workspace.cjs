@@ -96,6 +96,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
           data.locations.find((l) => l.id === id)?.guest_prefix === "низ ",
         cash,
       );
+      await page.locator("#locationForm").waitFor({ state: "detached" });
       assert.equal(
         (await read("backup")).locations
           .find((l) => l.id === cash)
