@@ -225,7 +225,10 @@ async function fetchState() {
     hasServerState = true;
     clearTimeout(startupNoticeTimer);
     document.querySelector("#main").hidden = false;
-    if (view === "cash") moveCashIndicator();
+    if (view === "cash") {
+      moveCashIndicator();
+      updateGuestHint();
+    }
     setNoticeVisible(false);
     document.querySelector("#connection").textContent = "● Підключено";
     document

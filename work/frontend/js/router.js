@@ -19,7 +19,7 @@ function availableViews() {
     ["bar", "Бариста"],
     ["delivery", "Видача"],
     ["history", "Статистика"],
-    ["menu", "Меню й ціни"],
+    ["menu", "Меню та ціни"],
     ["calculator", "Калькулятор"],
   ]
     .filter(([v]) => allowedView(v))

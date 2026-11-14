@@ -66,10 +66,10 @@ public class HostActivity extends Activity {
 
   private void accent(Button b, boolean gold) {
     GradientDrawable bg = new GradientDrawable();
-    bg.setColor(gold && !CafeUi.coffee(this) ? Color.rgb(228, 193, 118) : CafeUi.accent(this));
+    bg.setColor(gold && !(CafeUi.coffee(this) || CafeUi.mono(this)) ? Color.rgb(228, 193, 118) : CafeUi.accent(this));
     bg.setCornerRadius(px(11));
     b.setBackground(bg);
-    b.setTextColor(gold && !CafeUi.coffee(this) ? Color.rgb(23, 54, 43) : CafeUi.onAccent(this));
+    b.setTextColor(gold && !(CafeUi.coffee(this) || CafeUi.mono(this)) ? Color.rgb(23, 54, 43) : CafeUi.onAccent(this));
     b.setTypeface(null, Typeface.BOLD);
   }
 
@@ -523,7 +523,7 @@ public class HostActivity extends Activity {
                             })
                         .setNegativeButton("Ні", null)
                         .show());
-        stop.setTextColor(CafeUi.dark(this) ? Color.rgb(255, 185, 168) : Color.rgb(154, 63, 49));
+        stop.setTextColor(CafeUi.mono(this) ? CafeUi.text(this) : CafeUi.dark(this) ? Color.rgb(255, 185, 168) : Color.rgb(154, 63, 49));
         root.addView(
             text(
                 "Тримайте серверний телефон на зарядці та дозвольте фонову роботу. Перед видаленням"

@@ -55,7 +55,7 @@ async function statistics() {
   ++historyRequest;
   if (!document.querySelector("#statisticsContent"))
     document.querySelector("#main").innerHTML =
-      `<div class="stats-top">${statisticsHeading(current)}</div><div class="stats-select"><label class="stats-period">Період<select aria-label="Період статистики" onchange="statsFilter(this.value)"></select></label><div class="stats-tabs" role="group" aria-label="Вигляд статистики"><button onclick="statsTabChange('orders')">Замовлення</button><button onclick="statsTabChange('report')">Звіт</button><button onclick="statsTabChange('online')">Онлайн</button></div></div><div id="statisticsContent"><div class="stats-initial" aria-label="Завантаження статистики"></div></div>`;
+      `<div class="stats-tabs" role="group" aria-label="Вигляд статистики"><button onclick="statsTabChange('orders')">Замовлення</button><button onclick="statsTabChange('report')">Звіт</button><button onclick="statsTabChange('online')">Онлайн</button></div><div class="stats-top">${statisticsHeading(current)}</div><div class="stats-select"><label class="stats-period">Період<select aria-label="Період статистики" onchange="statsFilter(this.value)"></select></label></div><div id="statisticsContent"><div class="stats-initial" aria-label="Завантаження статистики"></div></div>`;
   let header = document.querySelector(".stats-top");
   if (header.dataset.current !== String(current)) {
     header.innerHTML = statisticsHeading(current);
@@ -77,6 +77,7 @@ async function statistics() {
   }
   select.value = statsSelection;
   select.disabled = statsTab === "online";
+  document.querySelector(".stats-select").hidden = statsTab === "online";
   document.querySelectorAll(".stats-tabs button").forEach((button, i) => {
     let selected = ["orders", "report", "online"][i] === statsTab;
     button.classList.toggle("selected", selected);

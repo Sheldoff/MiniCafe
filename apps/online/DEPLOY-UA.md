@@ -168,3 +168,8 @@ Online 0.19 / APK 3.52: docs/SETTINGS-STAFF-UA.md. Перед deploy засто�
 ## Залишки й Онлайн-статистика: онлайн 0.22 / APK 3.55
 
 [Інструкція](../../docs/CASH-STOCK-LIVE-UA.md). Схема D1 не змінюється: розподіл зберігається в JSON товару. Нових міграцій/секретів немає. Лише локальна одноразова D1 для API/restore-тестів; перед публікацією build.py, cf.ps1 whoami та cf.ps1 deploy з окремою авторизацією проєкту. Автоматичного deploy у workflow немає.
+
+
+## Чорно-біла тема й гості — online 0.23 / APK 3.56
+
+[Інструкція](../../docs/MONO-GUESTS-UA.md). `next_guest_number` та `guest_name_required` зберігаються в JSON; нових міграцій/секретів немає. Локальні тести перед окремим build.py/cf.ps1 whoami/deploy, без production-замовлень чи restore.

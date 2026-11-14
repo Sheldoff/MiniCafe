@@ -6,6 +6,7 @@ import {
   checkStockBasis,
 } from "./cash-stock.js";
 import {
+  locationById,
   validateLocation,
   applyRouting,
   inLocation,
@@ -283,13 +284,25 @@ export function mutate(d, path, input) {
       card = integer(input.card_amount);
     if (input.gift && (cash || card)) fail("Подарунок має нульову оплату");
     if (cash + card < total) fail("Недостатня оплата", total - cash - card);
+    let guest = text(input.guest || "", 100);
+    if (
+      !guest &&
+      locationById(d.locations || [], input.location_id || "cash")
+        ?.guest_name_required
+    )
+      fail("Вкажіть ім’я гостя");
+    if (!guest) {
+      const number = integer(d.next_guest_number ?? 1, 1, 1000000000);
+      guest = "Гість №" + number;
+      d.next_guest_number = number + 1;
+    }
     const sid = d.active_session || session(d);
     orders.push({
       id,
       request: idempotency,
       session_id: sid,
       created: now(),
-      guest: text(input.guest || "", 100),
+      guest,
       gift: !!input.gift,
       comment: text(input.comment || "", 500),
       place: "",

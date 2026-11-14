@@ -265,10 +265,10 @@ public class InternetActivity extends Activity {
     Button begin = action("Почати роботу", true, () -> localCash());
     android.graphics.drawable.GradientDrawable beginBackground =
         new android.graphics.drawable.GradientDrawable();
-    beginBackground.setColor(CafeUi.coffee(this) ? CafeUi.accent(this) : Color.rgb(228, 193, 118));
+    beginBackground.setColor((CafeUi.coffee(this) || CafeUi.mono(this)) ? CafeUi.accent(this) : Color.rgb(228, 193, 118));
     beginBackground.setCornerRadius(px(11));
     begin.setBackground(beginBackground);
-    begin.setTextColor((CafeUi.coffee(this) ? CafeUi.onAccent(this) : Color.rgb(23, 54, 43)));
+    begin.setTextColor(((CafeUi.coffee(this) || CafeUi.mono(this)) ? CafeUi.onAccent(this) : Color.rgb(23, 54, 43)));
     LinearLayout.LayoutParams beginParams = new LinearLayout.LayoutParams(-1, px(56));
     beginParams.topMargin = px(12);
     sharing.addView(begin, beginParams);

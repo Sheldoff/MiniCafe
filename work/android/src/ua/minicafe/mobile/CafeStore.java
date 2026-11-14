@@ -260,6 +260,7 @@ public final class CafeStore {
   }
 
   private static void validate(JSONObject d) throws Exception {
+    if (d.has("next_guest_number")) exactNumber(d, "next_guest_number", 1, 1000000001);
     JSONArray locations = d.optJSONArray("locations");
     if (d.has("locations") && locations == null)
       throw new IllegalArgumentException("Некоректні локації");
@@ -713,6 +714,7 @@ public final class CafeStore {
                 ? new JSONArray()
                 : new JSONArray(data.getJSONArray("locations").toString()))
         .put("online_payment_enabled", data.optBoolean("online_payment_enabled", true))
+        .put("next_guest_number", data.optLong("next_guest_number", 1))
         .put("products", ps)
         .put("orders", os)
         .put("sessions", new JSONArray(data.getJSONArray("sessions").toString()))
@@ -973,6 +975,9 @@ public final class CafeStore {
       row.put("linked_cash", linked);
     }
     if ("cash".equals(kind)) {
+      if (input.has("guest_name_required") && !(input.get("guest_name_required") instanceof Boolean))
+        throw new IllegalArgumentException("Некоректне налаштування імені гостя");
+      row.put("guest_name_required", input.optBoolean("guest_name_required", false));
       if (input.has("targets")) {
         JSONArray targets = input.getJSONArray("targets");
         if (targets.length() == 0 || targets.length() > 50)
@@ -1685,6 +1690,15 @@ public final class CafeStore {
                 + String.format(Locale.US, "%.2f", (total - given - card) / 100.0)
                 + " грн",
             total - given - card);
+      String guest = shortText(d.optString("guest", ""), 100).trim();
+      if (guest.isEmpty() && location(work.optJSONArray("locations"), d.optString("location_id", "cash")).optBoolean("guest_name_required"))
+        throw new IllegalArgumentException("Вкажіть ім’я гостя");
+      if (guest.isEmpty()) {
+        long number = work.optLong("next_guest_number", 1);
+        if (number < 1 || number > 1000000000) throw new IllegalArgumentException("Некоректний номер гостя");
+        guest = "Гість №" + number;
+        work.put("next_guest_number", number + 1);
+      }
       int sid = work.optInt("active_session", 0);
       if (sid == 0) {
         sid = createSession(work, "");
@@ -1704,7 +1718,7 @@ public final class CafeStore {
               .put("payment", payment)
               .put("gift", d.optBoolean("gift", false))
               .put("comment", shortText(d.optString("comment", ""), 500))
-              .put("guest", shortText(d.optString("guest", ""), 100))
+              .put("guest", guest)
               .put("place", "")
               .put("created", now())
               .put("items", items)

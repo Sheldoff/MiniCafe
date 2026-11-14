@@ -32,7 +32,8 @@ public final class CafeQr {
     target.setTag(token);
     target.animate().cancel();
     target.setAlpha(1f);
-    String key = size + ":" + value;
+    final int foreground = CafeUi.mono(target.getContext()) ? Color.BLACK : Color.rgb(75, 48, 34);
+    String key = foreground + ":" + size + ":" + value;
     Bitmap existing = cache.get(key);
     if (existing != null) {
       target.setImageBitmap(existing);
@@ -48,7 +49,7 @@ public final class CafeQr {
             int[] pixels = new int[size * size];
             for (int y = 0; y < size; y++)
               for (int x = 0; x < size; x++)
-                pixels[y * size + x] = matrix.get(x, y) ? Color.rgb(75, 48, 34) : Color.WHITE;
+                pixels[y * size + x] = matrix.get(x, y) ? foreground : Color.WHITE;
             bitmap = Bitmap.createBitmap(pixels, size, size, Bitmap.Config.ARGB_8888);
             cache.put(key, bitmap);
           } catch (Exception ignored) {

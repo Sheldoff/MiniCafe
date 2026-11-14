@@ -29,10 +29,10 @@ public class ScanActivity extends Activity
     getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     LinearLayout layout = new LinearLayout(this);
     layout.setOrientation(1);
-    layout.setBackgroundColor(CafeUi.coffee(this) ? CafeUi.background(this) : Color.rgb(24, 61, 48));
+    layout.setBackgroundColor((CafeUi.coffee(this) || CafeUi.mono(this)) ? CafeUi.background(this) : Color.rgb(24, 61, 48));
     TextView title = new TextView(this);
     title.setText("Наведіть камеру на QR-код\nу вікні МініКафе на ноутбуці");
-    title.setTextColor(CafeUi.coffee(this) ? CafeUi.text(this) : Color.WHITE);
+    title.setTextColor((CafeUi.coffee(this) || CafeUi.mono(this)) ? CafeUi.text(this) : Color.WHITE);
     title.setTextSize(19);
     title.setGravity(17);
     title.setPadding(20, 24, 20, 24);
