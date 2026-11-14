@@ -32,13 +32,26 @@ def coffee_color(value):
     return "#" + "".join(f"{c:02x}" for c in mapped) + raw[6:]
 
 
+def mono_color(value):
+    raw = {"white": "ffffff", "black": "000000"}.get(value, value.lstrip("#"))
+    if len(raw) in (3, 4): raw = "".join(c * 2 for c in raw)
+    rgb = [int(raw[i:i + 2], 16) / 255 for i in (0, 2, 4)]
+    linear = [c / 12.92 if c <= .04045 else ((c + .055) / 1.055) ** 2.4 for c in rgb]
+    y = sum(a * b for a, b in zip(linear, (.2126, .7152, .0722)))
+    level = 12.92 * y if y <= .0031308 else 1.055 * y ** (1 / 2.4) - .055
+    grey = f"{round(level * 255):02x}"
+    return "#" + grey * 3 + raw[6:]
+
+
 def palette_styles(css):
     colors = {}
+    mono = {}
 
     def replace(match):
         color = match.group().lower()
         name = "--tone-" + color.lstrip("#")
         colors[name] = coffee_color(color)
+        mono[name] = mono_color(color)
         return f"var({name},{match.group()})"
 
     # Comments may describe colors in prose; don't transform them into CSS.
@@ -48,4 +61,4 @@ def palette_styles(css):
         return declarations.sub(lambda m: m[1] + COLORS.sub(replace, m[2]) + m[3], part)
     transformed = "".join(part if part.startswith("/*") else transform(part) for part in parts)
     tokens = ";".join(f"{name}:{value}" for name, value in sorted(colors.items()))
-    return transformed + "\n:root[data-palette=coffee]{" + tokens + "}\n"
+    return transformed + "\n:root[data-palette=coffee]{" + tokens + "}\n:root[data-palette=mono]{" + ";".join(f"{k}:{v}" for k,v in sorted(mono.items())) + "}\n"

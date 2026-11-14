@@ -106,7 +106,7 @@ function menu(reset = false) {
   </form>
 </section>
 <section class="panel product-list-panel">
-  <div class="menu-page-heading"><div><h2>Меню й ціни</h2><p>Натисніть на товар, щоб змінити його дані.</p></div><button class="primary" id="editorToggle" onclick="toggleProductEditor()" aria-expanded="false">＋ Новий товар</button></div>
+  <div class="menu-page-heading"><div><h2>Меню та ціни</h2><p>Натисніть на товар, щоб змінити його дані.</p></div><button class="primary" id="editorToggle" onclick="toggleProductEditor()" aria-expanded="false">＋ Новий товар</button></div>
   <div class="menu-catalog-toolbar"><label for="productSearch">Знайти товар<input id="productSearch" type="search" placeholder="Пошук за назвою" aria-label="Пошук товарів" oninput="filterEditorProducts(this.value)"></label><span id="editorProductCount">${editorProductCount("")}</span></div>
   <div id="editorProducts">${editorProductRows("")}</div>
 </section></div>`;
@@ -137,7 +137,7 @@ function editorProductRows(q) {
           p,
         ) => `<div class="editor-product" data-product-id="${p.id}" role="button" tabindex="0" aria-label="Редагувати ${esc(p.name)}" onclick="editProduct(${p.id})" onkeydown="if(event.target===this&&(event.key==='Enter'||event.key===' ')){event.preventDefault();editProduct(${p.id})}">
     <div class="editor-product-info">${p.image_version ? `<img class="product-thumb" loading="lazy" src="${esc(imageUrl(p))}" alt="">` : '<span class="editor-placeholder" aria-hidden="true">' + (p.route === "bar" ? "☕" : "🥐") + "</span>"}<span class="grow"><b class="editor-product-name">${esc(p.name)}</b><small>${esc(p.category)}</small></span><strong class="editor-price">${money(p.price)}</strong></div>
-    <div class="editor-product-footer"><span class="editor-product-state${p.active ? "" : " is-hidden"}">${p.active ? "● У меню" : "○ Приховано"}</span><button type="button" class="remove" aria-label="Видалити ${esc(p.name)}" onclick="event.stopPropagation();deleteProduct(${p.id})">Видалити</button></div>
+    <div class="editor-product-footer">${p.active ? "" : '<span class="editor-product-state is-hidden">○ Приховано</span>'}<button type="button" class="remove" aria-label="Видалити ${esc(p.name)}" onclick="event.stopPropagation();deleteProduct(${p.id})">Видалити</button></div>
   </div>`,
       )
       .join("") ||

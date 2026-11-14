@@ -90,7 +90,12 @@ function applyLocationTheme() {
   ];
   props.forEach((key) => root.style.removeProperty(key));
   delete root.dataset.locationTheme;
-  if (!color || !/^#[a-fA-F0-9]{6}$/.test(color)) return;
+  if (
+    root.dataset.palette === "mono" ||
+    !color ||
+    !/^#[a-fA-F0-9]{6}$/.test(color)
+  )
+    return;
   root.dataset.locationTheme = "true";
   const dark = root.dataset.theme === "dark",
     coffee = root.dataset.palette === "coffee";
@@ -250,7 +255,7 @@ function locationsPage(id = "", fromHistory = false) {
         : [editing.bar_target || "bar", editing.delivery_target || "delivery"]),
     basic = ["cash", "bar", "delivery"].includes(id),
     colors = [...new Set(rows.map((l) => l.color))];
-  host.innerHTML = `<section class="panel settings-page"><h2>${saved ? "Редагувати локацію" : "Створити локацію"}</h2><form id="locationForm"><label>Функціонал і група в меню<select id="locationKind" ${basic ? "disabled" : ""}><option value="cash">Каса</option><option value="bar">Бариста</option><option value="delivery">Видача</option></select></label><label>Назва в бічному меню<input id="locationName" maxlength="80" required value="${esc(editing.name)}"></label><div id="locationCashRules"><fieldset><legend>Куди відправляти замовлення</legend><p class="muted">Оберіть потрібних бариста та видачі. Напої йдуть тільки бариста, їжа — тільки на видачу. Якщо обрано кілька черг одного типу, відмітки виконання спільні. Якщо відповідної черги не обрано, використовується основна.</p><div id="locationTargets">${rows
+  host.innerHTML = `<section class="panel settings-page"><h2>${saved ? "Редагувати локацію" : "Створити локацію"}</h2><form id="locationForm"><label>Функціонал і група в меню<select id="locationKind" ${basic ? "disabled" : ""}><option value="cash">Каса</option><option value="bar">Бариста</option><option value="delivery">Видача</option></select></label><label>Назва в бічному меню<input id="locationName" maxlength="80" required value="${esc(editing.name)}"></label><div id="locationCashRules"><label class="location-target"><input id="guestNameRequired" type="checkbox" ${editing.guest_name_required ? "checked" : ""}>Ім’я гостя обов’язкове</label><p class="muted">Коли вимкнено, порожнє поле автоматично стає «Гість №…». Введене ім’я не витрачає номер.</p><fieldset><legend>Куди відправляти замовлення</legend><p class="muted">Оберіть потрібних бариста та видачі. Напої йдуть тільки бариста, їжа — тільки на видачу. Якщо обрано кілька черг одного типу, відмітки виконання спільні. Якщо відповідної черги не обрано, використовується основна.</p><div id="locationTargets">${rows
     .filter((l) => l.kind !== "cash" && l.id !== id)
     .map(
       (l) =>
@@ -294,6 +299,8 @@ function locationsPage(id = "", fromHistory = false) {
         linked_cash: document.querySelector("#linkedCash").value,
         ...(document.querySelector("#locationKind").value === "cash"
           ? {
+              guest_name_required:
+                document.querySelector("#guestNameRequired").checked,
               targets: [
                 ...document.querySelectorAll("#locationTargets input:checked"),
               ].map((input) => input.value),

@@ -146,6 +146,7 @@ def main():
                 "editor-calculator",
                 "menu-prices-design",
                 "cash-live",
+                "mono-guests",
                 "cashier",
                 "card-payments",
                 "settings-locations",

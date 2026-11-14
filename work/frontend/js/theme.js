@@ -34,6 +34,8 @@ function setCafeTheme(mode, animate = true, notifyNative = true) {
   let meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = mode === "dark" ? "#142d25" : "#173f35";
   if (meta && root.dataset.palette === "coffee") meta.content = "#4b3022";
+  if (meta && root.dataset.palette === "mono")
+    meta.content = mode === "dark" ? "#111111" : "#202020";
   syncThemeControl();
   applyLocationTheme();
   clearThemeColorMotion();
@@ -55,9 +57,9 @@ function toggleCafeTheme() {
 }
 
 function setCafePalette(palette, notifyNative = true) {
-  if (!["standard", "coffee"].includes(palette)) return;
+  if (!["standard", "coffee", "mono"].includes(palette)) return;
   const root = document.documentElement;
-  if (palette === "coffee") root.dataset.palette = palette;
+  if (palette !== "standard") root.dataset.palette = palette;
   else delete root.dataset.palette;
   try {
     localStorage.setItem("minicafe-palette", palette);
@@ -76,6 +78,7 @@ function appearancePage() {
     `<section class="panel settings-panel"><h2>Оформлення</h2><p class="muted">Виберіть кольори для цього пристрою. Власні кольори локацій зберігаються.</p><div class="appearance-options">${[
       ["standard", "Класична", ["#173f35", "#b3d9a4", "#f5f4ef"]],
       ["coffee", "Кавова · типова", ["#78563f", "#f3e6ca", "#211914"]],
+      ["mono", "Чорно-біла", ["#111111", "#ffffff", "#b5b5b5"]],
     ]
       .map(
         ([id, name, colors]) =>

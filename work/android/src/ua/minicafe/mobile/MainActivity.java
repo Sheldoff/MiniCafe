@@ -361,14 +361,15 @@ public class MainActivity extends Activity {
       if ("theme".equals(target.getHost())) {
         String mode = target.getQueryParameter("mode");
         if ("light".equals(mode) || "dark".equals(mode)) {
-          String palette = "coffee".equals(target.getQueryParameter("palette")) ? "coffee" : "standard";
+          String palette = target.getQueryParameter("palette");
+          if (!"coffee".equals(palette) && !"mono".equals(palette)) palette = "standard";
           getSharedPreferences("appearance", 0).edit().putString("theme", mode).putString("palette", palette).apply();
           CafeUi.applyTheme(this);
           int color = CafeUi.background(this);
           view.setBackgroundColor(color);
           if (view.getParent() instanceof View) ((View) view.getParent()).setBackgroundColor(color);
-          getWindow().setStatusBarColor(CafeUi.coffee(this) ? Color.rgb(75, 48, 34) : Color.rgb(20, 45, 37));
-          getWindow().setNavigationBarColor(CafeUi.coffee(this) ? Color.rgb(75, 48, 34) : Color.rgb(20, 27, 24));
+          getWindow().setStatusBarColor(CafeUi.chrome(this));
+          getWindow().setNavigationBarColor(CafeUi.mono(this) ? CafeUi.background(this) : CafeUi.coffee(this) ? Color.rgb(75, 48, 34) : Color.rgb(20, 27, 24));
         }
         return true;
       } else if ("copy-support-card".equals(target.getHost())) {

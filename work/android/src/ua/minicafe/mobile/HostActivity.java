@@ -66,10 +66,10 @@ public class HostActivity extends Activity {
 
   private void accent(Button b, boolean gold) {
     GradientDrawable bg = new GradientDrawable();
-    bg.setColor(gold && !CafeUi.coffee(this) ? Color.rgb(228, 193, 118) : CafeUi.accent(this));
+    bg.setColor(gold && !(CafeUi.coffee(this) || CafeUi.mono(this)) ? Color.rgb(228, 193, 118) : CafeUi.accent(this));
     bg.setCornerRadius(px(11));
     b.setBackground(bg);
-    b.setTextColor(gold && !CafeUi.coffee(this) ? Color.rgb(23, 54, 43) : CafeUi.onAccent(this));
+    b.setTextColor(gold && !(CafeUi.coffee(this) || CafeUi.mono(this)) ? Color.rgb(23, 54, 43) : CafeUi.onAccent(this));
     b.setTypeface(null, Typeface.BOLD);
   }
 

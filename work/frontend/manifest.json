@@ -13,7 +13,8 @@
     "css/settings-controls.css",
     "css/statistics.css",
     "css/menu-prices.css",
-    "css/cash-live.css"
+    "css/cash-live.css",
+    "css/mono-guest.css"
   ],
   "scripts": [
     "js/state.js",

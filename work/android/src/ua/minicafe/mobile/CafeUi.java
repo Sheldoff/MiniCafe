@@ -20,8 +20,16 @@ public final class CafeUi {
     return "coffee".equals(c.getSharedPreferences("appearance", 0).getString("palette", "coffee"));
   }
 
+  public static boolean mono(Context c) {
+    return "mono".equals(c.getSharedPreferences("appearance", 0).getString("palette", "coffee"));
+  }
+
+  public static int chrome(Context c) {
+    return mono(c) ? Color.rgb(32,32,32) : coffee(c) ? Color.rgb(75,48,34) : Color.rgb(20,45,37);
+  }
+
   public static String appearance(Context c) {
-    return (dark(c) ? "dark" : "light") + (coffee(c) ? ":coffee" : ":standard");
+    return (dark(c) ? "dark" : "light") + (mono(c) ? ":mono" : coffee(c) ? ":coffee" : ":standard");
   }
 
   public static boolean dark(Context c) {
@@ -29,36 +37,43 @@ public final class CafeUi {
   }
 
   public static int background(Context c) {
+    if (mono(c)) return dark(c) ? Color.rgb(17,17,17) : Color.rgb(244,244,244);
     return coffee(c) ? (dark(c) ? Color.rgb(33, 25, 20) : Color.rgb(247, 241, 230)) : (dark(c) ? Color.rgb(20, 27, 24) : Color.rgb(245, 244, 239));
   }
 
   public static int surface(Context c) {
+    if (mono(c)) return dark(c) ? Color.rgb(32,32,32) : Color.rgb(255,255,255);
     return coffee(c) ? (dark(c) ? Color.rgb(45, 33, 27) : Color.rgb(255, 253, 247)) : (dark(c) ? Color.rgb(30, 41, 36) : Color.WHITE);
   }
 
   public static int text(Context c) {
+    if (mono(c)) return dark(c) ? Color.rgb(245,245,245) : Color.rgb(23,23,23);
     return coffee(c) ? (dark(c) ? Color.rgb(243, 230, 202) : Color.rgb(56, 39, 29)) : (dark(c) ? Color.rgb(233, 239, 233) : Color.rgb(23, 63, 53));
   }
 
   public static int accent(Context c) {
+    if (mono(c)) return dark(c) ? Color.rgb(238,238,238) : Color.rgb(32,32,32);
     return coffee(c) ? (dark(c) ? Color.rgb(215, 184, 142) : Color.rgb(120, 86, 63)) : (dark(c) ? Color.rgb(179, 217, 164) : Color.rgb(33, 89, 67));
   }
 
   public static int onAccent(Context c) {
+    if (mono(c)) return dark(c) ? Color.rgb(23,23,23) : Color.rgb(255,255,255);
     return coffee(c) ? (dark(c) ? Color.rgb(44, 29, 20) : Color.rgb(255, 244, 223)) : (dark(c) ? Color.rgb(22, 38, 25) : Color.WHITE);
   }
 
   public static boolean applyTheme(Activity a) {
     boolean dark = dark(a);
-    a.setTheme(coffee(a) ? (dark ? R.style.CafeTheme_CoffeeDark : R.style.CafeTheme_Coffee) : (dark ? R.style.CafeTheme_Dark : R.style.CafeTheme));
+    a.setTheme(mono(a) ? (dark ? R.style.CafeTheme_MonoDark : R.style.CafeTheme_Mono) : coffee(a) ? (dark ? R.style.CafeTheme_CoffeeDark : R.style.CafeTheme_Coffee) : (dark ? R.style.CafeTheme_Dark : R.style.CafeTheme));
     return dark;
   }
 
   public static int muted(Context c) {
+    if (mono(c)) return dark(c) ? Color.rgb(196,196,196) : Color.rgb(85,85,85);
     return coffee(c) ? (dark(c) ? Color.rgb(209, 187, 160) : Color.rgb(112, 87, 68)) : (dark(c) ? Color.rgb(176, 190, 178) : Color.rgb(93, 112, 99));
   }
 
   public static int raised(Context c) {
+    if (mono(c)) return dark(c) ? Color.rgb(53,53,53) : Color.rgb(231,231,231);
     return coffee(c) ? (dark(c) ? Color.rgb(68, 49, 37) : Color.rgb(240, 227, 204)) : (dark(c) ? Color.rgb(41, 56, 47) : Color.rgb(237, 241, 229));
   }
 
@@ -126,7 +141,7 @@ public final class CafeUi {
     field.setTextSize(15);
     field.setTextColor(text(c));
     field.setHintTextColor(muted(c));
-    field.setBackground(shape(c, coffee(c) ? surface(c) : (dark(c) ? Color.rgb(23, 34, 29) : Color.rgb(249, 250, 246)), true));
+    field.setBackground(shape(c, (coffee(c) || mono(c)) ? surface(c) : (dark(c) ? Color.rgb(23, 34, 29) : Color.rgb(249, 250, 246)), true));
     field.setPadding(px(c, 12), px(c, 12), px(c, 12), px(c, 12));
     field.setMinimumHeight(px(c, 50));
     field.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_DONE);
@@ -159,7 +174,7 @@ public final class CafeUi {
     GradientDrawable bg = new GradientDrawable();
     bg.setColor(color);
     bg.setCornerRadius(px(c, 14));
-    if (border) bg.setStroke(px(c, 1), coffee(c) ? (dark(c) ? Color.rgb(148, 121, 94) : Color.rgb(201, 182, 156)) : (dark(c) ? Color.rgb(76, 98, 84) : Color.rgb(216, 224, 212)));
+    if (border) bg.setStroke(px(c, 1), mono(c) ? (dark(c) ? Color.rgb(119,119,119) : Color.rgb(181,181,181)) : coffee(c) ? (dark(c) ? Color.rgb(148, 121, 94) : Color.rgb(201, 182, 156)) : (dark(c) ? Color.rgb(76, 98, 84) : Color.rgb(216, 224, 212)));
     return bg;
   }
 
@@ -173,14 +188,14 @@ public final class CafeUi {
     StateListDrawable states = new StateListDrawable();
     states.addState(
         new int[] {-android.R.attr.state_enabled},
-        shape(c, coffee(c) ? raised(c) : (dark(c) ? Color.rgb(44, 54, 47) : Color.rgb(230, 234, 225)), !primary));
+        shape(c, (coffee(c) || mono(c)) ? raised(c) : (dark(c) ? Color.rgb(44, 54, 47) : Color.rgb(230, 234, 225)), !primary));
     states.addState(
         new int[] {android.R.attr.state_pressed},
         shape(
             c,
             primary
-                ? (coffee(c) ? accent(c) : (dark(c) ? Color.rgb(195, 228, 182) : Color.rgb(24, 70, 53)))
-                : (coffee(c) ? raised(c) : (dark(c) ? Color.rgb(44, 62, 50) : Color.rgb(235, 242, 227))),
+                ? ((coffee(c) || mono(c)) ? accent(c) : (dark(c) ? Color.rgb(195, 228, 182) : Color.rgb(24, 70, 53)))
+                : ((coffee(c) || mono(c)) ? raised(c) : (dark(c) ? Color.rgb(44, 62, 50) : Color.rgb(235, 242, 227))),
             !primary));
     states.addState(new int[] {}, shape(c, primary ? accent(c) : surface(c), !primary));
     b.setBackground(states);
