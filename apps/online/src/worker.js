@@ -43,6 +43,7 @@ const writes = new Set([
   "order",
   "card-payment/hide",
   "transaction/hide",
+  "transaction/clear",
   "settings/update",
   "location/save",
   "location/delete",
@@ -53,6 +54,7 @@ const writes = new Set([
   "undo-issue",
   "status",
   "session/start",
+  "session/rename",
   "session/end",
   "expenses",
   "expenses/update",
@@ -274,6 +276,12 @@ async function handle(request, env, ctx) {
       });
     }
     if (path === "card-payments") {
+      const wantedCash =
+        url.searchParams.get("location_id") || user.location || "";
+      if (user.location && wantedCash !== user.location)
+        return json({ error: "Інша каса" }, 403);
+      if (wantedCash && !/^(cash|loc-[a-f0-9]{32})$/.test(wantedCash))
+        fail("Некоректна каса");
       const before = url.searchParams.has("before")
         ? Number(url.searchParams.get("before"))
         : Number.MAX_SAFE_INTEGER;
@@ -283,7 +291,7 @@ async function handle(request, env, ctx) {
         await env.DB.prepare(
           "SELECT id,json_extract(data,'$.guest') AS guest,json_extract(data,'$.payment.card_amount') AS amount FROM orders WHERE id<? AND (?='' OR coalesce(json_extract(data,'$.cash_location'),'cash')=?) AND coalesce(json_extract(data,'$.card_history_hidden'),0)=0 AND coalesce(json_extract(data,'$.stats_cleared'),0)=0 AND coalesce(json_extract(data,'$.gift'),0)=0 AND json_extract(data,'$.payment.card_amount')>0 ORDER BY id DESC LIMIT 51",
         )
-          .bind(before, user.location || "", user.location || "")
+          .bind(before, wantedCash, wantedCash)
           .all()
       ).results;
       return json({
@@ -307,6 +315,7 @@ async function handle(request, env, ctx) {
             locations: d.locations || [],
             online_payment_enabled: d.online_payment_enabled !== false,
             next_guest_number: d.next_guest_number || 1,
+            next_guest_numbers: d.next_guest_numbers || {},
             versions: d.versions,
             products: d.products,
             orders: d.orders

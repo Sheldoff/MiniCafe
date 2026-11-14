@@ -34,6 +34,7 @@ async function loadCardPayments(reset = true) {
     host.textContent = "Завантажуємо оплати…";
   }
   if (!reset && !cardPaymentCursor) return;
+  const cashId = activeLocation || "cash";
   const serial = ++cardPaymentSerial;
   let rows = reset ? [] : [...cardPaymentRows],
     cursor = reset ? null : cardPaymentCursor,
@@ -43,7 +44,9 @@ async function loadCardPayments(reset = true) {
   try {
     for (let page = 0; page < pages; page++) {
       const r = await fetch(
-        "/api/card-payments" + (cursor ? "?before=" + cursor : ""),
+        "/api/card-payments?location_id=" +
+          encodeURIComponent(cashId) +
+          (cursor ? "&before=" + cursor : ""),
         { headers: auth, cache: "no-store" },
       );
       const result = await r.json();
@@ -53,6 +56,7 @@ async function loadCardPayments(reset = true) {
       if (!cursor) break;
     }
     if (
+      cashId !== (activeLocation || "cash") ||
       serial !== cardPaymentSerial ||
       host !== cardPaymentHost ||
       !host.isConnected
@@ -75,7 +79,10 @@ async function hideCardPayment(id) {
   hidingCardPayments.add(id);
   drawCardPayments();
   try {
-    await post("card-payment/hide", { id });
+    await post("card-payment/hide", {
+      id,
+      location_id: activeLocation || "cash",
+    });
     await loadCardPayments();
     toast("Оплату прибрано зі списку");
   } catch (e) {

@@ -61,6 +61,14 @@ export function validateLocation(input, rows = []) {
     )
       throw Error("Некоректне налаштування імені гостя");
     out.guest_name_required = input.guest_name_required === true;
+    if (
+      input.guest_prefix !== undefined &&
+      (typeof input.guest_prefix !== "string" ||
+        input.guest_prefix.length > 40 ||
+        /[\u0000-\u001f\u007f]/.test(input.guest_prefix))
+    )
+      throw Error("Перевірте префікс гостя");
+    out.guest_prefix = input.guest_prefix ?? "Гість №";
     if (input.targets !== undefined) {
       if (
         !Array.isArray(input.targets) ||

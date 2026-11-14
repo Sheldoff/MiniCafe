@@ -81,7 +81,7 @@ test("anonymous sequence survives retries, named sales, failed payments, backups
     guest_name_required: false,
   });
   d = write(d, "order", { ...sale("other"), location_id: other });
-  assert.equal(d.orders.at(-1).guest, "Гість №4");
+  assert.equal(d.orders.at(-1).guest, "Гість №1");
   assert.throws(() =>
     validateLocation({ ...location, guest_name_required: "true" }),
   );

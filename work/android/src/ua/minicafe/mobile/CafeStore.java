@@ -157,7 +157,9 @@ public final class CafeStore {
 
   private static int createSession(JSONObject d, String name) throws Exception {
     int id = next(d, "nextSession");
-    String title = name.trim().isEmpty() ? "Сесія №" + id : shortText(name.trim(), 100);
+    SimpleDateFormat labelDate = new SimpleDateFormat("dd.MM.yyyy", Locale.US);
+    labelDate.setTimeZone(TimeZone.getTimeZone("Europe/Kyiv"));
+    String title = name.trim().isEmpty() ? "Сесія " + labelDate.format(new Date()) : shortText(name.trim(), 100);
     d.getJSONArray("sessions")
         .put(
             new JSONObject()
@@ -261,6 +263,12 @@ public final class CafeStore {
 
   private static void validate(JSONObject d) throws Exception {
     if (d.has("next_guest_number")) exactNumber(d, "next_guest_number", 1, 1000000001);
+    if (d.has("next_guest_numbers")) {
+      JSONObject counters = d.getJSONObject("next_guest_numbers");
+      if (counters.length()>1000) throw new IllegalArgumentException("Забагато лічильників");
+      Iterator<String> ids=counters.keys();
+      while(ids.hasNext()) {String id=ids.next();if(!id.matches("cash|loc-[a-f0-9]{32}"))throw new IllegalArgumentException("Некоректна каса");exactNumber(counters,id,1,1000000001);}
+    }
     JSONArray locations = d.optJSONArray("locations");
     if (d.has("locations") && locations == null)
       throw new IllegalArgumentException("Некоректні локації");
@@ -715,6 +723,7 @@ public final class CafeStore {
                 : new JSONArray(data.getJSONArray("locations").toString()))
         .put("online_payment_enabled", data.optBoolean("online_payment_enabled", true))
         .put("next_guest_number", data.optLong("next_guest_number", 1))
+        .put("next_guest_numbers", data.optJSONObject("next_guest_numbers") == null ? new JSONObject() : new JSONObject(data.getJSONObject("next_guest_numbers").toString()))
         .put("products", ps)
         .put("orders", os)
         .put("sessions", new JSONArray(data.getJSONArray("sessions").toString()))
@@ -765,12 +774,16 @@ public final class CafeStore {
   }
 
   public synchronized JSONObject cardPayments(long before, boolean transactions) throws Exception {
+    return cardPayments(before,transactions,"");
+  }
+  public synchronized JSONObject cardPayments(long before, boolean transactions, String cashId) throws Exception {
+    if(!cashId.isEmpty() && !"cash".equals(location(data.optJSONArray("locations"),cashId).getString("kind")))throw new IllegalArgumentException("Касу не знайдено");
     if (before < 1) throw new IllegalArgumentException("Некоректна сторінка");
     List<JSONObject> matching = new ArrayList<>();
     JSONArray orders = data.getJSONArray("orders");
     for (int i = 0; i < orders.length(); i++) {
       JSONObject order = orders.getJSONObject(i), payment = order.optJSONObject("payment");
-      if (order.getLong("id") < before
+      if ((cashId.isEmpty() || cashId.equals(order.optString("cash_location","cash"))) && order.getLong("id") < before
           && !order.optBoolean("gift")
           && !order.optBoolean("stats_cleared")
           && !order.optBoolean(transactions ? "transaction_history_hidden" : "card_history_hidden")
@@ -978,6 +991,10 @@ public final class CafeStore {
       if (input.has("guest_name_required") && !(input.get("guest_name_required") instanceof Boolean))
         throw new IllegalArgumentException("Некоректне налаштування імені гостя");
       row.put("guest_name_required", input.optBoolean("guest_name_required", false));
+      if (input.has("guest_prefix") && !(input.get("guest_prefix") instanceof String)) throw new IllegalArgumentException("Некоректний префікс");
+      String prefix=input.optString("guest_prefix","Гість №");
+      if(prefix.length()>40 || prefix.matches(".*[\\p{Cntrl}].*"))throw new IllegalArgumentException("Перевірте префікс гостя");
+      row.put("guest_prefix",prefix);
       if (input.has("targets")) {
         JSONArray targets = input.getJSONArray("targets");
         if (targets.length() == 0 || targets.length() > 50)
@@ -1339,6 +1356,8 @@ public final class CafeStore {
       if (!(d.get("online_payment_enabled") instanceof Boolean))
         throw new IllegalArgumentException("Некоректне налаштування");
       work.put("online_payment_enabled", d.getBoolean("online_payment_enabled"));
+    } else if (path.equals("/api/transaction/clear")) {
+      for(int n=0;n<orders.length();n++){JSONObject o=orders.getJSONObject(n);if(o.optJSONObject("payment")!=null && o.getJSONObject("payment").optLong("card_amount")>0)o.put("transaction_history_hidden",true);}
     } else if (path.equals("/api/transaction/hide")) {
       JSONObject o = find(orders, (int) exactNumber(d, "id", 1, Integer.MAX_VALUE));
       if (o.optJSONObject("payment") == null
@@ -1357,6 +1376,9 @@ public final class CafeStore {
         }
       work.put("calculator_expenses", keep)
           .put("expenses_version", work.optLong("expenses_version", 0) + 1);
+    } else if (path.equals("/api/session/rename")) {
+      String name=shortText(d.getString("name"),100).trim();if(name.isEmpty())throw new IllegalArgumentException("Вкажіть назву сесії");
+      find(work.getJSONArray("sessions"), (int)exactNumber(d,"id",1,Integer.MAX_VALUE)).put("name",name);
     } else if (path.equals("/api/session/start")) {
       if (work.optInt("active_session", 0) > 0)
         throw new IllegalArgumentException("Спочатку завершіть поточну сесію");
@@ -1694,10 +1716,13 @@ public final class CafeStore {
       if (guest.isEmpty() && location(work.optJSONArray("locations"), d.optString("location_id", "cash")).optBoolean("guest_name_required"))
         throw new IllegalArgumentException("Вкажіть ім’я гостя");
       if (guest.isEmpty()) {
-        long number = work.optLong("next_guest_number", 1);
+        String cashId=d.optString("location_id","cash");
+        JSONObject counters=work.optJSONObject("next_guest_numbers");if(counters==null)counters=new JSONObject();
+        long number = counters.optLong(cashId,"cash".equals(cashId)?work.optLong("next_guest_number",1):1);
         if (number < 1 || number > 1000000000) throw new IllegalArgumentException("Некоректний номер гостя");
-        guest = "Гість №" + number;
-        work.put("next_guest_number", number + 1);
+        guest = location(work.optJSONArray("locations"),cashId).optString("guest_prefix","Гість №") + number;
+        counters.put(cashId,number+1);work.put("next_guest_numbers",counters);
+        if("cash".equals(cashId))work.put("next_guest_number", number + 1);
       }
       int sid = work.optInt("active_session", 0);
       if (sid == 0) {
@@ -1880,6 +1905,7 @@ public final class CafeStore {
         || path.equals("/api/undo-issue")
         || path.equals("/api/order")
         || path.equals("/api/status")
+        || path.equals("/api/transaction/clear")
         || path.equals("/api/transaction/hide")
         || path.equals("/api/card-payment/hide")
         || path.equals("/api/stats/clear")) domains.add("orders");

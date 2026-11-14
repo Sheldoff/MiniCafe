@@ -14,7 +14,8 @@
     "css/statistics.css",
     "css/menu-prices.css",
     "css/cash-live.css",
-    "css/mono-guest.css"
+    "css/mono-guest.css",
+    "css/cash-session.css"
   ],
   "scripts": [
     "js/state.js",
@@ -38,6 +39,7 @@
     "js/guest-codes.js",
     "js/settings.js",
     "js/settings-controls.js",
+    "js/cash-session.js",
     "js/startup.js"
   ]
 }

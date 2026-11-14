@@ -185,18 +185,3 @@
 :root[data-palette="mono"] .calc-problem {
   color: var(--warning);
 }
-:root[data-palette="mono"] .drawer-links button {
-  --nav-color: var(--border) !important;
-}
-:root[data-palette="mono"] .drawer-unit-count {
-  background: var(--accent) !important;
-  color: var(--on-accent) !important;
-}
-:root[data-palette="mono"] .queue-grid .card {
-  --source-color: var(--accent) !important;
-  --source-text: var(--on-accent) !important;
-}
-:root[data-palette="mono"] .queue-grid .card button.primary:hover {
-  background: var(--source-color) !important;
-  color: var(--source-text) !important;
-}

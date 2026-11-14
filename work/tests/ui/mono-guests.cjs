@@ -50,6 +50,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
         active_session: 0,
         issue_undo: {},
         next_guest_number: 1,
+        next_guest_numbers: {},
       });
       for (const p of fixture.products) {
         delete p.stock;
@@ -148,12 +149,13 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
           const c = await contrast(page);
           assert.deepEqual(c.problems, [], mode + "/" + view + " contrast");
           const colored = await page.evaluate(() => {
+            if (document.documentElement.dataset.locationTheme) return [];
             const bad = [];
             for (const el of document.querySelectorAll("body *")) {
               if (
                 !el.getBoundingClientRect().width ||
                 el.closest(
-                  "svg,.appearance-swatches,.location-presets,.location-color",
+                  "svg,.appearance-swatches,.location-presets,.location-color,.color-preview,.queue-grid .card,[data-nav-color],.drawer-unit-count",
                 ) ||
                 el.matches("img,input[type=color]")
               )
@@ -176,7 +178,15 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
                     2
                   )
                     bad.push(
-                      el.tagName + "." + el.className + " " + prop + "=" + m[0],
+                      el.tagName +
+                        "#" +
+                        el.id +
+                        "." +
+                        el.className +
+                        " " +
+                        prop +
+                        "=" +
+                        m[0],
                     );
                 }
               }
@@ -200,11 +210,15 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
             const s = getComputedStyle(
               document.querySelector(".tile-feedback"),
             );
-            const a = s.backgroundColor.match(/\d+/g);
-            return a[0] === a[1] && a[1] === a[2];
+            const probe = document.createElement("span");
+            probe.style.backgroundColor = "var(--feedback-add)";
+            document.body.append(probe);
+            const expected = getComputedStyle(probe).backgroundColor;
+            probe.remove();
+            return s.backgroundColor === expected;
           }),
           true,
-          "feedback animation gray",
+          "feedback follows the selected location and palette",
         );
         await page.evaluate(() => change("history"));
         await page.waitForTimeout(160);

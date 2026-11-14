@@ -299,7 +299,14 @@ public final class CafeStats {
                     .put("revenue", 0L)
                     .put("orders", 0L));
     for (JSONObject cash : cashiers.values()) sources.put(cash);
+    JSONArray events = new JSONArray();
+    for(int n=Math.max(0,chosen.length()-500);n<chosen.length();n++){
+      JSONObject o=chosen.getJSONObject(n);JSONArray lines=new JSONArray(),items=o.getJSONArray("items");
+      for(int j=0;j<items.length();j++){JSONObject i=items.getJSONObject(j);lines.put(new JSONObject().put("name",i.getString("name")).put("qty",i.getInt("qty")).put("status",i.getString("status")));}
+      events.put(new JSONObject().put("id",o.getInt("id")).put("created",o.getString("created")).put("cash_location",o.optString("cash_location","cash")).put("items",lines));
+    }
     return new JSONObject()
+        .put("events",events)
         .put("generated_at", iso.format(new Date()))
         .put("interval_seconds", interval)
         .put("timeline", timeline)

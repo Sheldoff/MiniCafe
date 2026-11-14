@@ -24,7 +24,13 @@ export async function createPayment(env, input, guest, items) {
   const old = await env.DB.prepare("SELECT * FROM mono_payments WHERE id=?")
     .bind(id)
     .first();
-  if (old && old.data !== data)
+  if (
+    old &&
+    JSON.stringify({
+      guest: JSON.parse(old.data).guest,
+      items: JSON.parse(old.data).items,
+    }) !== data
+  )
     fail("Цей запит уже використано. Почніть нове замовлення.");
   if (!old) {
     const count = await env.DB.prepare(
@@ -46,7 +52,13 @@ export async function createPayment(env, input, guest, items) {
     .bind(id)
     .first();
   if (!row) fail("Онлайн-оплату вимкнено. Створіть код для каси.");
-  if (row.data !== data) fail("Запит уже використано");
+  if (
+    JSON.stringify({
+      guest: JSON.parse(row.data).guest,
+      items: JSON.parse(row.data).items,
+    }) !== data
+  )
+    fail("Запит уже використано");
   return json({
     payment: true,
     token: input.payment_request,
@@ -200,6 +212,48 @@ export async function syncMono(env, bankFetch = fetch) {
 }
 export async function paymentRoutes(request, env) {
   const path = new URL(request.url).pathname;
+  if (
+    ["/api/payments/history/hide", "/api/payments/history/clear"].includes(path)
+  ) {
+    const user = await identity(request, env);
+    if (request.method !== "POST")
+      return json({ error: "Метод не підтримується" }, 405);
+    if (!user || user.role !== "admin" || !csrfAllowed(request, user))
+      return json({ error: "Недостатньо прав" }, 403);
+    const length = Number(request.headers.get("Content-Length") || 0);
+    if (length > 2048) return json({ error: "Завеликий запит" }, 400);
+    // Read at most a small bounded body even when Content-Length is absent.
+    const reader = request.body?.getReader();
+    let raw = "";
+    if (reader)
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        raw += new TextDecoder().decode(value);
+        if (raw.length > 2048) {
+          await reader.cancel();
+          return json({ error: "Завеликий запит" }, 400);
+        }
+      }
+    let input;
+    try {
+      input = JSON.parse(raw || "{}");
+    } catch {
+      return json({ error: "Некоректний запит" }, 400);
+    }
+    if (
+      path.endsWith("/hide") &&
+      !/^MC-[A-F0-9]{16}$/.test(input?.reference || "")
+    )
+      return json({ error: "Некоректний код" }, 400);
+    await env.DB.prepare(
+      "UPDATE mono_payments SET data=json_set(data,'$.history_hidden',1)" +
+        (path.endsWith("/hide") ? " WHERE reference=?" : ""),
+    )
+      .bind(...(path.endsWith("/hide") ? [input.reference] : []))
+      .run();
+    return json({ ok: true });
+  }
   if (path === "/api/payments/history" && request.method === "GET") {
     const user = await identity(request, env);
     if (!user || user.role !== "admin")
@@ -219,7 +273,8 @@ export async function paymentRoutes(request, env) {
     const rows = (
       await env.DB.prepare(
         "SELECT reference,total,status,order_id,created,expires,json_extract(data,'$.guest') AS guest FROM mono_payments " +
-          (anchor ? "WHERE created<? OR (created=? AND reference<?) " : "") +
+          "WHERE coalesce(json_extract(data,'$.history_hidden'),0)=0 " +
+          (anchor ? "AND (created<? OR (created=? AND reference<?)) " : "") +
           "ORDER BY created DESC,reference DESC LIMIT 51",
       )
         .bind(
@@ -227,15 +282,13 @@ export async function paymentRoutes(request, env) {
         )
         .all()
     ).results;
-    const page = rows
-      .slice(0, 50)
-      .map((r) => ({
-        ...r,
-        status:
-          r.status === "waiting" && r.expires <= timestamp()
-            ? "expired"
-            : r.status,
-      }));
+    const page = rows.slice(0, 50).map((r) => ({
+      ...r,
+      status:
+        r.status === "waiting" && r.expires <= timestamp()
+          ? "expired"
+          : r.status,
+    }));
     return json({
       payments: page,
       next_before: rows.length > 50 ? page.at(-1).reference : null,

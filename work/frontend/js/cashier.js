@@ -154,7 +154,11 @@ function updateGuestHint() {
   field.required = required;
   field.placeholder = required
     ? "Ім’я гостя — обов’язково"
-    : "Гість №" + (data.next_guest_number || 1);
+    : "Гість №" +
+      (data.next_guest_numbers?.[activeLocation || "cash"] ??
+        ((activeLocation || "cash") === "cash"
+          ? data.next_guest_number || 1
+          : 1));
   field.setAttribute(
     "aria-label",
     required

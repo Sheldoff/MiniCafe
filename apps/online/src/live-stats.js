@@ -64,6 +64,19 @@ export function liveSession(orders, active = false) {
         },
       );
   return {
+    events: [...orders]
+      .sort((a, b) => a.created.localeCompare(b.created))
+      .slice(-500)
+      .map((o) => ({
+        id: o.id,
+        created: o.created,
+        cash_location: o.cash_location || "cash",
+        items: o.items.map((i) => ({
+          name: i.name,
+          qty: i.qty,
+          status: i.status,
+        })),
+      })),
     generated_at: new Date().toISOString(),
     interval_seconds: interval,
     timeline,
