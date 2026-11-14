@@ -1,7 +1,7 @@
 {
   "application": "МініКафе",
-  "version": "3.57",
-  "android_version_code": 69,
+  "version": "3.58",
+  "android_version_code": 70,
   "purpose": "Каса, окремі черги напоїв і їжі, гнучке меню, статистика/PDF, калькулятор, резервні копії",
   "entry_document": "START-HERE-UA.md",
   "human_prompt": "NEXT-CHAT-PROMPT-UA.txt",
@@ -26,6 +26,7 @@
     "delivery": "Тільки видача їжі"
   },
   "latest_requested_changes": [
+    "Minute ruler with grouped simultaneous receipts; interactive comparisons by cash/fulfillment/products/drinks and orders/quantity/amount/unit price; scoped payment metrics, pencil session dialog, bottom PDF, donut and base-location separator/delete editor",
     "Per-cash persistent guest counters/exact prefixes and isolated card ledgers; palette-independent configured colors with HEX/RGB picker; non-financial transaction clear/hide; stats swipe guards, one-row period/session rename/end and date defaults; live per-cash product timeline without redundant session/refresh/revenue blocks; compact settings and cake delivery icon",
     "Monochrome light/dark palette including CSS keyframes, feedback and native Android controls; per-cash required guest name, persistent anonymous-only server numbering with atomic retries; compact renamed Menu and Prices; top statistics tabs and hidden live period filter",
     "Cash partition stock with conserved global total, source consumption/refund, calculator reconciliation and stale-editor guard; type-safe routing/legacy queue repair; compact mobile web catalog/headerless editor, location icons/heading, per-cash bar portion badges and SVG empty queues; live current-session dashboard with 15s polling, charts, stale-data/authorization guards",
@@ -68,14 +69,14 @@
     "private_password_file_separate": "work/android/signing.local.json",
     "certificate_fingerprint_file": "work/android/signing-cert.sha256"
   },
-  "validation_limit": "Android 3.57/code 69: full checks.py without skips passed (c9747ff0084540baa8e9a14776701e02, 26 Java suites, local API and Chrome/WebKit). Original signing certificate verified. Cash-workspace UI passed online and Android: exact per-cash prefixes/counters/isolated card ledgers, HEX/RGB and location color persistence across all palettes/light/dark, one-row editable sessions at 320/390/768/1440, guarded stats swipes, product timeline lanes and safe transaction controls. Existing editor/stock/queues/theme/gesture/statistics regressions passed. Online 0.24: 26 unit tests and full disposable local D1 pipeline (concurrent numbered orders, role/CSRF, bank history hide/clear with unchanged matching/replay/finance, restore/scopes), general Chrome/WebKit/Cyrillic PDF and Java-D1 interop passed. GitHub source/online checks passed. Worker e675b6ef-ef0e-459d-851f-2932a57b5430; public GET / 200, /admin 302, /api/ping 200. No physical phones or production test orders/restore; Windows frozen. Private value/archive scans and SHA-256 verified when packaging.",
+  "validation_limit": "3.58: full verification in progress.",
   "development_tracks": {
     "policy": "docs/PROJECT-TRACKS-UA.md",
     "local_android": {
       "status": "active",
       "entry": "apps/local-android/README.md",
       "sources": "work/android",
-      "version": "3.57"
+      "version": "3.58"
     },
     "online": {
       "status": "telegram_auth_deployed",
@@ -86,7 +87,7 @@
       "sources": "apps/online/src",
       "database": "D1 minicafe-db",
       "deploy_docs": "apps/online/DEPLOY-UA.md",
-      "version": "0.24.0"
+      "version": "0.25.0"
     },
     "windows": {
       "status": "frozen",

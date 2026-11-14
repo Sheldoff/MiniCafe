@@ -257,23 +257,30 @@ function minuteTimeline(live) {
   const end = Math.floor(Date.parse(live.generated_at) / 60000) * 60000,
     start = end - 59 * 60000;
   const cashes = allLocations().filter((l) => l.kind === "cash");
-  return `<section class="order-timeline"><h3>Замовлення · хвилинна лінійка</h3><div class="order-timeline-scroll"><div class="minute-ruler"><div class="minute-ticks">${Array.from({ length: 60 }, (_, n) => `<time style="left:${(n / 60) * 100}%">${new Date(start + n * 60000).toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" })}</time>`).join("")}</div>${cashes
-    .map(
-      (c) =>
-        `<div class="minute-lane"><b>${esc(c.name)}</b>${(live.events || [])
-          .filter(
-            (e) =>
-              e.cash_location === c.id &&
-              Date.parse(e.created.replace(" ", "T") + "Z") >= start,
-          )
-          .map(
-            (e) =>
-              `<details style="left:${Math.min(99, ((Date.parse(e.created.replace(" ", "T") + "Z") - start) / 3600000) * 100)}%"><summary aria-label="Замовлення ${e.id}">●</summary><div>№${e.id} ${esc(e.created.slice(11))}${e.items.map((i) => `<p>${i.qty} × ${esc(i.name)}</p>`).join("")}</div></details>`,
-          )
-          .join("")}</div>`,
-    )
-    .join("")}</div></div></section>`;
+  const time = (t) =>
+    new Date(t).toLocaleTimeString("uk-UA", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  return `<section class="order-timeline"><h3>Замовлення · хвилинна лінійка</h3><div class="order-timeline-scroll" tabindex="0" aria-label="Хвилинна лінійка"><div class="minute-ruler"><div class="minute-ticks">${Array.from({ length: 60 }, (_, n) => `<time style="left:${(n / 60) * 100}%">${time(start + n * 60000)}</time>`).join("")}</div>${cashes
+    .map((c) => {
+      const bins = new Map();
+      for (const e of live.events || []) {
+        const at =
+          Math.floor(Date.parse(e.created.replace(" ", "T") + "Z") / 60000) *
+          60000;
+        if (e.cash_location !== c.id || at < start || at > end) continue;
+        const rows = bins.get(at) || [];
+        rows.push(e);
+        bins.set(at, rows);
+      }
+      return `<div class="minute-lane"><b>${esc(c.name)}</b>${[...bins].map(([at, orders]) => `<details data-timeline-slot="${c.id}-${at}" style="left:${((at - start) / 3600000) * 100}%"><summary aria-label="${orders.length} замовлень, ${time(at)}">●<small>${orders.length}</small></summary><div><b>${time(at)}</b>${orders.map((e) => `<p>Чек №${e.id}</p>${e.items.map((i) => `<p>${i.qty} × ${esc(i.name)}${i.status === "cancelled" ? " · скасовано" : ""}</p>`).join("")}`).join("")}</div></details>`).join("")}</div>`;
+    })
+    .join(
+      "",
+    )}</div></div><p class="muted">Остання година · крок 1 хв · до 500 останніх чеків. Натисніть позначку для позицій.</p></section>`;
 }
+
 let analyticsGroup = "cash",
   analyticsMetric = "orders",
   analyticsSource = "all",
@@ -286,6 +293,11 @@ function analyticsChanged(key, value) {
   if (liveStatsLast) replaceStatistics(liveStatisticsMarkup(liveStatsLast.r));
 }
 function interactiveAnalytics(r) {
+  if (
+    analyticsSource !== "all" &&
+    !allLocations().some((l) => l.kind === "cash" && l.id === analyticsSource)
+  )
+    analyticsSource = "all";
   const events = (r.live.events || []).filter(
       (e) => analyticsSource === "all" || e.cash_location === analyticsSource,
     ),
@@ -297,9 +309,17 @@ function interactiveAnalytics(r) {
         time: minute.replace(" ", "T") + ":00Z",
         orders: 0,
         qty: 0,
+        amount: 0,
+        price: 0,
       };
     m.orders++;
-    m.qty += e.items.reduce((n, i) => n + i.qty, 0);
+    m.qty += e.items
+      .filter((i) => i.status !== "cancelled")
+      .reduce((n, i) => n + i.qty, 0);
+    m.amount += e.items
+      .filter((i) => i.status !== "cancelled")
+      .reduce((n, i) => n + (i.price || 0) * i.qty, 0);
+    m.price = m.qty ? m.amount / m.qty : 0;
     minutes.set(minute, m);
     const keys = new Map();
     for (const i of e.items) {
@@ -320,7 +340,13 @@ function interactiveAnalytics(r) {
     }
     for (const [id, line] of keys) {
       const row = groups.get(id) || {
-        name: locationInfo(id)?.name || id,
+        name:
+          locationInfo(id)?.name ||
+          (analyticsGroup === "cash"
+            ? "Архівна каса"
+            : analyticsGroup === "delivery"
+              ? "Архівна видача"
+              : id),
         orders: 0,
         qty: 0,
         amount: 0,
@@ -330,6 +356,24 @@ function interactiveAnalytics(r) {
       row.amount += line.amount;
       groups.set(id, row);
     }
+  }
+  const timeRows = [];
+  const last = Math.floor(Date.parse(r.live.generated_at) / 60000) * 60000;
+  const first = Math.max(
+    last - 59 * 60000,
+    Math.min(last, ...[...minutes.values()].map((m) => Date.parse(m.time))),
+  );
+  for (let at = first; at <= last; at += 60000) {
+    const key = new Date(at).toISOString().slice(0, 16).replace("T", " ");
+    timeRows.push(
+      minutes.get(key) || {
+        time: new Date(at).toISOString(),
+        orders: 0,
+        qty: 0,
+        amount: 0,
+        price: 0,
+      },
+    );
   }
   const options = (values, selected) =>
     values
@@ -364,7 +408,10 @@ function interactiveAnalytics(r) {
           (v, e) => {
             v.cash += e.payment?.cash_amount || 0;
             v.card += e.payment?.card_amount || 0;
-            v.cash_count += e.payment?.cash_amount > 0 ? 1 : 0;
+            v.cash_count +=
+              (e.payment?.cash_given ?? e.payment?.cash_amount ?? 0) > 0
+                ? 1
+                : 0;
             v.card_count += e.payment?.card_amount > 0 ? 1 : 0;
             return v;
           },
@@ -404,7 +451,7 @@ function interactiveAnalytics(r) {
     )
     .join(
       "",
-    )}</select></div><p class="muted">Без скасованих позицій. Детальні порівняння — за останніми 500 чеками поточної сесії. Спільні видачі враховують спільне замовлення у кожному напрямку.</p>${liveBars("Порівняння", rows, ["amount", "price"].includes(analyticsMetric))}${liveChart("Час і кількість замовлень / порцій", [...minutes.values()], analyticsMetric === "qty" ? "qty" : "orders", false, 60)}${liveBars(
+    )}</select></div><p class="muted">Без скасованих позицій. Детальні порівняння — за останніми 500 чеками поточної сесії. Спільні видачі враховують спільне замовлення у кожному напрямку.</p>${liveBars("Порівняння", rows, ["amount", "price"].includes(analyticsMetric))}${liveChart("Час і " + { orders: "кількість замовлень", qty: "порції", amount: "сума", price: "ціна порції" }[analyticsMetric], timeRows, analyticsMetric, ["amount", "price"].includes(analyticsMetric), 60)}${liveBars(
     "Напої · порції",
     [...drinkGroups].map(([name, value]) => ({ name, value })),
     false,

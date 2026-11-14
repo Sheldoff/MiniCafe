@@ -263,7 +263,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
         count,
         { timeout: 22000 },
       );
-      await page.locator(".live-data summary").click();
+      assert.equal(await page.locator(".live-data").count(), 0);
       for (const palette of ["coffee", "standard"])
         for (const mode of ["light", "dark"])
           for (const width of [1440, 768, 390, 320]) {
@@ -309,11 +309,8 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
       );
       await page.evaluate(() => statistics());
       await page.locator(".live-status.is-stale").waitFor();
-      assert.equal(await page.locator(".live-kpi").count(), 5);
-      assert(
-        await page.locator(".live-data").evaluate((e) => e.open),
-        "expanded graph data collapsed on refresh",
-      );
+      assert.equal(await page.locator(".live-kpi").count(), 0);
+      assert(await page.getByLabel("Групування").isVisible());
       await page.unroute("**/api/stats?*live=1");
       await page.route("**/api/stats?*live=1", (r) =>
         r.fulfill({
@@ -327,7 +324,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
         .getByRole("status")
         .filter({ hasText: "Доступ до статистики обмежено" })
         .waitFor();
-      assert.equal(await page.locator(".live-kpi").count(), 0);
+      assert.equal(await page.locator(".order-timeline").count(), 0);
       await page.unroute("**/api/stats?*live=1");
       await page.evaluate(() => change("locations"));
       for (const width of [320, 390, 1440]) {

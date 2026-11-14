@@ -164,8 +164,10 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
         "Гість №1",
       );
       await page.evaluate(() => change("history"));
-      await page.locator("#sessionName").fill("Вечірня зміна");
       await page.locator("#sessionNameForm button").click();
+      await page.locator("#editSessionTitle").fill("Вечірня зміна");
+      await page.locator("#orderDialog button.primary").click();
+      await page.locator("#orderDialog").waitFor({ state: "detached" });
       await page.waitForFunction(() =>
         data.sessions.some((s) => s.name === "Вечірня зміна"),
       );
@@ -174,7 +176,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
         await page.waitForTimeout(120);
         const select = await page.locator(".stats-period select").boundingBox(),
           end = await page.locator(".stats-end-session").boundingBox(),
-          field = await page.locator("#sessionName").boundingBox();
+          field = await page.locator("#sessionNameForm button").boundingBox();
         assert(
           Math.abs(select.y + select.height - end.y - end.height) < 3,
           "Period/end on one row",
@@ -229,7 +231,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
       await page.locator("#reportDocument").waitFor();
       await swipe(10, 150);
       assert.equal(await page.evaluate(() => statsTab), "report");
-      await swipe(-170, 0, "#sessionName");
+      await swipe(-170, 0, ".stats-period select");
       assert.equal(await page.evaluate(() => statsTab), "report");
       await swipe(-170, 0, ".stats-heading h2", true);
       assert.equal(await page.evaluate(() => statsTab), "report");
@@ -241,17 +243,40 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
         await page.locator(".live-toolbar button,.live-toolbar h2").count(),
         0,
       );
-      assert.equal(await page.locator(".timeline-cash-label").count(), 3);
+      assert.equal(await page.locator(".minute-lane").count(), 2);
+      await page
+        .locator("details[data-timeline-slot]")
+        .first()
+        .evaluate((el) => (el.open = true));
       assert(
         (await page.locator(".order-timeline").innerText()).includes(
           product.name,
         ),
       );
-      const slot = page.locator("details.timeline-slot").first();
+      await page.getByLabel("Показник", { exact: true }).selectOption("qty");
+      await page
+        .getByLabel("Каса для порівняння", { exact: true })
+        .selectOption(cash);
+      await page
+        .getByLabel("Показник оплати", { exact: true })
+        .selectOption("count");
+      const comparison = page
+        .getByRole("heading", { name: "Порівняння", exact: true })
+        .locator("..");
+      assert.equal(
+        await comparison.locator(".live-breakdown b").innerText(),
+        "3",
+      );
+      assert.equal(
+        await page.locator(".minute-lane details").count(),
+        2,
+        "one marker per cash/minute includes simultaneous orders",
+      );
+      const slot = page.locator("details[data-timeline-slot]").first();
       await slot.evaluate((el) => (el.open = true));
       await page.evaluate(() => statistics());
       await page.waitForFunction(
-        () => document.querySelector("details.timeline-slot")?.open,
+        () => document.querySelector("details[data-timeline-slot]")?.open,
       );
       await page.waitForFunction(
         () =>

@@ -309,3 +309,19 @@
 #main .session-name-form {
   flex: 0 !important;
 }
+.live-dashboard .muted {
+  color: var(--muted);
+}
+.live-dashboard select {
+  max-width: 100%;
+  min-width: 0;
+}
+#main .session-name-form {
+  flex: 0 0 44px !important;
+  min-width: 44px;
+  max-width: 44px;
+}
+#main .session-name-form button {
+  width: 44px;
+  min-width: 44px;
+}
