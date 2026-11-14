@@ -1,3 +1,4 @@
+import { itemDestinations } from "./locations.js";
 export function liveSession(orders, active = false) {
   const time = (s) => Date.parse(s.replace(" ", "T") + "Z");
   const moments = orders.map((o) => time(o.created));
@@ -69,11 +70,15 @@ export function liveSession(orders, active = false) {
       .slice(-500)
       .map((o) => ({
         id: o.id,
+        payment: o.payment || null,
         created: o.created,
         cash_location: o.cash_location || "cash",
         items: o.items.map((i) => ({
           name: i.name,
           qty: i.qty,
+          price: i.price,
+          route: i.route,
+          destinations: itemDestinations(i),
           status: i.status,
         })),
       })),

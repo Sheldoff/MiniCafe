@@ -88,6 +88,9 @@ test("independent cash numbering preserves exact prefixes, names/retries/backup;
     new URLSearchParams({ session: String(sid), live: "1" }),
   ).live;
   assert.equal(live.events.length, 6);
+  assert.equal(live.events.at(-1).items[0].price,5000);
+  assert.equal(live.events.at(-1).payment.card_amount,5000);
+  assert.equal(live.events.at(-1).items[0].destinations[0].route,"bar");
   assert(
     live.events.some(
       (e) => e.cash_location === two && e.items[0].name === "Кава",

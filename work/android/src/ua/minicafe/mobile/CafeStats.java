@@ -302,8 +302,8 @@ public final class CafeStats {
     JSONArray events = new JSONArray();
     for(int n=Math.max(0,chosen.length()-500);n<chosen.length();n++){
       JSONObject o=chosen.getJSONObject(n);JSONArray lines=new JSONArray(),items=o.getJSONArray("items");
-      for(int j=0;j<items.length();j++){JSONObject i=items.getJSONObject(j);lines.put(new JSONObject().put("name",i.getString("name")).put("qty",i.getInt("qty")).put("status",i.getString("status")));}
-      events.put(new JSONObject().put("id",o.getInt("id")).put("created",o.getString("created")).put("cash_location",o.optString("cash_location","cash")).put("items",lines));
+      for(int j=0;j<items.length();j++){JSONObject i=items.getJSONObject(j);lines.put(new JSONObject().put("name",i.getString("name")).put("qty",i.getInt("qty")).put("price",i.getLong("price")).put("route",i.getString("route")).put("destinations",CafeStore.itemDestinations(i)).put("status",i.getString("status")));}
+      events.put(new JSONObject().put("id",o.getInt("id")).put("created",o.getString("created")).put("payment",o.optJSONObject("payment")).put("cash_location",o.optString("cash_location","cash")).put("items",lines));
     }
     return new JSONObject()
         .put("events",events)
