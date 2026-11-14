@@ -16,6 +16,8 @@ public class CashWorkspaceTest {
   check(s.cardPayments(Long.MAX_VALUE,false,"cash").getJSONArray("payments").length()==1,"Main cash ledger leaked");check(s.cardPayments(Long.MAX_VALUE,false,TWO).getJSONArray("payments").length()==4,"Second cash ledger wrong");
   int sid=s.state().getInt("active_session");s.mutate("/api/session/rename",new JSONObject().put("id",sid).put("name","Ранкова зміна"));check(s.state().getJSONArray("sessions").getJSONObject(0).getString("name").equals("Ранкова зміна"),"Session rename lost");
   s.mutate("/api/transaction/clear",new JSONObject());check(s.cardPayments(Long.MAX_VALUE,true).getJSONArray("payments").length()==0,"History not cleared");check(s.cardPayments(Long.MAX_VALUE,false,TWO).getJSONArray("payments").length()==4,"Clearing log changed cash ledger");
+  JSONObject live=CafeStats.live(new JSONObject(new String(s.backup(),"UTF-8")),sid);
+  JSONObject event=live.getJSONArray("events").getJSONObject(0);check(event.getJSONArray("items").getJSONObject(0).getLong("price")==3500,"Live price missing");check(event.getJSONObject("payment").getLong("card_amount")==3500,"Live payment missing");
   System.out.println("PASS cash-specific numbering/prefixes, names/retries/restart, isolated card histories, session rename and non-financial history clear");
  }
 }
