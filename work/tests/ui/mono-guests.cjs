@@ -202,11 +202,15 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
             const s = getComputedStyle(
               document.querySelector(".tile-feedback"),
             );
-            const a = s.backgroundColor.match(/\d+/g);
-            return a[0] === a[1] && a[1] === a[2];
+            const probe = document.createElement("span");
+            probe.style.backgroundColor = "var(--feedback-add)";
+            document.body.append(probe);
+            const expected = getComputedStyle(probe).backgroundColor;
+            probe.remove();
+            return s.backgroundColor === expected;
           }),
           true,
-          "feedback animation gray",
+          "feedback follows the selected location and palette",
         );
         await page.evaluate(() => change("history"));
         await page.waitForTimeout(160);

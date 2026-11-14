@@ -145,6 +145,10 @@
   font-size: 17px;
   color: var(--text);
 }
+.order-timeline .muted,
+.location-color-editor .muted {
+  color: var(--muted);
+}
 .order-timeline-scroll {
   overflow: auto;
   max-width: 100%;
