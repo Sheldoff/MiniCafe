@@ -18,22 +18,12 @@ function liveBars(title, rows, currency) {
 }
 function liveStatisticsMarkup(r, error = "") {
   const l = r.live,
-    rows = l.timeline,
     at = new Date(l.generated_at).toLocaleTimeString("uk-UA", {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
     });
-  const kpi = (label, value, hint = "") =>
-    `<div class="live-kpi"><span>${label}</span><b>${value}</b>${hint ? `<small>${hint}</small>` : ""}</div>`;
-  const top = [...r.drinks, ...r.food]
-    .sort((a, b) => b.qty - a.qty)
-    .slice(0, 5);
-  return `<section class="live-dashboard"><div class="live-toolbar"><div><p class="live-status ${error ? "is-stale" : ""}" role="status">${error ? esc(error) + " · Останні дані: " : "Оновлено: "}${at} · кожні 15 с</p></div></div>${orderTimeline(l)}<div class="live-kpis">${kpi("Після витрат", money(r.net_revenue))}${kpi("Замовлень", r.order_count, "Подарункових: " + r.gift_count)}${kpi("Середній чек", r.check_count ? money(r.avg_check) : "—", "Без подарунків")}${kpi("Порцій у черзі", l.pending_units, "Замовлень: " + l.pending_orders)}${kpi("Найдовше очікування", l.pending_orders ? Math.floor(l.oldest_wait_seconds / 60) + " хв" : "—", "У поточній сесії")}</div><p class="live-period">Крок графіків: ${durationText(l.interval_seconds)}</p><div class="live-graphs">${liveChart("Кількість замовлень у часі", rows, "orders", false, l.interval_seconds)}${liveBars("Спосіб оплати", [{ name: "Готівка", value: r.cash, hint: "Оплат: " + r.cash_count }, { name: "Картка", value: r.card, hint: "Оплат: " + r.card_count }, ...(r.unknown ? [{ name: "Невідомий тип", value: r.unknown }] : [])], true)}${liveBars(
-    "Популярні позиції · порції",
-    top.map((p) => ({ name: p.name, value: p.qty, hint: money(p.amount) })),
-    false,
-  )}</div><details class="live-data"><summary>Дані графіків за періодами</summary><table class="report-table"><thead><tr><th>Період</th><th>Замовлень</th><th>Виручка</th></tr></thead><tbody>${rows.map((p) => `<tr><td>${new Date(p.time).toLocaleString("uk-UA", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</td><td>${p.orders}</td><td>${money(p.revenue)}</td></tr>`).join("")}</tbody></table></details><p class="live-note">Дані поточної сесії за оформленими чеками. Скасування позиції не означає повернення оплати. Автооновлення працює, поки сторінка відкрита й видима.</p></section>`;
+  return `<section class="live-dashboard"><p class="live-status ${error ? "is-stale" : ""}" role="status">${error ? esc(error) : "Оновлено: "}${at} · кожні 15 с</p>${minuteTimeline(l)}${interactiveAnalytics(r)}</section>`;
 }
 async function liveStatistics(current, serial) {
   clearTimeout(liveStatsTimer);

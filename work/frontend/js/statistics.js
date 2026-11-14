@@ -61,7 +61,7 @@ async function statistics() {
   ++historyRequest;
   if (!document.querySelector("#statisticsContent"))
     document.querySelector("#main").innerHTML =
-      `<div class="stats-tabs" role="group" aria-label="Вигляд статистики"><button onclick="statsTabChange('orders')">Замовлення</button><button onclick="statsTabChange('report')">Звіт</button><button onclick="statsTabChange('online')">Онлайн</button></div><div class="stats-top">${statisticsHeading(current)}</div><div class="stats-select"><label class="stats-period">Період<select aria-label="Період статистики" onchange="statsFilter(this.value)"></select></label><form id="sessionNameForm" class="session-name-form"><label>Назва сесії<input id="sessionName" maxlength="100" required autocomplete="off"></label><button type="submit" aria-label="Зберегти назву сесії">✓</button></form><button class="stats-end-session" onclick="endSession()">Завершити сесію</button></div><div id="statisticsContent"><div class="stats-initial" aria-label="Завантаження статистики"></div></div>`;
+      `<div class="stats-tabs" role="group" aria-label="Вигляд статистики"><button onclick="statsTabChange('orders')">Замовлення</button><button onclick="statsTabChange('report')">Звіт</button><button onclick="statsTabChange('online')">Онлайн</button></div><div class="stats-top">${statisticsHeading(current)}</div><div class="stats-select"><label class="stats-period"><select aria-label="Період статистики" onchange="statsFilter(this.value)"></select></label><form id="sessionNameForm" class="session-name-form"><label class="session-name-hidden">Назва сесії<input id="sessionName" maxlength="100" required autocomplete="off"></label><button type="submit" aria-label="Редагувати назву сесії" onclick="event.preventDefault();editSessionName()">✎</button></form><button class="stats-end-session" onclick="endSession()">Завершити сесію</button></div><div id="statisticsContent"><div class="stats-initial" aria-label="Завантаження статистики"></div></div>`;
   let header = document.querySelector(".stats-top");
   if (header.dataset.current !== String(current)) {
     header.innerHTML = statisticsHeading(current);
@@ -141,8 +141,8 @@ async function statistics() {
       return;
     statsCurrent = report;
     replaceStatistics(
-      `<div class="report-actions"><p>Підсумки обраного періоду</p><button class="primary" aria-label="Завантажити статистику PDF" onclick="exportStatistics()">${settingsIconSvgs.download}Завантажити PDF</button></div>` +
-        reportMarkup(report) +
+      reportMarkup(report) +
+        `<div class="report-actions"><p>Підсумки обраного періоду</p><button class="primary" aria-label="Завантажити статистику PDF" onclick="exportStatistics()">${settingsIconSvgs.download}Завантажити PDF</button></div>` +
         `<details class="stats-maintenance"><summary>Керування історією</summary><p class="muted">Очищення видалить усю статистику, а не лише обраний період.</p><button class="remove" onclick="clearStatistics()">Повністю очистити статистику</button></details>`,
     );
   } catch (e) {

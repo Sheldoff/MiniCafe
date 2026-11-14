@@ -68,7 +68,7 @@
 #main .location-list-row {
   border: 0;
 }
-#main .location-list-row:nth-child(-n + 2) {
+#main .location-list-row:nth-child(3) {
   border-bottom: 1px solid var(--border);
 }
 .transaction-actions {
@@ -248,4 +248,64 @@
     gap: 8px;
     grid-template-columns: 1fr 1fr;
   }
+}
+
+.session-name-hidden {
+  display: none !important;
+}
+.minute-ruler {
+  min-width: 2400px;
+  padding-top: 36px;
+  position: relative;
+}
+.minute-ticks {
+  height: 28px;
+  position: relative;
+}
+.minute-ticks time {
+  position: absolute;
+  font-size: 10px;
+  color: var(--muted);
+  border-left: 1px solid var(--border);
+  padding-left: 3px;
+}
+.minute-lane {
+  position: relative;
+  min-height: 72px;
+  border-bottom: 1px solid var(--border);
+  background: repeating-linear-gradient(
+    to right,
+    transparent 0,
+    transparent calc(100% / 60 - 1px),
+    var(--border) calc(100% / 60)
+  );
+}
+.minute-lane > b {
+  position: sticky;
+  left: 0;
+  background: var(--surface);
+  padding: 5px;
+  z-index: 2;
+}
+.minute-lane > details {
+  position: absolute;
+  top: 28px;
+  color: var(--accent);
+}
+.minute-lane summary {
+  cursor: pointer;
+  font-size: 20px;
+}
+.minute-lane details > div {
+  position: relative;
+  z-index: 3;
+  background: var(--surface);
+  color: var(--text);
+  padding: 12px;
+  border: 1px solid var(--border);
+  min-width: 180px;
+}
+
+#main .session-name-form {
+  flex: 0 !important;
 }
