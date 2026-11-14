@@ -68,7 +68,7 @@
     "private_password_file_separate": "work/android/signing.local.json",
     "certificate_fingerprint_file": "work/android/signing-cert.sha256"
   },
-  "validation_limit": "3.57 / online 0.24: verification in progress; previous release evidence retained in Git history.",
+  "validation_limit": "Android 3.57/code 69: full checks.py without skips passed (c9747ff0084540baa8e9a14776701e02, 26 Java suites, local API and Chrome/WebKit). Original signing certificate verified. Cash-workspace UI passed online and Android: exact per-cash prefixes/counters/isolated card ledgers, HEX/RGB and location color persistence across all palettes/light/dark, one-row editable sessions at 320/390/768/1440, guarded stats swipes, product timeline lanes and safe transaction controls. Existing editor/stock/queues/theme/gesture/statistics regressions passed. Online 0.24: 26 unit tests and full disposable local D1 pipeline (concurrent numbered orders, role/CSRF, bank history hide/clear with unchanged matching/replay/finance, restore/scopes), general Chrome/WebKit/Cyrillic PDF and Java-D1 interop passed. GitHub source/online checks passed. Worker e675b6ef-ef0e-459d-851f-2932a57b5430; public GET / 200, /admin 302, /api/ping 200. No physical phones or production test orders/restore; Windows frozen. Private value/archive scans and SHA-256 verified when packaging.",
   "development_tracks": {
     "policy": "docs/PROJECT-TRACKS-UA.md",
     "local_android": {
