@@ -173,3 +173,8 @@ Online 0.19 / APK 3.52: docs/SETTINGS-STAFF-UA.md. Перед deploy засто�
 ## Чорно-біла тема й гості — online 0.23 / APK 3.56
 
 [Інструкція](../../docs/MONO-GUESTS-UA.md). `next_guest_number` та `guest_name_required` зберігаються в JSON; нових міграцій/секретів немає. Локальні тести перед окремим build.py/cf.ps1 whoami/deploy, без production-замовлень чи restore.
+
+
+## Каси й сесії — online 0.24 / APK 3.57
+
+[Інструкція](../../docs/CASH-WORKSPACE-UA.md). Лічильники/префікси й приховування банківського журналу зберігаються в JSON. Міграцій/нових секретів немає. Повні локальні перевірки, build.py, cf.ps1 whoami, окремий ручний deploy. Не тестувати замовлення/restore на production.

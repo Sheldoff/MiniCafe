@@ -50,6 +50,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
         active_session: 0,
         issue_undo: {},
         next_guest_number: 1,
+        next_guest_numbers: {},
       });
       for (const p of fixture.products) {
         delete p.stock;
@@ -148,12 +149,13 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
           const c = await contrast(page);
           assert.deepEqual(c.problems, [], mode + "/" + view + " contrast");
           const colored = await page.evaluate(() => {
+            if (document.documentElement.dataset.locationTheme) return [];
             const bad = [];
             for (const el of document.querySelectorAll("body *")) {
               if (
                 !el.getBoundingClientRect().width ||
                 el.closest(
-                  "svg,.appearance-swatches,.location-presets,.location-color",
+                  "svg,.appearance-swatches,.location-presets,.location-color,.color-preview,.queue-grid .card",
                 ) ||
                 el.matches("img,input[type=color]")
               )

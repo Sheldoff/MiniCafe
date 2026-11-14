@@ -30,13 +30,19 @@ function statsFilter(value) {
   statistics();
 }
 
+let statsTabDirection = 1;
 function statsTabChange(tab) {
+  statsTabDirection =
+    ["orders", "report", "online"].indexOf(tab) >=
+    ["orders", "report", "online"].indexOf(statsTab)
+      ? 1
+      : -1;
   statsTab = tab;
   statistics();
 }
 
 function statisticsHeading(current) {
-  return `<div class="stats-heading"><h2>Статистика</h2><p class="stats-session"><span class="stats-status-dot" aria-hidden="true"></span>${current ? "Відкрита сесія №" + current : "Немає відкритої сесії"}</p></div>${current ? '<button class="stats-end-session" onclick="endSession()">Завершити сесію</button>' : ""}`;
+  return `<div class="stats-heading"><h2>Статистика</h2></div>`;
 }
 
 async function statistics() {
@@ -55,7 +61,7 @@ async function statistics() {
   ++historyRequest;
   if (!document.querySelector("#statisticsContent"))
     document.querySelector("#main").innerHTML =
-      `<div class="stats-tabs" role="group" aria-label="Вигляд статистики"><button onclick="statsTabChange('orders')">Замовлення</button><button onclick="statsTabChange('report')">Звіт</button><button onclick="statsTabChange('online')">Онлайн</button></div><div class="stats-top">${statisticsHeading(current)}</div><div class="stats-select"><label class="stats-period">Період<select aria-label="Період статистики" onchange="statsFilter(this.value)"></select></label></div><div id="statisticsContent"><div class="stats-initial" aria-label="Завантаження статистики"></div></div>`;
+      `<div class="stats-tabs" role="group" aria-label="Вигляд статистики"><button onclick="statsTabChange('orders')">Замовлення</button><button onclick="statsTabChange('report')">Звіт</button><button onclick="statsTabChange('online')">Онлайн</button></div><div class="stats-top">${statisticsHeading(current)}</div><div class="stats-select"><label class="stats-period">Період<select aria-label="Період статистики" onchange="statsFilter(this.value)"></select></label><form id="sessionNameForm" class="session-name-form"><label>Назва сесії<input id="sessionName" maxlength="100" required autocomplete="off"></label><button type="submit" aria-label="Зберегти назву сесії">✓</button></form><button class="stats-end-session" onclick="endSession()">Завершити сесію</button></div><div id="statisticsContent"><div class="stats-initial" aria-label="Завантаження статистики"></div></div>`;
   let header = document.querySelector(".stats-top");
   if (header.dataset.current !== String(current)) {
     header.innerHTML = statisticsHeading(current);
@@ -76,6 +82,36 @@ async function statistics() {
     select.dataset.signature = signature;
   }
   select.value = statsSelection;
+  const selectedSession = sessions.find((s) => String(s.id) === statsSelection),
+    nameForm = document.querySelector("#sessionNameForm"),
+    nameField = document.querySelector("#sessionName");
+  nameForm.hidden = !selectedSession;
+  if (
+    selectedSession &&
+    (nameField.dataset.session !== String(selectedSession.id) ||
+      document.activeElement !== nameField)
+  ) {
+    nameField.value = selectedSession.name;
+    nameField.dataset.session = String(selectedSession.id);
+  }
+  nameForm.onsubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedSession) return;
+    const b = nameForm.querySelector("button");
+    b.disabled = true;
+    try {
+      await post("session/rename", {
+        id: selectedSession.id,
+        name: nameField.value,
+      });
+      toast("Назву збережено", true);
+    } catch (error) {
+      toast(error.message);
+    } finally {
+      b.disabled = false;
+    }
+  };
+  document.querySelector(".stats-end-session").hidden = !current;
   select.disabled = statsTab === "online";
   document.querySelector(".stats-select").hidden = statsTab === "online";
   document.querySelectorAll(".stats-tabs button").forEach((button, i) => {
@@ -326,6 +362,14 @@ function replaceStatistics(html) {
     return;
   }
   box.dataset.markup = html;
+  const openSlots = same
+    ? [...box.querySelectorAll("[data-timeline-slot][open]")].map(
+        (el) => el.dataset.timelineSlot,
+      )
+    : [];
+  const timelineScroll = same
+    ? box.querySelector(".order-timeline-scroll")?.scrollLeft || 0
+    : 0;
   const expandedPanels = [".live-data", ".stats-maintenance"].filter(
     (selector) => same && box.querySelector(selector)?.open,
   );
@@ -344,6 +388,14 @@ function replaceStatistics(html) {
   box.querySelectorAll(".stats-content-ghost").forEach((e) => e.remove());
   let ghost = old && !same ? cleanGhost(old.cloneNode(true)) : null;
   box.innerHTML = '<div class="stats-pane">' + html + "</div>";
+  const timelineScroller = box.querySelector(".order-timeline-scroll");
+  if (timelineScroller)
+    timelineScroller.scrollLeft = same
+      ? timelineScroll
+      : timelineScroller.scrollWidth - timelineScroller.clientWidth;
+  box.querySelectorAll("[data-timeline-slot]").forEach((el) => {
+    if (openSlots.includes(el.dataset.timelineSlot)) el.open = true;
+  });
   expandedPanels.forEach((selector) =>
     box.querySelector(selector)?.setAttribute("open", ""),
   );
@@ -371,7 +423,7 @@ function replaceStatistics(html) {
   if (ghost) {
     ghost.className = "stats-content-ghost";
     box.appendChild(ghost);
-    let direction = statsTab === "report" ? 1 : -1;
+    let direction = statsTabDirection;
     motion(
       pane,
       [

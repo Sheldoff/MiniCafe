@@ -1,7 +1,7 @@
 {
   "application": "МініКафе",
-  "version": "3.56",
-  "android_version_code": 68,
+  "version": "3.57",
+  "android_version_code": 69,
   "purpose": "Каса, окремі черги напоїв і їжі, гнучке меню, статистика/PDF, калькулятор, резервні копії",
   "entry_document": "START-HERE-UA.md",
   "human_prompt": "NEXT-CHAT-PROMPT-UA.txt",
@@ -26,6 +26,7 @@
     "delivery": "Тільки видача їжі"
   },
   "latest_requested_changes": [
+    "Per-cash persistent guest counters/exact prefixes and isolated card ledgers; palette-independent configured colors with HEX/RGB picker; non-financial transaction clear/hide; stats swipe guards, one-row period/session rename/end and date defaults; live per-cash product timeline without redundant session/refresh/revenue blocks; compact settings and cake delivery icon",
     "Monochrome light/dark palette including CSS keyframes, feedback and native Android controls; per-cash required guest name, persistent anonymous-only server numbering with atomic retries; compact renamed Menu and Prices; top statistics tabs and hidden live period filter",
     "Cash partition stock with conserved global total, source consumption/refund, calculator reconciliation and stale-editor guard; type-safe routing/legacy queue repair; compact mobile web catalog/headerless editor, location icons/heading, per-cash bar portion badges and SVG empty queues; live current-session dashboard with 15s polling, charts, stale-data/authorization guards",
     "Menu and prices design: responsive photo cards with clear price/visibility/delete action, labeled search/results count, full-page grouped editor with photo preview and single save, themed accessible controls; shared online/APK",
@@ -67,14 +68,14 @@
     "private_password_file_separate": "work/android/signing.local.json",
     "certificate_fingerprint_file": "work/android/signing-cert.sha256"
   },
-  "validation_limit": "Android 3.56/code 68: full checks.py without skips passed (dfee17d919b340a180d0ef9640f2b79e, 25 Java suites, local API and Chrome/WebKit). Original signing certificate verified. New mono-guests browser scenarios passed online and local APK: light/dark all screens, computed grayscale colors and text contrast, feedback/reduced motion, saved theme, guest placeholders and required names, automatic numbering, compact 320/390/768/1440 menu and top tabs/live session. Online 0.23: 25 unit tests, full disposable local D1 API pipeline including concurrent anonymous numbering, idempotent duplicates, named/failed sales, required flag, backup/restore; Java-D1 interop and general Chrome/WebKit/Cyrillic PDF passed. GitHub source/online checks passed. Worker 4ca3b4f0-c439-4a7d-8d07-bb64983ed520; read-only production GET / 200, /admin 302, /api/ping 200. No physical phones or production test orders/restore; Windows frozen. Private-value and source archive scans/checksums verified at packaging.",
+  "validation_limit": "3.57 / online 0.24: verification in progress; previous release evidence retained in Git history.",
   "development_tracks": {
     "policy": "docs/PROJECT-TRACKS-UA.md",
     "local_android": {
       "status": "active",
       "entry": "apps/local-android/README.md",
       "sources": "work/android",
-      "version": "3.56"
+      "version": "3.57"
     },
     "online": {
       "status": "telegram_auth_deployed",
@@ -85,7 +86,7 @@
       "sources": "apps/online/src",
       "database": "D1 minicafe-db",
       "deploy_docs": "apps/online/DEPLOY-UA.md",
-      "version": "0.23.0"
+      "version": "0.24.0"
     },
     "windows": {
       "status": "frozen",

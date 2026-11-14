@@ -44,7 +44,7 @@ function itemAtDestination(item, route, id) {
   return itemDestinations(item).some((d) => d.route === route && d.id === id);
 }
 function locationKindIcon(kind) {
-  return `<span class="location-kind-icon" aria-hidden="true">${settingsIconSvgs[kind === "cash" ? "wallet" : kind === "bar" ? "coffee" : "utensils"]}</span>`;
+  return `<span class="location-kind-icon" aria-hidden="true">${settingsIconSvgs[kind === "cash" ? "wallet" : kind === "bar" ? "coffee" : "cake"]}</span>`;
 }
 function itemAtLocation(item, route) {
   return itemAtDestination(
@@ -90,15 +90,11 @@ function applyLocationTheme() {
   ];
   props.forEach((key) => root.style.removeProperty(key));
   delete root.dataset.locationTheme;
-  if (
-    root.dataset.palette === "mono" ||
-    !color ||
-    !/^#[a-fA-F0-9]{6}$/.test(color)
-  )
-    return;
+  if (!color || !/^#[a-fA-F0-9]{6}$/.test(color)) return;
   root.dataset.locationTheme = "true";
   const dark = root.dataset.theme === "dark",
-    coffee = root.dataset.palette === "coffee";
+    coffee = root.dataset.palette === "coffee",
+    mono = root.dataset.palette === "mono";
   const mix = (base, amount) =>
     "#" +
     [0, 1, 2]
@@ -112,32 +108,57 @@ function applyLocationTheme() {
       )
       .join("");
   const values = {
-    "--text": coffee
+    "--text": mono
       ? dark
-        ? "#f3e6ca"
-        : "#38271d"
-      : dark
-        ? "#e9efe9"
-        : "#26372f",
-    "--muted": coffee
+        ? "#f5f5f5"
+        : "#171717"
+      : coffee
+        ? dark
+          ? "#f3e6ca"
+          : "#38271d"
+        : dark
+          ? "#e9efe9"
+          : "#26372f",
+    "--muted": mono
       ? dark
-        ? "#d1bba0"
-        : "#705744"
-      : dark
-        ? "#b0beb2"
-        : "#526355",
+        ? "#c4c4c4"
+        : "#555555"
+      : coffee
+        ? dark
+          ? "#d1bba0"
+          : "#705744"
+        : dark
+          ? "#b0beb2"
+          : "#526355",
     "--location-color": color,
     "--location-text": locationTextColor(color),
     "--accent": dark ? mix("#ffffff", 0.45) : color,
-    "--page": mix(dark ? (coffee ? "#211914" : "#111815") : "#ffffff", 0.06),
-    "--surface": mix(dark ? (coffee ? "#2d211b" : "#1c2520") : "#ffffff", 0.04),
-    "--raised": mix(dark ? (coffee ? "#443125" : "#27342b") : "#ffffff", 0.12),
+    "--page": mix(
+      dark ? (mono ? "#111111" : coffee ? "#211914" : "#111815") : "#ffffff",
+      0.06,
+    ),
+    "--surface": mix(
+      dark ? (mono ? "#202020" : coffee ? "#2d211b" : "#1c2520") : "#ffffff",
+      0.04,
+    ),
+    "--raised": mix(
+      dark ? (mono ? "#353535" : coffee ? "#443125" : "#27342b") : "#ffffff",
+      0.12,
+    ),
     "--input-bg": mix(
-      dark ? (coffee ? "#261c17" : "#17221d") : "#ffffff",
+      dark ? (mono ? "#191919" : coffee ? "#261c17" : "#17221d") : "#ffffff",
       0.03,
     ),
     "--border": mix(
-      dark ? (coffee ? "#94795e" : "#65766b") : coffee ? "#c9b69c" : "#d2d8d3",
+      dark
+        ? mono
+          ? "#777777"
+          : coffee
+            ? "#94795e"
+            : "#65766b"
+        : coffee
+          ? "#c9b69c"
+          : "#d2d8d3",
       0.2,
     ),
   };
@@ -181,11 +202,10 @@ function settingsExtras() {
   if (!panel) return;
   panel.classList.add("settings-panel");
   const isCloud = panel.classList.contains("cloud-server-panel");
-  if (isCloud) {
-    const title = document.createElement("h2");
-    title.textContent = "Налаштування";
-    panel.prepend(title);
-  } else panel.querySelector("h2").textContent = "Налаштування";
+  if (!isCloud) {
+    panel.querySelector("h2")?.remove();
+    panel.querySelector(":scope > p")?.remove();
+  } else panel.querySelectorAll(":scope > p").forEach((el) => el.remove());
   let actions = panel.querySelector(".cloud-server-actions");
   if (!actions) {
     actions = document.createElement("div");
@@ -255,7 +275,7 @@ function locationsPage(id = "", fromHistory = false) {
         : [editing.bar_target || "bar", editing.delivery_target || "delivery"]),
     basic = ["cash", "bar", "delivery"].includes(id),
     colors = [...new Set(rows.map((l) => l.color))];
-  host.innerHTML = `<section class="panel settings-page"><h2>${saved ? "Редагувати локацію" : "Створити локацію"}</h2><form id="locationForm"><label>Функціонал і група в меню<select id="locationKind" ${basic ? "disabled" : ""}><option value="cash">Каса</option><option value="bar">Бариста</option><option value="delivery">Видача</option></select></label><label>Назва в бічному меню<input id="locationName" maxlength="80" required value="${esc(editing.name)}"></label><div id="locationCashRules"><label class="location-target"><input id="guestNameRequired" type="checkbox" ${editing.guest_name_required ? "checked" : ""}>Ім’я гостя обов’язкове</label><p class="muted">Коли вимкнено, порожнє поле автоматично стає «Гість №…». Введене ім’я не витрачає номер.</p><fieldset><legend>Куди відправляти замовлення</legend><p class="muted">Оберіть потрібних бариста та видачі. Напої йдуть тільки бариста, їжа — тільки на видачу. Якщо обрано кілька черг одного типу, відмітки виконання спільні. Якщо відповідної черги не обрано, використовується основна.</p><div id="locationTargets">${rows
+  host.innerHTML = `<section class="panel settings-page"><h2>${saved ? "Редагувати локацію" : "Створити локацію"}</h2><form id="locationForm"><label>Функціонал і група в меню<select id="locationKind" ${basic ? "disabled" : ""}><option value="cash">Каса</option><option value="bar">Бариста</option><option value="delivery">Видача</option></select></label><label>Назва в бічному меню<input id="locationName" maxlength="80" required value="${esc(editing.name)}"></label><div id="locationCashRules"><label class="location-target"><input id="guestNameRequired" type="checkbox" ${editing.guest_name_required ? "checked" : ""}>Ім’я гостя обов’язкове</label><label>Префікс автоматичного гостя<input id="guestPrefix" maxlength="40" value="${esc(editing.guest_prefix ?? "Гість №")}" autocomplete="off" spellcheck="false"></label><p class="muted">Текст перед номером зберігається точно, включно з пробілом у кінці. Наприклад: «Н» → Н2, «низ » → низ 2.</p><p class="muted">Коли вимкнено, порожнє поле автоматично стає «Гість №…». Введене ім’я не витрачає номер.</p><fieldset><legend>Куди відправляти замовлення</legend><p class="muted">Оберіть потрібних бариста та видачі. Напої йдуть тільки бариста, їжа — тільки на видачу. Якщо обрано кілька черг одного типу, відмітки виконання спільні. Якщо відповідної черги не обрано, використовується основна.</p><div id="locationTargets">${rows
     .filter((l) => l.kind !== "cash" && l.id !== id)
     .map(
       (l) =>
@@ -271,7 +291,8 @@ function locationsPage(id = "", fromHistory = false) {
     )
     .join(
       "",
-    )}</select></label><label>Колір інтерфейсу<input id="locationColor" type="color" value="${editing.color}"></label><div class="location-presets" aria-label="Кольори наявних локацій">${colors.map((color) => `<button type="button" aria-label="Обрати колір ${color}" style="background:${color};color:${locationTextColor(color)}" onclick="document.querySelector('#locationColor').value='${color}'">✓</button>`).join("")}</div><p id="locationError" role="status"></p><button class="primary" type="submit">Зберегти локацію</button></form></section>`;
+    )}</select></label><fieldset class="location-color-editor"><legend>Колір локації</legend><div class="location-color-fields"><label class="color-preview" id="locationColorPreview" style="background:${editing.color};color:${locationTextColor(editing.color)}"><span>Обрати колір</span><input aria-label="Колір локації" id="locationColor" type="color" value="${editing.color}"></label><label>HEX<input id="locationColorHex" value="${editing.color}" pattern="#?[a-fA-F0-9]{6}" maxlength="7" spellcheck="false" autocomplete="off" aria-label="HEX кольору"></label></div><div class="color-rgb">${["R", "G", "B"].map((c, n) => `<label>${c}<input id="color${c}" type="number" min="0" max="255" step="1" inputmode="numeric" value="${parseInt(editing.color.slice(1 + n * 2, 3 + n * 2), 16)}"></label>`).join("")}</div><p class="muted">Колір зберігається для всіх тем. Контраст написів підбирається автоматично.</p></fieldset><div class="location-presets" aria-label="Кольори наявних локацій">${colors.map((color) => `<button type="button" aria-label="Обрати колір ${color}" style="background:${color};color:${locationTextColor(color)}" onclick="setLocationColor('${color}')">✓</button>`).join("")}</div><p id="locationError" role="status"></p><button class="primary" type="submit">Зберегти локацію</button></form></section>`;
+  bindLocationColor();
   document.querySelector("#locationKind").value = editing.kind;
   const update = () => {
     document.querySelector("#linkedCashField").hidden =
@@ -299,6 +320,7 @@ function locationsPage(id = "", fromHistory = false) {
         linked_cash: document.querySelector("#linkedCash").value,
         ...(document.querySelector("#locationKind").value === "cash"
           ? {
+              guest_prefix: document.querySelector("#guestPrefix").value,
               guest_name_required:
                 document.querySelector("#guestNameRequired").checked,
               targets: [
@@ -334,7 +356,7 @@ async function transactionsPage(append = false) {
   if (!append) {
     transactionCursor = null;
     document.querySelector("#main").innerHTML =
-      '<section class="panel settings-page"><h2>Історія транзакцій</h2><div id="bankPaymentHistory"><p class="muted">Історія оплат банки доступна при підключенні до онлайн-сервера.</p></div><h3>Карткові оплати замовлень</h3><p class="muted">Карткові оплати замовлень. Видалення прибирає запис зі списку та не змінює оплату чи звіти.</p><div id="transactionRows"></div><button id="transactionMore" hidden onclick="transactionsPage(true)">Показати ще</button></section>';
+      '<section class="panel settings-page"><h2>Історія транзакцій</h2><div id="bankPaymentHistory"><p class="muted">Історія оплат банки доступна при підключенні до онлайн-сервера.</p></div><h3>Карткові оплати замовлень</h3><div id="transactionRows"></div><button id="transactionMore" hidden onclick="transactionsPage(true)">Показати ще</button><div class="transaction-actions"><button onclick="transactionsPage()">Оновити</button><button class="remove" id="clearTransactions" onclick="clearTransactions(this)">Очистити історію</button></div></section>';
   }
   if (!append && typeof window.loadBankPaymentHistory === "function")
     window.loadBankPaymentHistory();

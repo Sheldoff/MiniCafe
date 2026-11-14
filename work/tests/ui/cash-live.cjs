@@ -307,9 +307,9 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
           body: JSON.stringify({ error: "offline fixture" }),
         }),
       );
-      await page.locator(".live-toolbar button").click();
+      await page.evaluate(() => statistics());
       await page.locator(".live-status.is-stale").waitFor();
-      assert.equal(await page.locator(".live-kpi").count(), 6);
+      assert.equal(await page.locator(".live-kpi").count(), 5);
       assert(
         await page.locator(".live-data").evaluate((e) => e.open),
         "expanded graph data collapsed on refresh",
@@ -322,7 +322,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
           body: JSON.stringify({ error: "revoked" }),
         }),
       );
-      await page.locator(".live-toolbar button").click();
+      await page.evaluate(() => statistics());
       await page
         .getByRole("status")
         .filter({ hasText: "Доступ до статистики обмежено" })

@@ -147,6 +147,7 @@ def main():
                 "menu-prices-design",
                 "cash-live",
                 "mono-guests",
+                "cash-workspace",
                 "cashier",
                 "card-payments",
                 "settings-locations",

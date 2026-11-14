@@ -29,16 +29,7 @@ function liveStatisticsMarkup(r, error = "") {
   const top = [...r.drinks, ...r.food]
     .sort((a, b) => b.qty - a.qty)
     .slice(0, 5);
-  return `<section class="live-dashboard"><div class="live-toolbar"><div><h2>${esc(r.title)}</h2><p class="live-status ${error ? "is-stale" : ""}" role="status">${error ? esc(error) + " · Останні дані: " : "Оновлено: "}${at} · кожні 15 с</p></div><button type="button" onclick="statistics()">Оновити</button></div><div class="live-kpis">${kpi("Виручка", money(r.revenue))}${kpi("Після витрат", money(r.net_revenue))}${kpi("Замовлень", r.order_count, "Подарункових: " + r.gift_count)}${kpi("Середній чек", r.check_count ? money(r.avg_check) : "—", "Без подарунків")}${kpi("Порцій у черзі", l.pending_units, "Замовлень: " + l.pending_orders)}${kpi("Найдовше очікування", l.pending_orders ? Math.floor(l.oldest_wait_seconds / 60) + " хв" : "—", "У поточній сесії")}</div><p class="live-period">Крок графіків: ${durationText(l.interval_seconds)}</p><div class="live-graphs">${liveChart("Виручка у часі", rows, "revenue", true, l.interval_seconds)}${liveChart("Кількість замовлень у часі", rows, "orders", false, l.interval_seconds)}${liveBars("Спосіб оплати", [{ name: "Готівка", value: r.cash, hint: "Оплат: " + r.cash_count }, { name: "Картка", value: r.card, hint: "Оплат: " + r.card_count }, ...(r.unknown ? [{ name: "Невідомий тип", value: r.unknown }] : [])], true)}${liveBars(
-    "Виручка по касах",
-    l.cashiers.map((c) => ({
-      name: locationInfo(c.id)?.name || c.name,
-      value: c.revenue,
-      color: locationInfo(c.id)?.color,
-      hint: "Замовлень: " + c.orders + " · У черзі порцій: " + c.pending_units,
-    })),
-    true,
-  )}${liveBars(
+  return `<section class="live-dashboard"><div class="live-toolbar"><div><p class="live-status ${error ? "is-stale" : ""}" role="status">${error ? esc(error) + " · Останні дані: " : "Оновлено: "}${at} · кожні 15 с</p></div></div>${orderTimeline(l)}<div class="live-kpis">${kpi("Після витрат", money(r.net_revenue))}${kpi("Замовлень", r.order_count, "Подарункових: " + r.gift_count)}${kpi("Середній чек", r.check_count ? money(r.avg_check) : "—", "Без подарунків")}${kpi("Порцій у черзі", l.pending_units, "Замовлень: " + l.pending_orders)}${kpi("Найдовше очікування", l.pending_orders ? Math.floor(l.oldest_wait_seconds / 60) + " хв" : "—", "У поточній сесії")}</div><p class="live-period">Крок графіків: ${durationText(l.interval_seconds)}</p><div class="live-graphs">${liveChart("Кількість замовлень у часі", rows, "orders", false, l.interval_seconds)}${liveBars("Спосіб оплати", [{ name: "Готівка", value: r.cash, hint: "Оплат: " + r.cash_count }, { name: "Картка", value: r.card, hint: "Оплат: " + r.card_count }, ...(r.unknown ? [{ name: "Невідомий тип", value: r.unknown }] : [])], true)}${liveBars(
     "Популярні позиції · порції",
     top.map((p) => ({ name: p.name, value: p.qty, hint: money(p.amount) })),
     false,

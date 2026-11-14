@@ -73,7 +73,7 @@ window.loadBankPaymentHistory = function () {
     if (!append) {
       cursor = "";
       section.innerHTML =
-        '<h3>Оплати банки «Кафе»</h3><p>Автоматична перевірка приблизно раз на хвилину. Тут збережені оплачені замовлення та запити з їхнім статусом.</p><button data-payment-refresh>Оновити</button><div id="bankPaymentRows"></div><button data-payment-more hidden>Показати ще</button>';
+        '<h3>Оплати банки «Кафе»</h3><div id="bankPaymentRows"></div><div class="transaction-actions"><button data-payment-more hidden>Показати ще</button><button data-payment-refresh>Оновити</button></div>';
     }
     try {
       const r = await fetch(
@@ -98,7 +98,7 @@ window.loadBankPaymentHistory = function () {
           j.payments
             .map(
               (p) =>
-                `<div class="bank-payment-row" data-bank-reference="${esc(p.reference)}"><b>${esc(p.guest || "Гість")}</b><p>${esc(p.reference)} · ${money(p.total)}</p><small>${esc(new Date(p.created * 1000).toLocaleString("uk-UA"))}</small><p>${esc(statuses[p.status] || p.status)}${p.order_id ? " · №" + p.order_id : ""}</p>${p.status === "review" ? `<button data-payment-retry="${esc(p.reference)}">Повторити передачу на приготування</button>` : ""}</div>`,
+                `<div class="bank-payment-row" data-bank-reference="${esc(p.reference)}"><button class="bank-payment-remove" aria-label="Прибрати транзакцію банки" data-payment-hide="${esc(p.reference)}">×</button><b>${esc(p.guest || "Гість")}</b><p>${esc(p.reference)} · ${money(p.total)}</p><small>${esc(new Date(p.created * 1000).toLocaleString("uk-UA"))}</small><p>${esc(statuses[p.status] || p.status)}${p.order_id ? " · №" + p.order_id : ""}</p>${p.status === "review" ? `<button data-payment-retry="${esc(p.reference)}">Повторити передачу на приготування</button>` : ""}</div>`,
             )
             .join("") || (!append ? "<p>Історія банки порожня.</p>" : ""),
         );
@@ -117,6 +117,20 @@ window.loadBankPaymentHistory = function () {
     }
     if (e.target.closest("[data-payment-more]")) {
       await refresh(true);
+      return;
+    }
+    const remove = e.target.closest("[data-payment-hide]");
+    if (remove) {
+      remove.disabled = true;
+      try {
+        await post("payments/history/hide", {
+          reference: remove.dataset.paymentHide,
+        });
+        await refresh();
+      } catch (error) {
+        toast(error.message);
+        remove.disabled = false;
+      }
       return;
     }
     const b = e.target.closest("[data-payment-retry]");
