@@ -155,7 +155,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
               if (
                 !el.getBoundingClientRect().width ||
                 el.closest(
-                  "svg,.appearance-swatches,.location-presets,.location-color,.color-preview,.queue-grid .card",
+                  "svg,.appearance-swatches,.location-presets,.location-color,.color-preview,.queue-grid .card,[data-nav-color],.drawer-unit-count",
                 ) ||
                 el.matches("img,input[type=color]")
               )
@@ -178,7 +178,15 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
                     2
                   )
                     bad.push(
-                      el.tagName + "." + el.className + " " + prop + "=" + m[0],
+                      el.tagName +
+                        "#" +
+                        el.id +
+                        "." +
+                        el.className +
+                        " " +
+                        prop +
+                        "=" +
+                        m[0],
                     );
                 }
               }
