@@ -332,6 +332,7 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(url))
       await page.evaluate(() => change("locations"));
       for (const width of [320, 390, 1440]) {
         await page.setViewportSize({ width, height: 1000 });
+        await page.waitForTimeout(260);
         const heading = await page
             .locator(".locations-heading h2")
             .boundingBox(),
